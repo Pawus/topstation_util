@@ -1,0 +1,309 @@
+proc,JtDebug=1
+
+#include ".\hbOutils.inc"
+proc,EPAD=EPADESA
+
+rout,ChoiVol
+{
+  var,§fed,§t,§vol
+
+  §t=¹[EPAD] Teintes des volumes voisins¹
+  
+  !HbVolEddv=[hbcFLD]*!onc([hbcFED])
+  dial,HB_FLD,l=208,h=72,tx={§t}
+  qc,tx,TX_NUM	,002,002,044,012,j=8,tx="N° volume"
+  qc,OP,OP_NVOL ,048,002,158,200,j=2,rout=ChoiNvol,tmen=CMP,selc=!HbVolEddv,eval=`{{mm}&t2:nom)8}   |   {{{mm}&r0:e}&q1:nab}`,rdig=IdFcd
+  qc,tx,TX_EDDV ,002,016,044,012,j=8,tx="EDDV",iv=1
+  qc,af,AF_EDDV ,048,016,158,012,j=2,tx=""
+  qc,tx,TX_S    ,044,030,025,012,j=5,tx="Statut",iv=1
+  qc,af,AF_S	,077,030,100,012,j=5,tx=""
+  qc,tx,TX_DIST ,002,044,044,012,j=8,tx="Distance"
+  qc,ed,ED_DIST ,048,044,020,012,j=8,tx="1",vrif=INT,vmin=0,vmax=99
+  qc,tx,TX_DIST2,070,044,140,012,j=2,tx="m pour la recherche des volumes voisins"
+  qc,bf,BF_OK   ,002,058,044,012,j=5,tx="¹OK¹",rout=BfOk,iv=1
+  qc,bf,BF_AIDE ,164,058,042,012,j=5,tx="¹Aide¹",rout=BfAide  
+  qset,foc=OP_NVOL
+  
+  	rout,IdFcd(§x,§y,§r)
+	{
+		runs,[hbcFCD]*!tra*!zonp([§x],[§y],0.01)
+		{
+			runs,[hbcFLD]*!nev([mm])
+			{
+				qmod,OP_NVOL,ma=[mm]
+                run,ChoiNvol
+				[fi2]
+			}
+		}
+	}
+    
+    rout,ChoiNvol
+    {
+        §vol=[ma(OP_NVOL)]
+        runs,[hbcFED]*!nev([§vol])
+        {
+            §fed=[mm]
+            qmod,TX_EDDV,iv=0
+            qmod,AF_EDDV,tx=[[§fed]&q1:nom]
+            qmod,TX_S,iv=0
+            run,StatutEddv([§fed]) 		 /* retourne le statut dans hbTemp	*/           
+            qmod,AF_S,tx=[hbTemp]
+        }
+        qmod,BF_OK,iv=0
+        evnt,entr=BfOk,bdro=BfOk
+    }
+
+	rout,BfOk
+	{
+        if,"tx(ED_DIST)><``"
+        {
+            run,ReqTeinVoi([§vol],[§fed],[tx(ED_DIST)])
+        }
+	}
+    
+}
+
+rout,BfAide
+{
+  aide,{epUtil}\aide\hbReqTeinVoi.txt
+}
+
+rout,ReqTeinVoi(§vol,§fed,§dist)
+{
+  var,§altsup,§dl,§ind,§l,§nb,§partie,§plans,§t
+  
+    cvue,x=[[§fed]:x],y=[[§fed]:y]
+    !HbCoupVol=[hbcFCD]*!onc([§vol])
+    !cmpe,hbTemp.[hbbIndMin]
+    zoni,hbTemp.[hbbIndMin],!HbCoupVol
+    hbTemp.[hbbIndMin]:md=203
+    list,imp=[%DFO:imp],file="[base]\Listing.txt",raz=1
+    §t=Aucune couleur
+    runp,hbU[[§vol]&v0:nco]
+    {
+        §t=[proc_desc]
+    }
+    impr,=====================================================================================
+    impr,[[§fed]&q1:nom]
+    impr,=====================================================================================
+    impr,Volume [[§vol]&t2:nom)8]   Teinte > nombre/nom  : [[§vol]&v0:co)15] / [§t)20]        
+    impr,--------------------------------------------------------------------------------------
+    run,StatutEddv([§fed])		/* retourne le statut de l'EDDV dans hbTemp	*/  
+    impr,Statut de l'EDDV     : [hbTemp]
+    impr,Etat du volume       : [[§vol]&q4:etat]
+    impr
+    impr
+    if,"nmbr(`!HbCoupVol`)"
+    {
+        run,TeinVoi([§fed],[§vol],[§dist])
+        impr
+        impr
+        run,TeinTout([§fed])
+    }
+    else
+    {
+        impr,Pas de volume voisin détecté
+    }
+    run,CoupSansAlt
+    list
+    §t=[EPAD] - Teintes des volumes voisins
+    afli,imp=[%DFO:IMP],file="[base]\Listing.txt",titr={§t},aide=[epUtil]\aide\hbReqTeinVoi.txt
+}
+
+rout,TeinVoi(§fed,§vol,§dist)
+{
+	var,§fcd
+
+	!HbCoupEddvAi=0
+	!HbCoupEddvAiAs=0
+	!HbCoupEddv=[hbcFCD]*!onc([§fed])
+	
+
+	runs,!HbCoupEddv                    /* Tri des coupes sans altinf, avec altinf, sans altsup et avec altsup */
+	{
+		if,"[mm]&v1:altinf><``"
+		{
+			if,"[mm]&v1:altsup><``"
+			{
+				!HbCoupEddvAiAs<[mm]
+			}
+			else
+			{
+				!HbCoupEddvAi<[mm]
+			}
+		}
+	}
+
+    !Hb=0                               /* Sélection !Hb des coupes voisines de coupes du volume requêté    */
+	runs,!HbCoupVol*!HbCoupEddvAi,tri={{mm}&r0:L}&t2:nom)8
+	{
+		§fcd=[mm]
+		runs,!HbCoupEddvAi*~[§fcd]
+		{
+			if,"[mm]&v1:altinf=[§fcd]&v1:altinf"
+			{
+				if,"nmbr(`[mm]*!zoni([§fcd],[§dist])`)"
+				{
+					!Hb<[mm]
+				}
+			}
+		}
+		runs,!HbCoupEddvAiAs
+		{
+			if,"[[mm]&v1:altinf<[§fcd]&v1:altinf]@[[mm]&v1:altsup>[§fcd]&v1:altinf]"
+			{
+				if,"nmbr(`[mm]*!zoni([§fcd],[§dist])`)"
+				{
+					!Hb<[mm]
+				}
+			}
+		}		
+	}
+	
+	runs,!HbCoupVol*!HbCoupEddvAiAs,tri={{mm}&r0:L}&t2:nom)8
+	{
+		§fcd=[mm]
+		runs,!HbCoupEddvAi
+		{
+			if,"[mm]&v1:altinf=[§fcd]&v1:altinf"
+			{
+				if,"nmbr(`[mm]*!zoni([§fcd],[§dist])`)"
+				{
+					!Hb<[mm]
+				}
+			}
+            else
+            {
+      			if,"[[mm]&v1:altinf>[§fcd]&v1:altinf]@[[mm]&v1:altinf<[§fcd]&v1:altsup]"
+    			{
+    				if,"nmbr(`[mm]*!zoni([§fcd],[§dist])`)"
+    				{
+    					!Hb<[mm]
+    				}
+    			}
+            }
+		}
+		runs,!HbCoupEddvAiAs*~[§fcd]
+		{
+			if,"[[mm]&v1:altinf<=[§fcd]&v1:altinf]@[[mm]&v1:altsup>[§fcd]&v1:altinf]"
+			{
+				if,"nmbr(`[mm]*!zoni([§fcd],[§dist])`)"
+				{
+					!Hb<[mm]
+				}
+			}
+			else
+            {
+    			if,"[[mm]&v1:altinf>[§fcd]&v1:altinf]@[[mm]&v1:altinf<[§fcd]&v1:altsup]"
+    			{
+    				if,"nmbr(`[mm]*!zoni([§fcd],[§dist])`)"
+    				{
+    					!Hb<[mm]
+    				}
+    			}
+            }
+		}		
+	}
+    !Hb>!HbCoupVol
+    if,"nmbr(`!Hb`)"
+    {
+        impr,Teintes des volumes voisins à une distance de moins de [§dist]m en plan du volume [[§vol]&t2:nom]
+        impr,--------------------------------------------------------------------------------------
+        run,ImpTeintes
+        impr
+        impr
+    }
+}
+
+rout,CoupSansAlt
+{  
+	!Hb=0
+	runs,!HbCoupEddv                    /* Tri des coupes sans altinf   */
+	{                                   /* pour signaler l'anomalie     */
+		if,"[mm]&v1:altinf><``"
+		{
+			!HbTemp<[mm]
+		}
+		else
+		{
+			!Hb<[mm]
+		}
+	}
+	if,"nmbr(`!Hb`)"
+	{
+		impr,Anomalie: coupes de volumes de l'EDDV sans cote altimétrique inférieure
+		impr,--------------------------------------------------------------------------------------
+		run,ImpNomCoupes
+	}
+}
+
+rout,TeinTout(§fed)
+{
+    !Hb=[hbcFCD]*!onc([§fed])
+    impr,Teintes de tous les volumes de l'EDDV
+    impr,--------------------------------------------------------------------------------------
+    run,ImpTeintes
+    impr
+    impr
+}
+
+rout,ImpNomCoupe(§textav,§fcd)
+{
+	runs,[hbcFLD]*!nev([§fcd])
+	{
+		hbTemp=[§textav] [[mm]&t2:nom] [[§fcd]&v0:niv] [[§fcd]&v0:ind]
+	}
+	if,"[§fcd]&v1:altinf><``"
+	{
+		hbTemp=[hbTemp]    AltInf=[[§fcd]&v1:altinf]
+	}
+	if,"[§fcd]&v1:altsup><``"
+	{
+		hbTemp=[hbTemp]    AltSup=[[§fcd]&v1:altsup]
+	}	
+	impr,[hbTemp]    (matricule [§fcd])
+}
+
+rout,ImpNomCoupes
+{
+	var,§fcd
+	
+	runs,!Hb,tri={{mm}&r0:L}&t2:nom)8
+	{
+		§fcd=[mm]
+		hbTemp=Dans volume
+		runs,[hbcFLD]*!nev([§fcd])
+		{
+			hbTemp=[hbTemp] [[mm]&t2:nom] [[§fcd]&v0:niv] [[§fcd]&v0:ind]
+		}
+		if,"[§fcd]&v1:altinf><``"
+		{
+			hbTemp=[hbTemp]    AltInf=[[§fcd]&v1:altinf]
+		}
+		if,"[§fcd]&v1:altsup><``"
+		{
+			hbTemp=[hbTemp]    AltSup=[[§fcd]&v1:altsup]
+		}	
+		impr,[hbTemp]    (matricule [§fcd])
+	}
+	impr
+}
+
+
+rout,ImpTeintes
+{
+	var,§t
+
+	runs,[hbcFLD]*!nev(!Hb),tri={mm}&t2:nom)8
+	{
+        §t=Aucune couleur
+        runp,hbU[[mm]&v0:nco]
+        {
+            §t=[proc_desc]
+        }
+        impr,Volume [[mm]&t2:nom)8]   Teinte > nombre/nom  : [[mm]&v0:co)15] / [§t)20]        
+        impr,--------------------------------------------------------------------------------------
+	}
+}
+
+ 

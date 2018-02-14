@@ -1,0 +1,12 @@
+
+TRACER LES LIMITES DE COUPES DE VOLUMES DU PLAN DE Z INFERIEUR
+	
+	Cette fonction permet de tracer rapidement les limites de coupes de volumes
+	du plan d'altitude immédiatement inférieure.	
+	
+	Un message s'affiche si le plan appliqué est le plus bas, ou bien s'il n'y
+	a pas d'EDDV associé à ce plan.	
+	
+	On peut appuyer sur Ok ou bien cliquer dans la vue avec le bouton droit de la
+	souris.		
+	

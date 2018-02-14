@@ -1,0 +1,101 @@
+proc,JtDebug=1
+
+#include ".\hbOutils.inc"
+proc,EPAD=EPADESA
+
+
+rout,Fenetre
+{
+    var,§t
+
+    §t=¹[EPAD] Contrôle du tracé des coupes h. de volumes¹
+    dial,HB_CTC,l=234,h=16,tx={§t}
+    qc,bf,BF_OK   ,002,002,090,012,j=5,tx="¹Lancer le contrôle¹",rout=BfOk
+    qc,bf,BF_AIDE ,190,002,042,012,j=5,tx="¹Aide¹",rout=BfAide  
+    evnt,entr=BfOk,bdro=BfOk
+
+	rout,BfOk
+	{
+        list,imp=[%DFO:imp],file="[base]\Listing.txt",raz=1
+        impr
+        impr,CONTROLE DU TRACE DES COUPES H. DE VOLUMES DANS AU MOINS UN PLAN DESCRIPTIF
+        impr,===========================================================================
+        impr
+        impr
+        runs,[hbcFED],tri={mm}&q1:nom
+        {
+            run,CtrEddv([mm])
+        }
+        list
+        §t=¹Contrôle du tracé des coupes h. de volumes¹
+        afli,imp=[%DFO:IMP],file="[base]\Listing.txt",titr={§t},aide={epUtil}\Aide\hbCtrTraCoup.txt
+	}
+}
+
+rout,BfAide
+{
+	aide,{epUtil}\aide\hbCtrTraCoup.txt
+}
+
+rout,CtrEddv(§fed)
+{
+	var,§i
+    
+	§i=[[§fed]&q1:nom]
+	if,"[§fed]&q4:etat><``"
+	{
+		§i=[§i]   (Statut:[[§fed]&q4:etat])  
+	}
+	impq,§i
+	impr,=========================================================================================
+	impr
+	!Hb=[hbcFCD]*!onc([§fed])
+    runs,jtPlan*!onc([§fed])
+    {
+        if,"[mm]&d0:<<`+`"
+        {
+            run,MessageFdia(Le plan [mm] de l'EDDV [§fed] comporte plus d'un domaine: corriger l'anomalie)
+        }
+        !Hb>!dom([[mm]&d0:])
+    }
+	if,"nmbr(`!Hb`)"
+	{
+		impr,Coupes non représentées dans au moins un plan descriptif
+		impr,--------------------------------------------------------
+		run,ImpNomCoupes
+	}
+    else
+    {
+        impr,Toutes les coupes sont représentées dans au moins un plan descriptif
+    }
+	impr
+    impr
+}
+
+
+rout,ImpNomCoupes
+{
+	var,§fcd
+	
+	runs,!Hb,tri={{mm}&r0:L}&t2:nom)8
+	{
+		§fcd=[mm]
+		hbTemp=Dans volume
+		runs,[hbcFLD]*!nev([§fcd])
+		{
+			hbTemp=[hbTemp] [[mm]&t2:nom] [[§fcd]&v0:niv] [[§fcd]&v0:ind]
+		}
+		if,"[§fcd]&v1:altinf><``"
+		{
+			hbTemp=[hbTemp]    AltInf=[[§fcd]&v1:altinf]
+		}
+		if,"[§fcd]&v1:altsup><``"
+		{
+			hbTemp=[hbTemp]    AltSup=[[§fcd]&v1:altsup]
+		}	
+		impr,[hbTemp]    (matricule [§fcd])
+	}
+	impr
+}
+
+

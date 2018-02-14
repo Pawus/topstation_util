@@ -1,0 +1,331 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         16 10 2013 (VD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+/*         VD Vianney Dugrain (vdugrain@epadesa.fr)                       */
+/*                                                                        */
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+#include "..\ep_commun\epNumOutils.inc"
+#include "..\ep_commun\epRalOutils.inc"
+#include "..\ep_commun\epTexteOutils.inc"
+
+proc,JtDebug=1
+
+/*--------------------------------------------------------------------------*/
+/*                                PROCEDURES                                */
+/*                         par ordre alphabétique                           */
+/*--------------------------------------------------------------------------*/
+
+proc,Hc=[12+[udiay<1.8]]
+proc,Hc2=[6+[udiay<1.8]]
+proc,Ht=[Hc+2+2*[udiay<1.8]]
+proc,Ht2=[Hc2+1+1*[udiay<1.8]]
+
+
+/*--------------------------------------------------------------------------*/
+/*                                ROUTINES                                  */
+/*                         par ordre alphabétique                           */
+/*--------------------------------------------------------------------------*/
+
+rout,CreComp(§r)
+{
+  Cas=Cre
+  Ma=[ml(`[§r]`)]
+  [Ma]:MD=EP_ZON_COURANT
+  marq,12
+  qpop,"Création d'une zone",j=0,temp=10
+  {
+    qap,"¹Digitaliser¹",dfo=1
+	{
+	  dlin,matl=[Ma],code=-1,sour=0,dsac=2345678,Ok=Init
+	}
+	qap,"¹Inonder¹"
+	{
+	}
+  }
+}
+
+rout,CreeFenetre
+{
+  var,§h,§hf,§bl,§c,§lmax,§nmbr_item,§lgauche,§href,§hlign,§cref,§lf,§ldroite,§lcentre,§t,§i
+  
+  §nmbr_item=17 /* nombre de lignes dans la fenêtre */
+ 
+  §lgauche=116 /* largeur de la colonne de gauche   (étiquette)       */
+  §lcentre=116 /* largeur de la colonne de centrale (zone de saisie)  */
+  §ldroite=12 /* largeur de la colonne de droite   (bouton poussoir)  */
+  §href=2     /* interligne */
+  §hlign=12   /* hauteur de ligne */
+  §cref=2     /* séparateur de colonne */
+  §lf=[§lgauche+§lcentre+§ldroite+8*§cref]    /* largeur de la fenêtre par défaut */
+  §hf=[[§nmbr_item*Ht+4*§href]%0] /* hauteur de la fenêtre par défaut */
+
+  §t=¹Habillage de la zone¹
+  
+  dial,EP_ENT_PLAN_CART,l=[§lf],h=[§hf],lmin=[§lf],hmin=[§hf],lmax=[§lf],hmax=[§lf],tx={§t}
+  
+  §h=[§href] 
+  §c=[§cref]
+  
+  §i=-7
+  
+  /***   Contour   **********************************************************************/
+  qc,gr,GR_CONT,[§c],[§h],[§lf-4],[§hlign+§href+6*§hlign+5*§href],tx="¹Contour¹",ft=2
+    
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_CCOU,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Couleur :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_CCOU,[§c],[§h],[§lcentre],[6*Hc],j=2,tmen=,selc=,eval=,tx=,rout=ValidCoul
+  {
+    runp,epC%
+	{
+	  qao,tx=[proc_desc]
+	}
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_CCOU,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_CEPS,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Epaisseur :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_CEPS,[§c],[§h],[§lcentre],[6*Hc],j=2,tmen=,selc=,eval=,tx=,rout=ValidEpaiss,tri=
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_CEPS,[§c],[§h],[§ldroite],[Hc],opt=1
+
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_CLGN,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Type de ligne :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_CLGN,[§c],[§h],[§lcentre],[6*Hc],j=2,tmen=,selc=,eval=,tx=,rout=ValidLigne,tri=
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_CLGN,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_CPRI,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Priorité :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_CPRI,[§c],[§h],[§lcentre],[6*Hc],j=2,tmen=,selc=,eval=,tx=,tri=
+  {
+	whil,"§i<8"
+	{
+	  qao,[§i+7],[-§i]
+	  §i=[§i+1]
+	}
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_CPRI,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_CCLQ,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Calque :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_CCLQ,[§c],[§h],[§lcentre],[6*Hc],j=2,tmen=CALQ,selc=,eval=,tx=,rout=,tri=
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_CCLQ,[§c],[§h],[§ldroite],[Hc],opt=1
+ 
+   /***   Remplissage   *********************************************************************/
+  §h=[§h+2*§hlign+2*§href]
+  §c=[§cref]
+  qc,gr,GR_REMP,[§c],[§h],[§lf-4],[§hlign+§href+5*§hlign+4*§href],tx="¹Remplissage¹",ft=2
+  
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_RTYP,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Type de remplissage :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_RTYP,[§c],[§h],[§lcentre],[6*Hc],j=2,tmen=,selc=,eval=,tx=,rout=ValidTypR,tri=
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_RTYP,[§c],[§h],[§ldroite],[Hc],opt=1
+	    
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_RCOU,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Couleur :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_RCOU,[§c],[§h],[§lcentre],[6*Hc],j=2,tmen=,selc=,eval=,tx=,rout=ValidCoul
+  {
+    runp,epC%
+	{
+	  qao,tx=[proc_desc]
+	}
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_RCOU,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_RPRI,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Priorité :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_RPRI,[§c],[§h],[§lcentre],[6*Hc],j=2,tmen=,selc=,eval=,tx=,tri=
+  {
+    §i=-7
+	whil,"§i<8"
+	{
+	  qao,[§i+7],[-§i]
+	  §i=[§i+1]
+	}
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_RPRI,[§c],[§h],[§ldroite],[Hc],opt=1
+
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_RCLQ,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Calque :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_RCLQ,[§c],[§h],[§lcentre],[6*Hc],j=2,tmen=CALQ,selc=,eval=,tx=,rout=,tri=
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_RCLQ,[§c],[§h],[§ldroite],[Hc],opt=1  
+
+  /***   Texte   ************************************************************************/
+  §h=[§h+2*§hlign+2*§href]
+  §c=[§cref]
+  qc,gr,GR_TEXT,[§c],[§h],[§lf-4],[§hlign+§href+6*§hlign+5*§href],tx="¹Texte¹",ft=2
+  
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_TPRI,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Priorité :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_TPRI,[§c],[§h],[§lcentre],[6*Hc],j=2,tmen=,selc=,eval=,tx=,tri=
+  {
+    §i=-7
+	whil,"§i<8"
+	{
+	  qao,[§i+7],[-§i]
+	  §i=[§i+1]
+	}
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_TPRI,[§c],[§h],[§ldroite],[Hc],opt=1
+	    
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_TCLQ,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Calque :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_TCLQ,[§c],[§h],[§lcentre],[6*Hc],j=2,tmen=CALQ,selc=,eval=,tx=,rout=,tri=
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_TCLQ,[§c],[§h],[§ldroite],[Hc],opt=1  
+  
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_TTXT,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Contenu :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,EM,EM_TTXT,[§c],[§h],[§lcentre],[3*Hc],j=2,tmen=,selc=,eval=,tx=,rout=,tri=
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_TTXT,[§c],[§h],[§ldroite],[Hc],opt=1
+    
+  §h=[§h+4*§hlign+4*§href] /* ---------------------- */
+  §c=[§cref]
+  qc,bf,BF_BEOK,[§c],[§h],048,[Hc],j=5,tx="¹OK¹",rout=BfBeok
+  §c=[§c+50]
+  qc,bf,BF_RINI,[§c],[§h],048,[Hc],j=5,tx="¹Réinitialiser¹",rout=InitZone
+  §c=[§c+50]
+  qc,bf,BF_RPCT,[§c],[§h],048,[Hc],j=5,tx="¹Répercuter¹",rout=SelReperc
+  §c=[§lf-52]
+  qc,bf,BF_AIDA,[§c],[§h],048,[Hc],j=5,tx="¹Aide¹",rout=BfAide
+  
+  evnt,entr=BfBeok,bdro=BfBeok,ferm=BfFerm
+  
+  rout,BfBeok
+  {
+  
+  }
+  
+  rout,BfAide
+  {
+  
+  }
+  
+  rout,BfFerm
+  {
+  
+  }
+  
+  rout,ValidCoul
+  {
+  
+  }
+  
+  rout,ValidEpaiss
+  {
+  
+  }
+  
+  rout,ValidLigne
+  {
+  
+  }
+  
+  rout,ValidTypR
+  {
+  
+  }
+  
+  rout,SelReperc
+  {
+  
+  }
+  
+  
+}
+
+rout,DupComp(§ma)
+{
+
+}
+
+rout,ModComp(§ma)
+{
+
+}
+
+rout,Init
+{
+  if,"defprc(`epUsr`)<>1"
+  {
+    epUsr=
+  }
+  run,InitRpqt
+  run,LecArgs
+  run,CreeFenetre
+  
+  rout,InitRpqt
+  {
+  }
+  
+  rout,LecArgs
+  {
+    var,§aa
+    Md=[[Ma]:MD]
+    Dtc=[[Ma]&Q0:dtc]
+    §aa=20
+    if,"[[Ma]:AN>90]"
+    {
+      §aa=19
+    }
+    if,"[Dtc==``]"
+    {
+      Dtc=[[Ma]:JO]/[[Ma]:MO]/[§aa][[Ma]:AN]
+    }
+    In=[[Ma]&Q0:in]
+    Io=[[Ma]&Q0:io]
+    if,"[Io==``]"
+    {
+      if,"defprc(`epUsr`)"
+	  {
+        Io=[epUsr] /* procédure définie dans [epInitDir]\ep_locales.txt */
+	  }
+    }
+    Ir=[[Ma]&Q0:ir]
+    
+	Tx=[[Ma]&T1:tx]
+	Hach=[[Ma]&Q57:hach]
+	Coul=[[Ma]&Q57:coul]
+	Coc=[[Ma]&Q57:coc]
+	Ivt=[[Ma]&Q57:ivt]
+	Lwc=[[Ma]&Q57:lwc]
+	Ly=[[Ma]&V1:ly]
+	Ivc=[[Ma]&V6:ivc]
+	Lyc=[[Ma]&V6:lyc]
+  }
+}

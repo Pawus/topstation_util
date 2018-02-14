@@ -1,0 +1,13 @@
+
+EFFACER DU PLAN 	
+	
+    Cette fonction permet d'effacer du plan l'ensemble des composants visibles
+    qui appartiennent au même calque que le composant sélectionné.
+
+    La fonction enlève du domaine du plan actif les composants visibles dont le
+	calque indiqué dans la rallonge &v1:Ly est le même que celui enregistré dans
+	celle du composant sélectionné.
+	
+	Ces composants sont également gommés du tracé.
+	
+	

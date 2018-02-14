@@ -1,0 +1,81 @@
+
+IMPORTER PROJETS D'EDDV ET PARCELLAIRE FONCIER
+	
+	Cette fonction d'import permet soit de lire un fichier de composants provenant de la CaLif dans 
+	une base de travail en vue de réaliser un ou des projets d'EDDV, soit de mettre à jour la base 
+	CaLif avec le ou les projets d'EDDV terminés provenant d'une base de travail.	
+	
+	Préalablement à l'import, il faudra avoir placé dans le dossier Images de la base les images 
+	founies avec le fichier.	
+	
+IMPORTER DANS UNE BASE DE TRAVAIL	
+	
+	Le programme va d'abord vérifier que la base ne contient pas d'autres composants que les communes 
+	concernant l'EPADESA et le département des Hauts de Seine. Dans le cas contraire, l'import ne 
+	pourra être poursuivi.
+	
+	Puis il va demander de choisir le fichier de composants à lire. Le bouton de fonction "Fichier" 
+	permet de choisir le fichier à importer.	
+	
+	En appuyant sur <Ok> ou le bouton droit de la souris, les composants sont importés. Un message 
+	d'information le confirme en rappelant qu'il faut mettre à jour le dossier Images de la base 
+	avec l'éventuel dossier d'images associées aux composants importés.	
+	
+	
+IMPORTER DANS LA CALIF
+	
+	Le programme va commencer par un message d'avertissement pour demander qu'une sauvegarde soit faite 
+	avant l'import.	
+	
+	Puis il va demander de choisir le fichier de composants à lire. Le bouton de fonction "Fichier" 
+	permet de choisir le fichier à importer.	
+	
+	En appuyant sur <Ok> ou le bouton droit de la souris, des vérifications de la base CaLif et du fichier 
+	d'import est lancée. Les anomalies suivantes bloqueront l'import:	
+	      -	Projet à réimporter de nom "X" présent dans la base CaLif mais non exporté de la base CaLif.	
+	      -	Projet à réimporter de nom "X" présent dans la base CaLif mais avec un matricule différent.	
+	      -	Projet à réimporter de nom "X": supprimer au préalable le projet "Y" portant sur le même EDDV.	
+	      -	Projet à importer de nom "X" non présent dans la base CaLif.	
+	      -	Tentative d'import d'une parcelle foncière "P" non autorisé dans la base CaLif	
+	      -	Tentative d'import d'une limite foncière "P" non autorisé dans la base CaLif	
+		
+	Puis le programme va d'abord supprimer de la base CaLif les projets à réimporter, à savoir les projets 
+	eux-mêmes avec leurs indices, présents dans la base avant import, qu'ils soient activés ou non.	
+	
+	Ensuite il écrit à part un nouveau fichier provisoire des sommets "invariants" (FB+FC+FG+FP+FS+Kf) du 
+	fichier d'import. Ces points sont dits "invariants" car leurs matricules et leurs coordonnées 
+	planimétriques doivent rester invariants dans la base CaLif. Il écrit un deuxième fichier provisoire 
+	des sommets invariants mais cette fois de la base Calif, en ne listant que M:X,Y .
+	
+	Il continue en listant les points "invariants" anormaux du fichier d'import, à savoir:	
+	     -	les sommets ayant des XY différents de ceux de la base Calif	
+	     -	les sommets ayant un radical de sommet "invariant" mais non présents dans la base CaLif	
+	Le programme n'est pas bloqué pour autant (voir ci-après le traitement spécifique de ces sommets). 
+	
+	Puis le programme supprime les EDDV d'origine des projets importés, leurs volumes, leurs plans avec 
+	les images et cartouches associés. Les points supports de ces éléments uniquement, à l'exception des 
+	"Kf" et "F£" seront également supprimés.	
+	
+	Le fichier d'import est repris, à l'exception des sommets invariants. Les indices des matricules des 
+	composants sont renumérotés, à l'exception des composants projets eux-mêmes (Fedpro).	
+	
+	Le fichier provisoire des sommets invariants extraits du fichier d'import est exécuté, sans renumérotation 
+	donc des indices des matricules. Enfin, le fichier provisoire des sommets invariants extrait de la base 
+	CaLif est exécuté en dernier, remettant les valeurs X et Y de la base CaLif avant import à chaque sommet.	
+	
+	Le programme termine par des vérifications de la cohérence de la base CaLif après import. Si ce n'est pas 
+	le cas, la procédure d'import est entièrement annulée. Les vérifications sont:	
+	     -	Deux EDDV ne doivent pas porter le même nom, ni le même numéro;	
+	     -	Les plans importés ne doivent comporter qu'un seul domaine et celui-ci ne doit pas être utilisé par
+		un autre plan;	
+	     -	Les images importées ne doivent comporter qu'un seul domaine;
+	     -  Les points nouveaux de radival "Kfn" doivent comporter une rallonge O57 (voir Structure_Composants 
+		spécifique à l'EPADESA)
+	
+	
+VERIFICATIONS A OPERER DANS LA CaLif APRES IMPORT
+	
+	Il faudra lancer l'outil de contrôle de non chevauchement des divisions en volumes, volumes et coupes 
+	associées  "Fonc > Utilitaires > Contrôler coupes h. de volumes". 
+
+	

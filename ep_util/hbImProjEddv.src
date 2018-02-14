@@ -1,0 +1,606 @@
+/*  dernière modification :                                               */
+/*         14 01 2016 (SD)                                                */
+/*  auteur :                                                              */
+/*         FB François Bellanger (francois.bellanger@mercator2.fr)        */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+proc,JtDebug=1
+
+/* Pour fonctionner dépends des fichiers sources suivants :               */
+/*    ZonEddv.prc de HbFonc                                               */
+/*    ProjEddvI.prc de HbFonc                                             */
+
+#include ".\hbOutils.inc"
+
+proc,DTCR=1962                                                      /* Date de création de l'EPAD    */
+proc,EPAD=EPADESA                                                   /* Nom de l'établissement public */
+proc,H=92
+proc,L=280
+proc,PTSINVAR=(FB+FC+FG+FP+FS+Kf)                                   /* Points invariants en X Y ; Si modif, mettre à jour aussi la routine PtsAnorm */
+proc,SELCMPDEP=hbbFld.1+[hbcCom]+[hbcDep]+[hbcDro]+[hbcPro]+epZO+epZP         /* Sélection de départ admissible dans une base de travail                      */
+
+rout,SelFic
+/*  Cette routine vérifie que la base est bien la CaLiF avant de lancer   */
+/*      le processus d'import en appelant MessCaLif                       */
+/*  Dernière modification : ?? ?? 20?? (FB)                               */
+{
+    if,"defprc(`hbbEpad`)=0"
+    {
+        hbbEpad=1
+        prcp,hbbEpad
+    }
+    if,"hbbEpad=1"
+    {
+        !Hb=!tout*~([SELCMPDEP])
+        if,"nmbr(`!Hb`)"
+        {
+            run,MessageFdia(Import non réalisable dans cette base: composants présents autres que [SELCMPDEP])
+        }
+        else
+        {
+            run,SelFich
+        }
+    }
+    else
+    {
+        if,"hbbEpad=DTCR"
+        {
+            run,MessCaLif
+        }
+    }
+}
+
+rout,MessCaLif
+/*  Cette routine affiche un message d'avertissement et permet d'annuler  */
+/*      le départ de la routine d'import si l'utilisateur le souhaite,    */
+/*      sinon amorce le processus d'import en appelant SelFich            */
+/*  Dernière modification : ?? ?? 20?? (FB)                               */
+{
+    dial,id=HB_CALIF,l=[L],h=[H],lmin=[L],lmax=[L],tx="[EPAD] Import de projets d'EDDV dans la CaLif"
+    qc,gr,GR_1,002,000,[L-4],[H-1-13-1],tx="",ft=
+    qc,tx,TX_1,004,008,[L-8],012,ft=2,j=2,tx="Attention, cette opération va supprimer des composants existants"
+    qc,tx,TX_2,004,020,[L-8],012,ft=2,j=2,tx="dans la base CaLiF (voir l'aide en ligne)."
+    qc,tx,TX_3,004,034,[L-8],012,ft=2,j=2,tx="Il est strictement nécessaire de faire une sauvegarde de la CaLif avant"
+    qc,tx,TX_4,004,048,[L-8],012,ft=2,j=2,tx="de poursuivre. Si cela n'a pas été fait, appuyer sur <Annuler>."
+    qc,tx,TX_5,004,060,[L-8],012,ft=2,j=2,tx="Si et seulement si cela a été fait, appuyer sur <Continuer>"
+    qc,bf,BF_OK  ,002,[H-1-13],060,012,j=5,iv=,tx="Continuer",rout=SelFich
+    qc,bf,BF_ANUL,[L-104],[H-1-13],050,012,j=5,iv=,tx="¹Annuler¹",rout=Anul
+    qc,bf,BF_AIDE,[L-52],[H-1-13],050,012,j=5,tx="¹Aide¹",rout=Aide
+}
+
+rout,Aide
+{
+    aide,{epUtil}\aide\hbImProjEddv.txt
+} 
+
+rout,Anul
+{
+    fdia
+}
+
+rout,SelFich
+/*  Cette routine permet de sélectionner le fichier contenant le projet à */
+/*      importer et de lancer :                                           */
+/*      1) soit la routine d'import dans une base de travail LecFicBaseT  */
+/*      2) soit la routine d'import dans la CaLiF (VerifCaLif)            */
+/*  Dernière modification : ?? ?? 20?? (FB)                               */
+{
+    var,§t
+
+    !sele,deb=!Hb,fin=!Hc
+    §t=¹[EPAD] Importer projets+parcellaire¹
+
+    dial,HB_SELPRO,l=228,h=32,tx={§t},ferm=0
+    qc,bf,HB_BFFIC  ,002,002,056,012,j=5,tx="Fichier",rout=BfselFic
+    qc,af,HB_FIC    ,060,002,164,012,j=2
+    qc,bf,HB_OK     ,002,016,050,012,j=5,tx="OK",iv=1,rout=BfOk
+    qc,bf,HB_AIDE   ,174,016,050,012,j=5,tx="Aide",rout=Aide
+    evnt,entr=BfOk,bdro=BfOk
+    qset,foc=HB_BFFIC,mod=0
+
+
+    rout,BfselFic
+    {
+        chfi,prop=[tops]\sauv\comp\,type=Fichiers textes (*.txt)|*.txt,titr=Fichier de projets à importer,ok=BfselFiOk
+
+        rout,BfselFiOk(§rep)
+        {
+            Rep=[§rep]
+            qmod,HB_FIC,tx={Rep}
+            qmod,HB_OK,iv=0
+        }
+    }
+
+    rout,BfOk
+    {
+        if,"tx(HB_FIC)><``"
+        {
+            if,"hbbEpad=1"
+            {
+                run,LecFicBaseT
+            }
+            else
+            {
+                if,"hbbEpad=DTCR"
+                {
+                   run,VerifCaLif([tx(HB_FIC)])
+                }
+            }
+        }
+    }
+}
+
+
+rout,LecFicBaseT
+/*  Cette routine permet d'importer les composants enregistrés dans le    */
+/*      fichier dont le nom et contenu dans la procédure tx(HB_FIC) dans  */
+/*      la base courante (normalement une base de travail)                */
+/*  Dernière modification : ?? ?? 20?? (FB)                               */
+{
+    var,§fic
+    
+    §fic=[tx(HB_FIC)]
+    exec,[§fic]
+    marq,10,`Import [§fic]`
+    list,file=[base]\LISTING,raz=1
+    impr
+    impr,IMPORT DE PROJETS D'EDDV DANS UNE BASE DE TRAVAIL
+    impr,================================================
+    impr
+    impr,IMPORT TERMINE!
+    impr
+    run,ListImages(Dimg)
+    list
+    afli,file=[base]\LISTING    
+}
+
+rout,VerifCaLif(§fic)
+/*  Cette routine procéde à des contrôles et appelle la routine           */
+/*      LecFicBaseC s'ils sont satisfaits                                 */
+/*    A l'issue de son execution la sélection !HbFedpr contient les       */
+/*      composants projets contenus dans l'import                         */
+/*  Dernière modification : ?? ?? 20?? (FB)                               */
+{
+    var,§fep,§sel,§sel2
+    
+    fdia
+
+    hbOui=1
+    list,[base]\LISTING,raz=1
+    impr
+    impr,ANOMALIES DETECTEES DANS LA BASE CaLif POUR L'IMPORT DE PROJETS D'EDDV
+    impr,==============================================================================
+    impr
+    !HbFedpro>
+    runf,[§fic],form=`Rad.Ind&Ral:Arg="NomPro",Suite`
+    {
+        if,"[Rad==hbcFep]@[Ral==`Q1`]@[Arg==`nom`]"
+        {
+            §sel=[hbcFep]*!test(&q1:nom==[NomPro])
+            if,"nmbr(§sel)"
+            {
+                runs,[§sel]
+                {
+                    §fep=[mm]
+                    !HbFedpro<[§fep]
+                    if,"[§fep]&v57:exp><``"
+                    {
+                        if,"[§fep]&v57:exp<>1"
+                        {
+                            impr,!!!!!Projet à réimporter de nom "[NomPro]" présent dans la base CaLif mais non exporté de la base CaLif!!!!!
+                            hbOui=0
+                        }
+                    }
+                    else
+                    {
+                        impr,!!!!!Projet à réimporter de nom "[NomPro]" présent dans la base CaLif mais non exporté de la base CaLif!!!!!
+                        hbOui=0                         
+                    }
+                    
+                    if,"[§fep]:i<>Ind"
+                    {
+                        impr,!!!!!Projet à réimporter de nom "[NomPro]" avec un matricule différent de celui présent dans la base CaLif!!!!!
+                        hbOui=0
+                    }
+                    
+                    if,"[§fep]&r0:E><``"
+                    {
+                        §sel2=[hbcFep]*!onc([[§fep]&r0:E])*~[§fep]
+                        if,"nmbr(§sel2)"
+                        {
+                            hbOui=0
+                            runs,[§sel2]
+                            {
+                                impr,!!!!!Projet à réimporter de nom "[[§fep]&q1:nom]": supprimer au préalable le projet "[[mm]&q1:nom]" portant sur le même EDDV!!!!!
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                impr,Projet à importer de nom "[NomPro]" non présent dans la base CaLif.
+                hbOui=0
+            }
+        }
+        else
+        {
+            if,"[Rad==hbcPaf]@[Ral==`V1`]"
+            {
+                impr,!!!!!Tentative d'import d'une parcelle foncière [Rad].[Ind] non autorisé dans la base CaLif!!!!!
+                hbOui=0
+            }
+            else
+            {
+                if,"[Rad==hbcFL]@[Ral==`L0`]"
+                {
+                    impr,!!!!!Tentative d'import d'une limite foncière [Rad].[Ind] non autorisé dans la base CaLif!!!!!
+                    hbOui=0
+                }
+            }
+        }
+    }
+    
+    if,"hbOui"
+    {
+        list
+        run,LecFicBaseC([§fic])
+    }
+    else
+    {
+        impr
+        impr,IMPORT NON REALISE:
+        impr,- Base CaLif à rectifier au préalable si un projet est incorrect ou inexistant;
+        impr,- Fichier d'import à rectifier s'il comporte des parcelles ou des limites foncières existantes.
+        list
+        afli,file=[base]\LISTING
+    }
+}
+
+rout,LecFicBaseC(§fic)
+/*  Cette routine procéde à l'import proprement dit dans la CaLiF         */
+/*  Dernière modification : ?? ?? 20?? (FB)                               */
+{
+    list,file=[base]\LISTING,raz=1
+    impr
+    impr,IMPORT DE PROJETS D'EDDV DANS LA BASE CaLif
+    impr,===========================================
+    impr    
+    list
+    
+    /* On supprime le projet de la CaLiF */
+    run,SupProCaLif
+    /* Il ne reste plus que le FED dans son état initial */
+    
+    /* On traite le cas des "points doubles" */
+    run,ESomInvT([§fic])                    /*  Ecriture dans un nouveau fichier des sommets invariants du fichier provenant de la base T    */
+    run,PtsAnorm([§fic])                    /*  Liste les sommets de T ayant des XY différents de ceux de C, ainsi que les sommets dits        */
+                                            /*  invariants de T non présents dans la base C                                                    */              
+    run,ESomInvC                             /*    Ecriture des M X Y des sommets invariants de la base C - par précaution                        */
+    
+    
+    run,SupFEDCaLif
+    !HbAvant=!tout
+    cmpr,"[§fic]",rnum=1,seli=[PTSINVAR]    /*  Reprise en ignorant les sommets invariants du fichier provenant de la base T                   */
+    run,RmatFedpro([§fic])                    /*  Réimmatriculation des Fedpro avec le même indice que dans le fichier provenant de la base T    */
+    exec,[base]\hbSomInvT.txt               /*    Exécution du fichier des sommets invariants du fichier provenant de la base T                  */
+    exec,[base]\hbSomInvC.txt                  /*    Lecture des M X Y des sommets invariants de la base C                                        */
+    /* fsup,file=[base]\hbSomInvT.txt       */
+    /* fsup,file=[base]\hbSomInvC.txt       */ 
+    !HbApres=!tout*~!HbAvant
+    list,file=[base]\LISTING,raz=0    
+    run,VerifNedd
+    run,VerifDomPlan
+    run,VerifDimg
+    run,VerifKfn
+    if,"hbOui"
+    {
+        marq,10,`Import [§fic]`
+        impr,IMPORT TERMINE!
+        impr
+        run,ListImages(Dimg*!HbApres)
+    }
+    else
+    {
+        impr,PROCEDURE D'IMPORT ANNULEE!
+        impr
+    }
+    list
+    afli,file=[base]\LISTING        
+}
+
+rout,SupProCaLif
+{
+    var,§a,§fed,§fep,§fepacti,§i,§ind,§indacti,§j,§nbind
+    
+    !HbFED>
+    §i=0
+    list,file=[base]\LISTING,raz=0
+    runs,!HbFedpro
+    {
+        §fep=[mm]
+        §i=[§i+1]
+        run,ChProActi([§fep]) /* On récupére l'état du projet dans la base */
+        dcod,ETPR,form=`§fed;§fepacti;§nbind;§indacti`
+        /* On supprime les volumétries attachées au projets les unes après les autres dans l'ordre décroissant des indices */
+        for,0->§j,§j<§nbind,§j+1->§j
+        {
+            §a=[xtr(`eabcd`,[§nbind-§j],1)]
+            §ind=[xtr(`eabc`,[§nbind-§j-1],1)]
+            Lanc,SupIndProj([§fep],[§a],[§ind]),[hbFonc]\ProjEddvI.prc
+        }
+        impr,Suppression projet "[[§fep]&q1:nom]" de la base CaLif.
+        if,"[§fep]&q1:type><`Nouvel EDDV`"
+        {
+            !HbFED<[[§fep]&r0:E]
+        }
+        !cmpe,[§fep]
+    }
+    if,"§i"
+    {
+        impr
+    }
+    list
+}
+
+rout,SupFEDCaLif
+/*  Cette supprime les volumétries concernées par le projet qui sont dans */
+/*      la CaLiF AVANT import                                             */
+/*  Dernière modification : 14 01 2016 (SD)                               */
+{
+    var,§dom,§fed,§jtplan,§nom_plan,§nom_edd
+
+    list,file=[base]\LISTING,raz=0    
+    runs,!HbFED
+    {
+        §fed=[mm]
+        runs,jtPlan*!onc([§fed])
+        {
+            §jtplan=[mm]
+            !cmpe,jtCart*!onc([§jtplan])
+            if,"[§jtplan]&d0:>>`+`"
+            {
+                run,MessageFdia(Le plan [[§jtplan]&v0:nom] comporte plus d'un domaine)
+            }
+            §dom=[[§jtplan]&d0:]
+            !cmpf,Dimg*!dom([§dom])
+            domo,[§dom],sel=!dom([§dom])
+            §nom_plan=[[§jtplan]&v0:nom]
+            !cmpe,[§jtplan]
+            if,"defcmp(§jtplan)"
+            then
+            {
+              impr,Impossible de supprimer le plan [§nom_plan] de l'EDDV [[§fed]&q1:nom]
+            }
+            else
+            {
+              impr,Suppression du plan [§nom_plan] de l'EDDV [[§fed]&q1:nom]
+            }
+        }
+        !HbPts=!pts([§fed]+!onc([§fed])*([hbcFLD]+[hbcFLO]+[hbcFCD]+[hbcFCO]+[hbcFCL]))
+        §nom_edd=[[§fed]&q1:nom]
+        lanc,SuppEddv([§fed],0),[hbFonc]\ZonEddv.prc
+        if,"defcmp(§fed)"
+        then
+        {
+          impr,Impossible de supprimer l'EDDV [§nom_edd] de la base CaLif sans archivage.
+          impr,  Oncle de l'EDDV [§nom_edd] (composants restant empechant la suppression):
+          rdcl,!onc([§fed]) 
+        }
+        else
+        {
+          impr,Suppression de l'EDDV [§nom_edd] de la base CaLif sans archivage.
+        }
+        !cmpe,!HbPts*~([PTSINVAR])
+        if,"nmbr(`!HbFED`)"
+        {
+            impr
+        }
+    }
+    list
+}
+
+
+rout,RmatFedpro(§fic)
+{
+    runf,[§fic],form=`Rad.Ind&Ral:Arg="NomPro",Suite`
+    {
+        if,"[Rad==hbcFep]@[Ral==`Q1`]@[Arg==`nom`]"
+        {
+            runs,[hbcFep]*!test(&q1:nom==[NomPro])
+            {
+                rmat,[mm],[hbcFep].[Ind]
+            }
+        }
+    }
+}
+
+
+rout,ESomInvT(§fic)
+{
+    !HbPtsInvar>
+    list,file=[base]\hbSomInvT.txt,raz=1
+    runf,[§fic],form=`Arg1:Arg2`
+    {
+        if,"Arg1>>`&`"
+        {
+            dcod,Arg1,form=`Mat&Ral`
+        }
+        else
+        {
+            Mat=[Arg1]
+        }
+        if,"nmbr(`[Mat]*[PTSINVAR]`)"
+        {
+            impr,[Arg1]:[Arg2]
+            !HbPtsInvar<[Mat]
+        }
+    }
+    list
+}
+
+rout,PtsAnorm(§fic)
+{
+    var,§i,§origine,§rad
+
+    §i=0
+    list,file=[base]\LISTING,raz=0
+    runf,[§fic],form=`Arg1:Arg2`
+    {
+        if,"Arg1>>`&`"
+        {
+            dcod,Arg1,form=`Mat&Ral`
+            §origine=0
+        }
+        else
+        {
+            Mat=[Arg1]
+            §origine=1
+        }
+        §rad=[xtr(Mat,0,3)]
+        if,"[§rad==`FB.`]#[§rad==`FC.`]#[§rad==`FG.`]#[§rad==`FP.`]#[§rad==`FS.`]#[§rad==`Kf.`]"
+        {
+            if,"§origine"
+            {
+                if,"defcmp(Mat)"
+                {
+                    dcod,Arg2,form=`X=Xtrav,Y=Ytrav,Suite`
+                    if,"[Xtrav><[Mat]:x]#[Ytrav><[Mat]:y]"
+                    {
+                        impr,Point [Mat] importé: X=[Xtrav],Y=[Ytrav] coordonnées non retenues car différentes
+                        impr,de celles présentes dans la la base CaLif; autres attributs importés.
+                        §i=[§i+1]
+                    }
+                }
+                else
+                {
+                    impr,Point [Mat] importé alors qu'il n'existait pas dans la base CaLif
+                    §i=[§i+1]
+                }
+            }
+        }
+    }
+    if,"§i"
+    {
+        impr
+    }
+    list
+}
+
+rout,ESomInvC
+{
+    list,[base]\hbSomInvC.txt,raz=1
+    runs,[PTSINVAR]*!HbPtsInvar
+    {
+        impr,[mm]:X=[[mm]:x],Y=[[mm]:y]
+    }
+    list
+}
+
+rout,VerifNedd
+{
+    var,§cc,§i
+    
+    §i=0
+    !Hb=[hbcFED]
+    runs,!Hb*!HbApres
+    {
+        §cc=[mm]
+        !Hb>[§cc]
+        runs,!Hb*!test(&q1:nom==[[§cc]&q1:nom])
+        {
+            impr,!!!!!Tentative d'import d'EDDV co-existant avec le même nom "[[§cc]&q1:nom]" ([mm] dans la Calif)!!!!!
+            hbOui=0
+            §i=[§i+1]
+        }
+        runs,!Hb*!test(&q1:nedd=[[§cc]&q1:nedd])
+        {
+            impr,!!!!!Tentative d'import d'EDDV co-existant avec le même numéro "[[§cc]&q1:nedd]" ([mm] dans la CaLif)!!!!!
+            hbOui=0
+            §i=[§i+1]
+        }
+    }
+    if,"§i"
+    {
+        impr
+    }
+}
+
+rout,VerifDomPlan
+{
+    var,§i,§jtplan
+    
+    §i=0
+    runs,jtPlan*!HbApres
+    {
+        §jtplan=[mm]
+        if,"[§jtplan]&d0:>>`+`"
+        {
+            impr,!!!!!Tentative d'import du plan "[[§jtplan]&v0:nom]" comportant plusieurs domaines: "[[§jtplan]&d0:]" !!!!!
+            hbOui=0
+            §i=[§i+1]
+        }
+        else
+        {
+            runs,jtPlan*!dom([[§jtplan]&d0:])*~[§jtplan]
+            {
+                impr,!!!!!Tentative d'import du plan "[[§jtplan]&v0:nom]" dont le domaine "[[§jtplan]&d0:]" est utilisé par d'autres plans !!!!!                
+            }
+        }
+    }
+    if,"§i"
+    {
+        impr
+    }
+}
+
+rout,VerifDimg
+{
+    var,§i
+    
+    §i=0
+    runs,Dimg*!HbApres
+    {
+        if,"[mm]&d0:>>`+`"
+        {
+            impr,!!!!!Tentative d'import d'une image comportant plusieurs domaines: "[[mm]&d0:]" !!!!!
+            hbOui=0
+            §i=[§i+1]
+        }
+    }
+    if,"§i"
+    {
+        impr
+    }
+}
+
+rout,VerifKfn
+{
+    var,§i
+    
+    §i=0
+    runs,Kfn*!HbApres
+    {
+        if,"nmbr(`[mm]*!ral(O57)`)=0"
+        {
+            impr,!!!!!Tentative d'import d'un point nouveau Kfn sans rallonge O57 - coordonnées: X=[[mm]:X],Y=[[mm]:y] !!!!!
+            hbOui=0
+            §i=[§i+1]
+        }
+    }
+    if,"§i"
+    {
+        impr,!!!!![§i] points Kfn sans rallonge O57: à compléter avant import !!!!!
+        impr
+    }
+}
+
+rout,ListImages(§sel)
+{
+    impr,Si ce n'est pas encore fait, penser à mettre à jour le dossier Images de la base comme suit:
+    runs,[§sel]
+    {
+        impr,[[mm]&v2:Im]
+    }
+    impr
+}

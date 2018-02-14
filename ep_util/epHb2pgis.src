@@ -1,0 +1,272 @@
+/*	@	02/01/2012	*/
+/*	@	Export des géométries cadastrales dans PostGis */
+/*	@	Auteur : Vianney Dugrain	*/
+
+/*	lanc,CreaTabSec,D:\travail\TopStation\Fichiers source\hbase2pgis.src	*/
+
+proc,JtDebug=1
+
+rout,CreaTabPar
+/*	Mise à jour de la table parcelle à partir de données TopStation	*/
+{
+	odbc,data=Cadastre,auto=1 	/*	Connexion ODBC	*/
+	| DROP TABLE IF EXISTS hbase.parcelle_geom_cc49 CASCADE;
+	| CREATE TABLE hbase.parcelle_geom_cc49 (parcelleid INTEGER);
+	| SELECT AddGeometryColumn('hbase', 'parcelle_geom_cc49', 'the_geom', 310024149, 'GEOMETRY', 2);
+	| DROP TABLE IF EXISTS hbase.parcelle CASCADE;
+	| CREATE TABLE hbase.parcelle (parcelleid INTEGER, ccodep INTEGER, ccocom CHAR(3), ccopre CHAR(3), ccosec CHAR(2), dnupla INTEGER, cad BIGINT,
+	| nom_com VARCHAR(30), cpt CHAR(12), pr SMALLINT, co INTEGER, lw SMALLINT, sc SMALLINT, ly VARCHAR(20));
+	runs,Cpar
+	{
+		if,"len([[mm]&V1:Ly])<>0"
+		/*	Si la géométrie est renseignée, on remplit la BD	*/
+		{
+			var,§mat
+			§mat=[mm]
+			impq,§mat
+			wkli,[mm],ZB2
+			| INSERT INTO hbase.parcelle_geom_cc49 (parcelleid, the_geom)
+			| VALUES (
+			| [[mm]:i], GeomFromText('JS_WKT([mm],ZB2)',310024149)
+			| );
+			| INSERT INTO hbase.parcelle (parcelleid, ccodep, ccocom, ccopre, ccosec, dnupla, cad, nom_com, cpt, pr, co, lw, sc, ly)
+			| VALUES ([[mm]:i], 92, '[[mm]&V1:com]','[[mm]&V1:pre]','[[mm]&V1:sec]',[[mm]&V1:num],[[mm]&T1:cad],'[[mm]&T4:nom_com]',
+			| '[[mm]&V0:CPT]',[[mm]&V0:Pr],[[mm]&V0:Co],[[mm]&V0:Lw],[[mm]&V0:Sc],'[[mm]&V1:Ly]');
+		}
+	}
+}
+
+rout,InsertPar
+/*	Mise à jour de la table parcelle à partir de données TopStation	*/
+{
+	odbc,data=Cadastre,auto=1 	/*	Connexion ODBC	*/
+	runs,Cpf
+	{
+		if,"len([[mm]&V1:Ly])<>0"
+		/*	Si la géométrie est renseignée, on remplit la BD	*/
+		{
+			var,§mat
+			§mat=[mm]
+			impq,§mat
+			wkli,[mm],ZB2
+			| INSERT INTO hbase.parcelle_geom_cc49 (parcelleid, the_geom)
+			| VALUES (
+			| [[mm]:i], GeomFromText('JS_WKT([mm],ZB2)',310024149)
+			| );
+			| INSERT INTO hbase.parcelle (parcelleid, ccodep, ccocom, ccopre, ccosec, dnupla, cad, nom_com, cpt, pr, co, lw, sc, ly)
+			| VALUES ([[mm]:i], 92, '[[mm]&V1:com]','[[mm]&V1:pre]','[[mm]&V1:sec]',[[mm]&V1:num],[[mm]&T1:cad],'[[mm]&T4:nom_com]',
+			| '[[mm]&V0:CPT]',[[mm]&V0:Pr],[[mm]&V0:Co],[[mm]&V0:Lw],[[mm]&V0:Sc],'[[mm]&V1:Ly]');
+		}
+	}
+}
+
+rout,CreaTabSec
+/*	Mise à jour de la table section à partir de données TopStation	*/
+{
+	odbc,data=Cadastre,auto=1 	/*	Connexion ODBC	*/
+	| DROP TABLE IF EXISTS hbase.section_geom_cc49 CASCADE;
+	| CREATE TABLE hbase.section_geom_cc49 (sectionid INTEGER);
+	| SELECT AddGeometryColumn('hbase', 'section_geom_cc49', 'the_geom', 310024149, 'GEOMETRY', 2);
+	| DROP TABLE IF EXISTS hbase.section CASCADE;
+	| CREATE TABLE hbase.section (sectionid INTEGER, ccodep SMALLINT, ccocom CHAR(3),ccosec CHAR(2),sub CHAR(2),
+	| qupl CHAR(2),copl CHAR(2),eor INTEGER,icl INTEGER,sai CHAR(2),dedi DATE,dis DATE,ly VARCHAR(20));
+	runs,Cfeu
+	{
+		if,"len([[mm]&V1:Ly])<>0"
+		/*	Si la géométrie est renseignée, on remplit la BD	*/
+		{
+			var,§com,§sec
+			§com=[[mm]&R0:C]
+			§sec=[[mm]&R0:S]
+			wkli,[mm],ZB2
+			| INSERT INTO hbase.section_geom_cc49 (sectionid, the_geom)
+			| VALUES (
+			| [[mm]:i], GeomFromText('JS_WKT([mm],ZB2)',310024149)
+			| );
+			|	INSERT INTO hbase.section(sectionid, ccodep, ccocom, ccosec, copl, icl, sai, dis, ly)
+			|	VALUES (
+			|		[[mm]:i], 92, '[[§com]&Q0:com]', '[[§sec]&T0:sec]', '[[mm]&T2:copl]', 
+			|		[[mm]&T2:icl], '[[mm]&T3:sai]', '[[mm]&T4:dis]', '[[mm]&V1:ly]'
+			|	);
+			
+/*			| INSERT INTO hbase.section(sectionid, ccodep, ccocom, ccosec, sub, qupl, copl, eor, icl, sai, dedi, dis, ly)	*/
+/*			| VALUES (																										*/
+/*			| [[mm]:i], 92, '[[§com]&Q0:com]', '[[§sec]&T0:sec]', '[[mm]&T1:sub]', '[[mm]&T2:qupl]', '[[mm]&T2:copl]',		*/
+/*			| '[[mm]&T2:eor]', '[[mm]&T2:icl]', '[[mm]&T3:sai]', '[[mm]&T4:dedi]', '[[mm]&T4:dis]', '[[mm]&V1:ly]'			*/
+/*			| );																											*/
+		}
+	}
+}
+
+rout,CreaTabOSD
+/*	Mise à jour de la table d'objets surfaciques divers à partir des données TopStation	*/
+{
+	odbc,data=Cadastre,auto=1 	/*	Connexion ODBC	*/
+	| DROP TABLE IF EXISTS hbase.osd_geom_cc49 CASCADE;
+	| CREATE TABLE hbase.osd_geom_cc49 (osdid INTEGER);
+	| SELECT AddGeometryColumn('hbase', 'osd_geom_cc49', 'the_geom', 310024149, 'GEOMETRY', 2);
+	| DROP TABLE IF EXISTS hbase.osd CASCADE;
+	| CREATE TABLE hbase.osd (osdid INTEGER, typ VARCHAR(30), cl SMALLINT, pr SMALLINT, co INTEGER, lw SMALLINT, 
+	| sc SMALLINT, ly VARCHAR(20), lt VARCHAR(20));
+	runs,CDl
+	{
+		if,"len([[mm]&V1:Ly])<>0"
+		/*	Si la géométrie est renseignée, on remplit la BD	*/
+		{
+			var,§ind
+			§ind=[[mm]:i]
+			wkli,[mm],LA2
+			| INSERT INTO hbase.osd_geom_cc49 (osdid, the_geom)
+			| VALUES (
+			| [§ind], GeomFromText('JS_WKT([mm],LA2)',310024149)
+			| );
+			| INSERT INTO hbase.osd (osdid, typ, cl, pr, co, lw, sc, ly, lt)
+			| VALUES ([[mm]:i], '[[mm]&Q0:typ]', [[mm]&Q0:cl], [[mm]&V0:Pr], [[mm]&V0:Co], [[mm]&V0:Lw], [[mm]&V0:Sc], '[[mm]&V1:Ly]', '[[mm]&V2:Lt]');
+		}
+	}
+}
+
+rout,CreaTabBatid
+/*	Mise à jour de la table de bâtiments durs divers à partir des données TopStation	*/
+{
+	odbc,data=Cadastre,auto=1 	/*	Connexion ODBC	*/
+	| DROP TABLE IF EXISTS hbase.batid_geom_cc49 CASCADE;
+	| CREATE TABLE hbase.batid_geom_cc49 (batidid INTEGER);
+	| SELECT AddGeometryColumn('hbase', 'batid_geom_cc49', 'the_geom', 310024149, 'GEOMETRY', 2);
+	| DROP TABLE IF EXISTS hbase.batid CASCADE;
+	| CREATE TABLE hbase.batid (batidid INTEGER, pr SMALLINT, co INTEGER, lw SMALLINT, 
+	| sc SMALLINT, ly VARCHAR(20), lt VARCHAR(20));
+	runs,BAc
+	{
+		if,"len([[mm]&V1:Ly])<>0"
+		/*	Si la géométrie est renseignée, on remplit la BD	*/
+		{
+			var,§ind
+			§ind=[[mm]:i]
+			wkli,[mm],ZB2
+			| INSERT INTO hbase.batid_geom_cc49 (batidid, the_geom)
+			| VALUES (
+			| [§ind], GeomFromText('JS_WKT([mm],ZB2)',310024149)
+			| );
+			| INSERT INTO hbase.batid (batidid, pr, co, lw, sc, ly, lt)
+			| VALUES ([[mm]:i], [[mm]&V0:Pr], [[mm]&V0:Co], [[mm]&V0:Lw], [[mm]&V0:Sc], '[[mm]&V1:Ly]', '[[mm]&V2:Lt]');
+		}
+	}
+}
+
+rout,CreaTabResfer
+/*	Mise à jour de la table des réseaux ferrés divers à partir des données TopStation	*/
+{
+	odbc,data=Cadastre,auto=1 	/*	Connexion ODBC	*/
+	| DROP TABLE IF EXISTS hbase.resfer_geom_cc49 CASCADE;
+	| CREATE TABLE hbase.resfer_geom_cc49 (resferid INTEGER);
+	| SELECT AddGeometryColumn('hbase', 'resfer_geom_cc49', 'the_geom', 310024149, 'GEOMETRY', 2);
+	| DROP TABLE IF EXISTS hbase.resfer CASCADE;
+	| CREATE TABLE hbase.resfer (resferid INTEGER, pr SMALLINT, co INTEGER, lw SMALLINT, 
+	| sc SMALLINT, ly VARCHAR(20), lt VARCHAR(20));
+	runs,ILc
+	{
+		if,"len([[mm]&V1:Ly])<>0"
+		/*	Si la géométrie est renseignée, on remplit la BD	*/
+		{
+			var,§ind
+			§ind=[[mm]:i]
+			wkli,[mm],LA2
+			| INSERT INTO hbase.resfer_geom_cc49 (resferid, the_geom)
+			| VALUES (
+			| [§ind], GeomFromText('JS_WKT([mm],LA2)',310024149)
+			| );
+			| INSERT INTO hbase.resfer (resferid, pr, co, lw, sc, ly, lt)
+			| VALUES ([[mm]:i], [[mm]&V0:Pr], [[mm]&V0:Co], [[mm]&V0:Lw], [[mm]&V0:Sc], '[[mm]&V1:Ly]', '[[mm]&V2:Lt]');
+		}
+	}
+}
+
+rout,CreaTabEau
+/*	Mise à jour de la table des réseaux ferrés divers à partir des données TopStation	*/
+{
+	odbc,data=Cadastre,auto=1 	/*	Connexion ODBC	*/
+	| DROP TABLE IF EXISTS hbase.eau_geom_cc49 CASCADE;
+	| CREATE TABLE hbase.eau_geom_cc49 (eauid INTEGER);
+	| SELECT AddGeometryColumn('hbase', 'eau_geom_cc49', 'the_geom', 310024149, 'GEOMETRY', 2);
+	| DROP TABLE IF EXISTS hbase.eau CASCADE;
+	| CREATE TABLE hbase.eau (eauid INTEGER, pr SMALLINT, co INTEGER, lw SMALLINT, 
+	| sc SMALLINT, ly VARCHAR(20), lt VARCHAR(20));
+	runs,YUc
+	{
+		if,"len([[mm]&V1:Ly])<>0"
+		/*	Si la géométrie est renseignée, on remplit la BD	*/
+		{
+			var,§ind
+			§ind=[[mm]:i]
+			wkli,[mm],ZB2
+			| INSERT INTO hbase.eau_geom_cc49 (eauid, the_geom)
+			| VALUES (
+			| [§ind], GeomFromText('JS_WKT([mm],ZB2)',310024149)
+			| );
+			| INSERT INTO hbase.eau (eauid, pr, co, lw, sc, ly, lt)
+			| VALUES ([[mm]:i], [[mm]&V0:Pr], [[mm]&V0:Co], [[mm]&V0:Lw], [[mm]&V0:Sc], '[[mm]&V1:Ly]', '[[mm]&V2:Lt]');
+		}
+	}
+}
+
+rout,CreaTabFED
+/*	Mise à jour de la table des réseaux ferrés divers à partir des données TopStation	*/
+{
+	odbc,data=Cadastre,auto=1 	/*	Connexion ODBC	*/
+	| DROP TABLE IF EXISTS hbase.fed_geom_cc49 CASCADE;
+	| CREATE TABLE hbase.fed_geom_cc49 (fedid INTEGER);
+	| SELECT AddGeometryColumn('hbase', 'fed_geom_cc49', 'the_geom', 310024149, 'GEOMETRY', 2);
+	| DROP TABLE IF EXISTS hbase.fed CASCADE;
+	| CREATE TABLE hbase.fed (fedid INTEGER, nom VARCHAR(40), nedd INTEGER, nab VARCHAR(40), etat VARCHAR(15));
+	runs,FED
+	{
+		var,§ind
+		§ind=[[mm]:i]
+		wkli,[mm],ZB2
+		| INSERT INTO hbase.fed_geom_cc49 (fedid, the_geom)
+		| VALUES (
+		| [§ind], GeomFromText('JS_WKT([mm],ZB2)',310024149)
+		| );
+		| INSERT INTO hbase.fed (fedid, nom, nedd, nab, etat)
+		| VALUES ([§ind],'[[mm]&Q1:nom]',[[mm]&Q1:nedd],'[[mm]&Q1:nab]','[[mm]&Q4:etat]');
+	}
+}
+
+rout,CreaTabParPoint
+{
+/*	OBSOLETE	*/
+	odbc,data=CadastreTest,auto=1 
+/*	odbc,`DROP TABLE IF EXISTS cadastre.parcelle CASCADE` */
+/*	odbc,`CREATE TABLE cadastre.parcelle (ccodep SMALLINT, ccocom SMALLINT, ccosec CHAR(2), dnupla INTEGER)` */
+	| DROP TABLE IF EXISTS cadastre.parcelle CASCADE;
+	| CREATE TABLE cadastre.parcelle (ccodep SMALLINT, ccocom CHAR(3), ccosec CHAR(2), dnupla INTEGER);
+	| SELECT AddGeometryColumn('cadastre', 'parcelle', 'the_geom', 310024149, 'POINT', 2);
+	runs,Cpar
+	{
+		if,"len([[mm]&V1:Ly])<>0"
+		{
+			wkli,[mm],P2
+			| INSERT INTO cadastre.parcelle (ccodep, ccocom, ccosec, dnupla, the_geom)
+			| VALUES (
+			| [[mm]&V1:dep], '[[mm]&V1:com]', '[[mm]&V1:sec]', [[mm]&V1:num], GeomFromText('JS_WKT([mm],P2)',310024149)
+			| );
+		}
+	}
+}
+
+rout,CreaTabParTest
+{
+/*	OBSOLETE	*/
+	odbc,data=CadastreTest,auto=1 
+	| DROP TABLE IF EXISTS cadastre.parcelle CASCADE;
+	| CREATE TABLE cadastre.parcelle (ccodep SMALLINT, ccocom CHAR(3), ccosec CHAR(2), dnupla INTEGER);
+	| SELECT AddGeometryColumn('cadastre', 'parcelle', 'the_geom', 3949, 'POLYGON', 2);
+	runs,Cpar
+	{
+		| INSERT INTO cadastre.parcelle (ccodep, ccocom, ccosec, dnupla)
+		| VALUES (
+		| [[mm]&V1:dep], '[[mm]&V1:com]', '[[mm]&V1:sec]', [[mm]&V1:num]
+		| );
+	}
+}

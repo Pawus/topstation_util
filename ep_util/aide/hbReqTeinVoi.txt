@@ -1,0 +1,35 @@
+	
+REQUETE SUR LES TEINTES DES VOLUMES VOISINS D'UN VOLUME D'ETAT DESCRIPTIF DE DIVISION EN VOLUMES
+	
+	Lors de l'élaboration des plans d'un EDDV, on a souvent besoin de connaître les teintes déjà 
+	utilisées pour les volumes, et notamment celles proches d'un volume en cours de création. Cette 
+	requête permet instantanément de lister ces teintes.	
+	
+	Choisir le volume dans la liste proposée "Volume | EDDV" ou bien cliquer à l'intérieur 
+	d'une coupe horizontale du volume dans le plan.	
+		
+	Une fois le volume choisi, le nom de l'EDDV et son état sont affichés dans la fenêtre.	
+	On peut préciser ensuite une distance du dit volume pour rechercher les volumes voisins. 
+	Celle-ci est exprimée en mètres et comprise entre 0 et 99 mètres.	 
+		
+	En appuyant sur le bouton <Ok>, l'assiette complète du volume est tramée et la vue est centrée 
+	dessus. Cette assiette correspond à l'empilement de toutes les coupes horizontales.	
+	
+	Puis la fonction édite pour le volume sélectionné:	
+      *	En titre, le nom de l'EDDV auquel il appartient	
+      *	le numéro du volume et la teinte exprimée en nombre ainsi qu' lettres si cette teinte correspond 
+	à l'une des teintes de la liste prédéfinie lors de la création du volmume	
+      *	les états respectifs de l'EDDV et du volume
+		
+	Et pour chaque volume situé à une distance en plan inférieure à celle demandée:	
+      *	le numéro du volume et la teinte exprimée en nombre ainsi qu' lettres si cette teinte correspond 
+	à l'une des teintes de la liste prédéfinie lors de la création du volmume	
+	
+	Ensuite la liste de tous les volumes de l'EDDV avec leurs teintes est éditée.	
+	
+	Enfin, si des coupes de volumes sont sans cote altimétrique inférieure, ce qui est une anomalie 
+	perturbante dans cette requête, leur liste est alors rappelée.	
+	
+
+	
+

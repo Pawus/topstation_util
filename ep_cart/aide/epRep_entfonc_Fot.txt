@@ -1,0 +1,17 @@
+
+
+OCCUPATION TEMPORAIRE
+		
+On entends par occupation temporaire l'ensemble des composants définissant une zone de domaine mis à disposition d'un tiers.
+
+La force de représentation de ces composants est indiquée sur le septième caractère de la procédure epRf.
+
+MODELE
+
+Liste des modèles utilisant cette représentation :
+
+    
+
+CHARTE GRAPHIQUE EPADESA
+
+

@@ -1,0 +1,50 @@
+precision;_;_
+precision;typev;entier
+precision;typeq;txt
+precision;1;"ecart type <= 5cm"
+precision;2;"ecart type <= 15cm"
+precision;9;"ecart type > 15cm"
+radicalKf;_;_
+radicalKf;typev;txt
+radicalKf;typeq;txt
+radicalKf;"Kf";"point support"
+radicalKf;"FB";"borne"
+radicalKf;"FC";"clou, spit"
+radicalKf;"FG";"gravure"
+radicalKf;"FP";"piquet"
+radicalKf;"FS";"sommet arpenté"
+nature;_;_
+nature;typev;txt
+nature;typeq;txt
+nature;"aspiré";"coordonnées aspirées par un opérateur (accrochage)"
+nature;"calculé";"coordonnées recalculées à partir des éléments definissant le point"
+nature;"digitalisé";"coordonnées établies par digitalisation (visuellement)"
+nature;"importé";"coordonnées importées automatiquement (d'une autre base notamment)"
+nature;"saisi";"coordonnées saisies manuellement"
+sommet;_;_
+sommet;typev;txt
+sommet;typeq;txt
+sommet;"angle de bâtiment";"angle de bâtiment"
+sommet;"angle de mur";"angle de mur"
+sommet;"angle de pilier";"angle de pilier"
+sommet;"axe du mur";"axe du mur"
+sommet;"marque de peinture";"marque de peinture"
+borne;_;_
+borne;typev;txt
+borne;typeq;txt
+borne;ancienne;ancienne
+borne;de limite de lot de remembrement;de limite de lot de remembrement
+borne;de périmètre de remembrement;de périmètre de remembrement
+borne;en silex;en silex
+clou;_;_
+clou;typev;txt
+clou;typeq;txt
+clou;clou d'arpentage;clou d'arpentage
+clou;spit;spit
+clou;tige de fer;tige de fer
+clou;tire-fond;tire-fond
+gravure;_;_
+gravure;typev;txt
+gravure;typeq;txt
+gravure;croix sur dalle;croix sur dalle
+gravure;marque verticale sur le mur;marque verticale sur le mur

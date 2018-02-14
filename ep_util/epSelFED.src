@@ -1,0 +1,10 @@
+/*  dernière modification :                                               */
+/*         13 01 2016 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+/*  epCmp (dans ep_util)                                                  */
+#include ".\epCmp.inc"
+
+#include ".\epSelFED.inc"

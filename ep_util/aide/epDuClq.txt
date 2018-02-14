@@ -1,0 +1,16 @@
+
+FORCER LES ATTRIBUTS EN DUCALQUE 	
+	
+    Cette fonction permet de forcer les attributs des composants sélectionnés
+    en "DuCalque".
+
+    La fonction force la couleur, l'épaisseur et le type de trait des composants
+	en enregistrant les rallonges suivantes :
+	
+        * v0:Co=256 
+		
+        * v0:Lw=-1
+		
+        * v2:Lt="ByLayer"
+	
+	

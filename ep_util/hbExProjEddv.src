@@ -1,0 +1,341 @@
+proc,JtDebug=1
+
+#include ".\hbOutils.inc"
+
+proc,DTCR=1962                                  /* Date de création de l'EPAD    */
+proc,EPAD=EPADESA                               /* Nom de l'établissement public */
+
+rout,SelProj
+{
+    var,§seldep,§t
+
+    !sele,deb=!Hb,fin=!Hc
+    !HbProjets>
+    !HbParFonc>
+    §t=¹[EPAD] Exporter projets+parc.¹
+
+    dial,HB_SELPRO,l=158,h=58,tx={§t},ferm=0
+    qc,bf,BF_PROJ ,002,002,040,012,j=5,tx="Projet(s)",rout=BfSelProj
+    qc,ed,ED_SPRO ,044,002,112,012,j=2,rout=VerFen
+    qc,bf,BF_PARF ,002,014,070,012,j=5,tx="Parcellaire foncier",rout=BfSelParf
+    qc,ed,ED_SPAF ,074,014,082,012,j=2,rout=VerFen   
+    qc,bf,BF_FICH ,002,028,040,012,j=5,tx="Fichier",rout=NomFichier
+    qc,ed,ED_FICH ,044,028,112,012,j=2,rout=VerFen
+    qc,bf,BF_OK   ,002,042,044,012,j=5,tx="¹OK¹",rout=BfOk,iv=1
+    qc,bf,BF_AIDE ,114,042,042,012,j=5,tx="¹Aide¹",rout=BfAide  
+    evnt,entr=VerFen
+    
+    rout,NomFichier
+    {
+        fdia,sauv=1
+        run,FicEcr(Export projets d'EDDV,[tops]\sauv\comp\,Projet_EDDV.txt,RetFich)
+    }
+    
+    rout,RetFich(§nomfich)
+    {
+        odia,id=HB_SELPRO
+        qmod,ED_FICH,tx=[§nomfich]
+        run,VerFen
+    }
+    
+    rout,BfOk
+    {
+        NomFicTxt=[tx(ED_FICH)]
+        run,Verif
+        if,"hbOui"
+        {
+            run,ExProj
+        }
+        else
+        {
+            afli,file=[base]\LISTING    
+        }
+    }
+    
+    rout,BfSelProj
+    {
+        if,"nmbr(hbcFep)"
+        {
+            fdia,sauv=1
+            §t="Sélection des projets d'EDDV"
+            chsa,nom=!HbProjets,selc=[hbcFep],bril=0,eval=`{&q1:nom(30}`,titr=[§t],ok=SelProjOk,aide={epUtil}\aide\hbExProjEddv.txt
+        }
+        else
+        {
+            [bp]
+            run,MessageFdia(Pas de projet d'EDDV dans cette base)
+        }
+        
+        rout,SelProjOk
+        {
+            odia,id=HB_SELPRO
+            if,"nmbr(`!HbProjets`)"
+            {
+                qmod,ED_SPRO,tx=!HbProjets
+            }
+            run,VerFen
+        }
+    }
+
+    
+    rout,BfSelParf
+    {
+		§seldep=[hbcF]+[hbcFLP]
+        if,"defprc(`hbbEpad`)"
+		{
+			if,"hbbEpad=DTCR"
+			{
+				§seldep=[hbcPaf]+[hbcFL]+[hbcF]+[hbcFLP]
+			}
+		}
+        if,"nmbr(§seldep)"
+        {
+            fdia,sauv=1
+
+            §t=Parcellaire foncier à exporter
+            chsl,nom=!HbParFonc,selc=[§seldep],titr=[§t],ok=SelParOk,aide={epUtil}\aide\hbExProjEddv.txt
+        }
+        else
+        {
+            [bp]
+            run,Message(Pas de parcellaire foncier à exporter de cette base)        
+        }
+        
+        rout,SelParOk
+        {
+            odia,id=HB_SELPRO
+            if,"nmbr(`!HbParFonc`)"
+            {
+                qmod,ED_SPAF,tx=!HbParFonc
+            }
+            run,VerFen            
+        }
+    }
+    
+    rout,VerFen
+    {
+        if,"[tx(ED_SPRO)==`!HbProjets`]@[tx(ED_FICH)><``]"
+        {
+            qmod,BF_OK,iv=0
+        	qset,foc=BF_OK
+            evnt,entr=VerFen,bdro=BfOk
+        }
+        else
+        {
+            qmod,BF_OK,iv=1
+        }
+    }
+    
+    rout,BfAide
+    {
+    	aide,{epUtil}\aide\hbExProjEddv.txt
+    }    
+}
+
+rout,Verif
+{
+    var,§fep,§i,§plan,§sel
+    
+	fdia
+    
+    hbOui=1
+	list,[base]\LISTING,raz=1
+	impr
+	impr,RECTIFICATIONS PREALABLES A APPORTER A LA BASE POUR L'EXPORT DE PROJETS D'EDDV
+    impr,==============================================================================
+	impr
+	if,"hbbEpad><DTCR"
+	{
+		run,VerifPntsSup
+	}
+	runs,!HbProjets
+    {
+	    §fep=[mm]
+		/*	run,ChProActi([§fep])													*/
+		/*	dcod,ETPR,form=`FED;FEP1;NBIND;INDACTI`									*/
+		/*	if,"INDACTI><`0`"														*/
+		/*	{																		*/
+		/*		hbOui=0																*/
+		/*		impr,Projet "[[§fep]&q1:nom]"										*/
+		/*		impr,		A désactiver au préalable pour autoriser son export.	*/
+		/*		impr																*/
+		/*	}																		*/
+		if,"[§fep]&v57:exp><``"
+        {
+            if,"[§fep]&v57:exp=1"
+			{
+				hbOui=0
+				impr,Projet "[[§fep]&q1:nom]"
+                impr,       Ce projet a déjà été exporté.
+				impr,		Pour l'exporter à nouveau, modifier l'attribut [§fep]&v57:exp=1 en 0
+                impr
+			}
+    	}
+    	if,"[§fep]&q1:type><`Nouvel EDDV`"
+    	{
+    		§sel=[hbcFep]*!onc([[§fep]&r0:E])*~[§fep]
+    		if,"nmbr(§sel)"
+    		{
+                hbOui=0
+    			runs,[§sel]
+    			{
+    				impr,Projet "[[§fep]&q1:nom]"
+                    impr,       supprimer le projet "[[mm]&q1:nom]" portant sur le même EDDV
+                    impr
+    			}
+    		}
+    	}
+        runs,jtPlan*!onc(!nev([§fep]))
+        {
+            if,"[mm]&d0:>>`+`"
+            {
+                hbOui=0
+                impr,Projet "[[§fep]&q1:nom]"
+                impr,       plan "[[mm]&v0:nom]" comportant plus d'un domaine
+                impr
+            }
+        }
+        runs,jtPlan*!onc(!nev([§fep]))
+        {
+            §plan=[mm]
+            dcod,[mm]&d0:,form=`D1+D2+D3+D4+D5`
+            for,"1->§i","§i<6","§i+1->§i"
+            {
+                if,"D[§i]><``"
+                {
+                    runs,Dimg*!dom([D[§i]])
+                    {
+                        if,"[mm]&d0:>>`+`"
+                        {
+                            hbOui=0
+                            impr,Projet "[[§fep]&q1:nom]"   plan "[[§plan]&v0:nom]"
+                            impr,       Image "[mm]" du plan comportant plus d'un domaine
+                            impr
+                        }
+                    }
+                }
+            }
+        }
+    }
+    list
+}
+
+rout,VerifPntsSup
+{
+	var,§j,§p
+	
+	!Hb>
+	runs,FE%*!nev(!HbProjets)
+	{
+		!Hb=J*!nev(F%*!asc([mm]))
+	}
+	whil,"nmbr(`!Hb`)"
+	{
+		runs,!Hb
+		{
+		    hbOui=0
+			§j=[mm]
+			!Hb>[§j]
+			impr,Point [§j] support de composant(s) foncier(s):
+			runs,F%*!onc([mm])
+			{
+				impr,		[mm]	Domaine(s) [[mm]&d0:]
+			}
+		}
+	}
+	!Hb>
+	runs,FE%*!nev(!HbProjets)
+	{
+		!Hb<!nev(F%*!asc([mm]))*~(FC£+FE%+FL£+FX%)
+	}
+	whil,"nmbr(`!Hb`)"
+	{
+		runs,!Hb
+		{
+			§j=
+			§p=[mm]
+			!Hb>[§p]
+			runs,[§p]*~!ral(O57)
+			{
+				§j=O57 
+			}
+			runs,[§p]*~!ral(Q0)
+			{
+				§j=[§j] Q0 
+			}
+			runs,[§p]*~!ral(V57)
+			{
+				§j=[§j] V57 
+			}
+			runs,[§p]*~!ral(V59)
+			{
+				§j=[§j] V59 
+			}
+			if,"§j><``"
+			{
+				hbOui=0
+				impr,Sommet [§p] avec attributs incomplets sur rallonge(s) [§j] support de composant(s) foncier(s):
+				runs,F%*!onc([§p])
+				{
+					impr,		[mm]	Domaine(s) [[mm]&d0:]
+				}
+			}
+			[fi]
+		}
+	}
+}
+
+rout,ExProj
+{
+    var,§fed
+    
+    !Hb>
+    !HbDimg>
+    runs,!HbProjets
+    {
+        !Hb<[mm]
+        runs,!nev([mm])
+        {
+            §fed=[mm]
+            !Hb<[§fed]+!onc([§fed])     /* les FED FEd FCD FCO FCL FLD FLO et jtPlan    */
+        }
+    }
+    runs,[hbcFLD]*!Hb
+    {
+        !Hb<!nev([mm])                  /* les FXV  */
+    }    
+    runs,jtPlan*!Hb
+    {
+        !Hb<jtCart*!onc([mm])           /* les jtCart  */
+        runs,Dimg*!dom([[mm]&d0:])
+        {
+            !Hb<[mm]
+            !HbDimg<[mm]
+        }
+    }    
+    !Hb<!HbParFonc                      /* Les FL FLP Fpar et F */
+    !Hb<!util(!Hb)
+    
+    list,[NomFicTxt],raz=1
+    cmpl,!Hb
+    list
+    runs,Fedpro*!Hb
+    {
+        ral,[mm]&v57:exp=1
+    }
+    marq,10,`Export des projets !HbProjets`
+    if,"nmbr(`!HbDimg`)"
+    {
+    	list,[base]\LISTING,raz=1
+    	impr
+    	impr,FICHIERS IMAGES A FOURNIR AVEC L'EXPORT DE PROJETS D'EDDV
+        impr,==========================================================
+    	impr
+        runs,!HbDimg
+        {
+            impr,[[mm]&v2:im]
+        }
+        list
+        afli,file=[base]\LISTING
+    }
+}

@@ -1,0 +1,38 @@
+/* version 0.2 du                                                         */
+/*  dernière modification :                                               */
+/*         02 02 2016 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+/* Liste des routines                                                     */
+/*  ConvertMdlToEp Applique les modèles EPAD aux composants fonciers      */
+/*         dernière modification : 02 02 2016 (SD)                        */
+/*  ConvertMdlToHb Applique les modèles EPAD aux composants fonciers      */
+/*         dernière modification : 02 02 2012 (SD)                        */
+
+proc,JtDebug=1
+
+rout,ConvertMdlToEp
+/* Permet de forcer les modèles des composants fonciers avec les modèles  */
+/*  EPAD                                                                  */
+{
+  org,[hbcPaf]+[hbcF],MD=EP_ZON_PARCELLE
+  org,[hbcFCD],MD=EP_ZON_VOLUME
+  org,[hbcFCL],MD=EP_LIN_VOLUME
+  org,[hbcFL]+[hbcFLP],MD=EP_LIN_PARCELLE
+  org,[hbcFEd]+[hbcFED],MD=EP_ZON_EDDV
+  marq,10,`¹Modèles EPAD appliqués aux composants fonciers¹`
+}
+
+rout,ConvertMdlToHb
+/* Permet de forcer les modèles des composants fonciers avec les modèles  */
+/*  HBASE                                                                 */
+{
+  org,[hbcPaf],MD=33
+  org,[hbcFCD],MD=HBF_COUPEVOL
+  org,[hbcFCL],MD=HBF_COUPELIM
+  org,[hbcFL],MD=HBF_LIM
+  org,[hbcFLP],MD=HBF_LIMPRO
+  org,[hbcFEd]+[hbcFED],MD=HBF_EDD
+  marq,10,`¹Modèles HBASE appliqués aux composants fonciers¹`
+}

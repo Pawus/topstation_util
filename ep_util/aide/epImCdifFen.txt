@@ -1,0 +1,7 @@
+IMPORT DES DONNEES DU CDIF
+
+Cette fenêtre permet le choix des composants et de l'emprise des données à importer.
+
+Il est possible de choisir l'emprise par secteur de projet, ou par la sélection d'une emprise rectangle sur l'espace objet courant, via le bouton "Sélectionner l'emprise sur le plan". 
+
+Les composants à importer sont à choisir parmis ceux proposés.

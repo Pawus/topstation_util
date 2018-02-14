@@ -1,0 +1,79 @@
+proc,JtDebug=0
+
+#include ".\hbOutils.inc"
+proc,EPAD=EPADESA
+
+rout,Fenetre
+{
+    var,§fed,§t
+
+    §t=¹[EPAD] Appliquer un plan d'EDDV¹
+
+    dial,HB_APE,l=208,h=44,tx={§t},ferm=1
+    qc,tx,TX_EDDV ,002,002,044,012,j=8,tx="EDDV"
+    qc,op,OP_EDDV ,048,002,158,104,j=2,rout=MajFen,rdig=IdEddv
+    {
+        runs,[hbcFED],tri={mm}&q1:nom
+        {
+            qao,tx={{mm}&q1:nom},ma=[mm]
+        }
+    }  
+    qc,tx,TX_S	,044,016,025,012,j=5,tx="Statut",iv=1
+    qc,af,AF_S	,077,016,100,012,j=5,tx=
+    qc,bf,BF_OK   ,002,030,044,012,j=5,tx="¹OK¹",rout=BfOk,iv=1
+    qc,bf,BF_AIDE ,164,030,042,012,j=5,tx="¹Aide¹",rout=BfAide  
+    qset,foc=OP_EDDV
+  
+  	rout,IdEddv(§x,§y)
+	{
+        runs,[hbcFED]*!zonp([§x],[§y],0.01)
+        {
+            §fed=[mm]
+            qmod,OP_EDDV,ma=[§fed]
+            [fi]
+        }
+        run,BfOk
+	}
+    
+    rout,MajFen
+    {
+        §fed=[ma(OP_EDDV)]
+        qmod,OP_EDDV,ma=[§fed]
+        run,StatutEddv([§fed])		/* retourne le statut dans hbTemp	*/
+        qmod,TX_S,iv=0
+        qmod,AF_S,tx=[hbTemp]   
+        qmod,BF_OK,iv=0
+    }
+    
+    rout,BfOk
+    {
+        §fed=[ma(OP_EDDV)]
+        !HbPlans=jtPlan*!onc([§fed])
+        if,"nmbr(`!HbPlans`)"
+        {
+            fdia
+            qpop,tx="Appliquer un plan de [[§fed]&q1:nom]",j=0,ft=2
+            {
+                §t={{mm}:z+11000}{{mm}&v0:nom}
+                runs,!HbPlans,tri=§t
+                {
+                    qap,"[[mm]&v0:nom]",proc=AppliquerPlan([mm]),ft=0
+                }
+            }
+        }
+        else
+        {
+            run,Message(Aucun plan descriptif associé à l'EDDV [[§fed]&q1:nom])
+        }
+    }
+}
+
+rout,BfAide
+{
+	aide,{epUtil}\aide\hbAppPlanEdv.txt
+}
+
+rout,AppliquerPlan(§mat)
+{
+    plna,plan=[§mat]   
+}

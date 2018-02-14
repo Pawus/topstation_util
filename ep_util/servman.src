@@ -1,0 +1,40 @@
+/* version 1.0 du 06 09 2010                                    */
+
+proc,JtDebug=1
+
+rout,Expfed(§file)
+{
+  list,imp=0,[§file],1
+  runs,!JtSelc
+  {
+    !EpSelc=[mm]+!test(&r0:e==[mm])
+	!EpSelc<!pts(!EpSelc)
+	cmpl,!EpSelc
+	!sele,!EpSelc
+  }
+  list
+}
+
+
+rout,AplExpfed
+{
+  chfi,titr=¹Fichier de destination¹,type=¹Fichier composant (*.txt)|*.txt¹,exis=0,ok=Expfed
+}
+
+
+rout,ExpfedChoix
+{
+  !JtSelc=0
+  chsl,nom=!JtSelc,titr=¹ÉTAT DESCRIPTIF À EXPORTER?¹,selc=[hbcFED]+FEd,ok=AplExpfed
+}
+
+rout,AplImpfed
+{
+  chfi,titr=¹Fichier d'import¹,type=¹Fichier composant (*.txt)|*.txt¹,exis=0,ok=Impfed
+}
+
+rout,Impfed(§file)
+{
+  cmpr,[§file],0
+  marq,10,`¹Import d'un EDD¹`
+}

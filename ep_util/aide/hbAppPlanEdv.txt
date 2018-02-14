@@ -1,0 +1,22 @@
+
+APPLIQUER UN PLAN D'EDDV	
+	
+	Cette fonction permet de choisir rapidement un plan d'EDDV.	
+	
+	La première case de la fenêtre permet de choisir un EDDV dans la liste.	
+	Une fois choisi, son statut est affiché dans la case en-dessous, et le 
+	bouton Ok est valide.		
+	
+	En appuyant sur le bouton Ok ou en cliquant directement à l'intérieur 
+	d'un EDDV dans le plan avec la souris, la fonction ouvrira alors un menu 
+	popup avec la liste des plans descriptifs associés à l'EDDV. Ceux-ci sont
+	triés comme suit:	
+		> D'abord les plans sans altitude (Z), selon leur nom	
+		> Puis les plans avec altitude, selon leur altitude	
+	
+	Une fois le plan choisi, il est immédiatement appliqué.	
+	
+	Un message s'affiche si aucun plan descriptif n'est associé à l'EDDV.	
+	
+
+

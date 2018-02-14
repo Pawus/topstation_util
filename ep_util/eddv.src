@@ -1,0 +1,532 @@
+/* version 1.0 du 18 08 2010                                     */
+
+proc,JtDebug=1
+
+rout,SetRalE
+{
+  var,§fed
+  runs,!JtSelc
+  {
+    §fed=[mm]
+    runs,!lini([mm],-0.01)*[hbcFCL]
+    {
+      if,"[mm]&r0:e><`[hbcFED].%`"
+      then
+      {
+        ral,[mm]&r0:e=[§fed]
+      }
+    }
+    runs,!zoni([mm],-0.01)*[hbcFCD]
+    {
+      if,"[mm]&r0:l><`[hbcFLD].%`"
+      then
+      {
+        ral,[mm]&r0:e=[§fed]
+      }
+      else
+      {
+        if,"[[mm]&r0:l]&r0:e><`[hbcFED].%`"
+        then
+        {
+          ral,[mm]&r0:e=[§fed]
+          ral,[[mm]&r0:l]&r0:e=[§fed]
+        }
+        else
+        {
+          ral,[mm]&r0:e=[[[mm]&r0:l]&r0:e]
+        }
+      }
+    }
+  }
+  marq,10,`¹Rallonges E forcées pour [§fed] ([[§fed]&v0:nom])¹`
+}
+
+rout,AplSetRalE
+{
+   var,§ts
+   §ts=¹EDDV ?¹
+   !JtSelc=0
+   chsl,nom=!JtSelc,selc=[hbcFED],titr={§ts},ok=SetRalE
+}
+
+rout,AplFLDtoFLO
+{
+  var,§ts
+  §ts=¹Volume(s) à supprimer ?¹
+  !EpSelc=0
+  chsl,nom=!EpSelc,selc=[hbcFCD],titr={§ts},ok=FLDtoFLOok
+  !sele,!EpSelc
+}
+
+rout,FLDtoFLOok
+{
+  runs,!EpSelc
+  {
+    run,FLDtoFLO([[mm]&r0:l])
+  }
+}
+
+rout,FLDtoFLO(§vol)
+{
+  /* Fonction permettant de « supprimer » un  volume                       */
+  /*  la fonction sort la fraction du domaine du plan courant              */
+  
+  var,§nom
+  §nom=[[§vol]&t2:nom]
+  rmat,!test(&r0:l==[§vol])*[hbcFCD],[epcFCO]
+  gom,[epcFCO]*!test(&r0:l==[§vol])
+  rmat,[§vol],[epcFLO]
+  marq,10,`¹Volume [§nom] supprimé de la volumétrie¹`
+}
+
+rout,AplFCLout
+{
+  var,§ts
+  §ts=¹Limite(s) à supprimer ?¹
+  !EpSelec=0
+  chsl,nom=!EpSelec,selc=[hbcFCL]+[epcFCl],titr={§ts},ok=AplFCLoutOk
+  !sele,!EpSelec
+}
+
+rout,AplFCLoutOk
+{
+  runs,!EpSelec
+  {
+    run,FCLout([mm])
+  }
+}
+
+rout,FCLout(§fcla)
+{
+  /* Fonction permettant de « supprimer » une limite de fraction de volume */
+  /*  la fonction sort la fraction du domaine du plan courant              */
+  
+  domo,[[jtMatPlan]&d0:],[§fcla]
+  gom,[§fcla]
+  marq,10,`¹[§fcla] supprimé du niveau [[jtMatPlan]:Z]¹`
+  
+}
+
+rout,AplFCLchgTyp
+{
+  var,§ts
+  §ts=¹Limite(s) à changer ?¹
+  !EpSelec=0
+  chsl,nom=!EpSelec,selc=[hbcFCL]+[epcFCl],titr={§ts},ok=AplFCLchgTypOk
+  tra,!EpSelec
+  !sele,!EpSelec
+}
+
+rout,AplFCLchgTypOk
+{
+  runs,!EpSelec
+  {
+    run,FCLchgTyp([mm])
+  }
+}
+
+rout,FCLchgTyp(§fcla)
+{
+  /* Fonction permettant de « convertir » une limite de fraction de volume */
+  /*  en limite de volume et reciproquement                                */
+  
+  if,"[§fcla]&v0:type==`ch`"
+  {
+    ral,[§fcla]&v0:type=
+	marq,10,`¹[§fcla] modifié en limite de volumes¹`
+  }
+  else
+  {
+    ral,[§fcla]&v0:type=ch
+	marq,10,`¹[§fcla] modifié en limite de fractions de volume¹`
+  }
+  tra,[§fcla]
+  
+}
+
+rout,TraKf
+{
+  !EpSelec=!tra*([hbcFCL]+[epcFCl]+[hbcFCD]+[epcFCd]+[hbcFED]+[epcFEd]+[hbcPaf])
+  tra,!pts(!EpSelec)*~!EpSelec
+  !sele,!EpSelec
+}
+
+rout,TraFCLinf
+{
+  var,§fed,§alt,§plan,§tri
+  if,"len([jtMatPlan]&r0:e)<>`0`"
+  {
+    §fed=[[jtMatPlan]&r0:e]
+	§alt=[[jtMatPlan]:z]
+	§plan=[mm]
+	runs,jtPlan*!test(Z<[§alt])*!test(&r0:e==[§fed]),tri={mm}:Z)7
+	{
+	  §plan=[mm]
+	}
+	tra,[hbcFCL]*!dom([[§plan]&d0:])
+  }
+}
+
+rout,TraFCDinf
+{
+  var,§fed,§alt,§plan,§tri
+  if,"len([jtMatPlan]&r0:e)<>`0`"
+  {
+    §fed=[[jtMatPlan]&r0:e]
+	§alt=[[jtMatPlan]:z]
+	§plan=[mm]
+	runs,jtPlan*!test(Z<[§alt])*!test(&r0:e==[§fed]),tri={mm}:Z)7
+	{
+	  §plan=[mm]
+	}
+	tra,([hbcFCD]+[epcFCd])*!dom([[§plan]&d0:])
+  }
+}
+
+rout,TraFCLsup
+{
+  var,§fed,§alt,§plan,§tri
+  if,"len([jtMatPlan]&r0:e)<>`0`"
+  {
+    §fed=[[jtMatPlan]&r0:e]
+	§alt=[[jtMatPlan]:z]
+	§plan=[mm]
+	runs,jtPlan*!test(Z>[§alt])*!test(&r0:e==[§fed]),tri={999-{mm}:Z})7
+	{
+	  §plan=[mm]
+	}
+	tra,([hbcFCL]+[epcFCl])*!dom([[§plan]&d0:])
+  }
+}
+
+rout,TraFCDsup
+{
+  var,§fed,§alt,§plan,§tri
+  if,"len([jtMatPlan]&r0:e)<>`0`"
+  {
+    §fed=[[jtMatPlan]&r0:e]
+	§alt=[[jtMatPlan]:z]
+	§plan=[mm]
+	runs,jtPlan*!test(Z>[§alt])*!test(&r0:e==[§fed]),tri={999-{mm}:Z})7
+	{
+	  §plan=[mm]
+	}
+	tra,([hbcFCD]+[epcFCd])*!dom([[§plan]&d0:])
+  }
+}
+
+rout,DuplEDDV
+{
+   var,§ts
+   §ts=¹EDDV ?¹
+   chma,selc=[hbcFED]+[epcFEd],titr={§ts},ok=DuplEDDVok
+}
+
+rout,DuplEDDVok(§feda)
+{
+  var,§nom,§ind
+  var,§i,§j
+  var,§fedp,§flda,§fldp,§fcda,§fcdp
+  var,§plana,§planp,§prefixe,§titre
+  var,§doma,§domp
+  var,§avant,§apres
+  
+  §ind=1
+  /* recherche de projet existant */
+  runs,[hbcFep]*!test(&r0:a==[§feda])
+  {
+    if,"[mm]&q1:indice>=[§ind]"
+    then
+    {
+      §ind=[[mm]&q1:indice+1]
+    }
+  }
+  
+  §nom=[[§feda]&q1:nom] mod.[§ind]
+  
+  /* Duplication de la volumétrie */
+  dupl,[§feda],[epcFEd]
+  §fedp=[mm]
+  ral,[§fedp]&q1:nom=[§nom]
+  ral,[§fedp]&q4:etat=PROJET
+  [§fedp]&q5:[[§feda]&d0:]
+  [§fedp]&q6:[[§feda]&d1:]
+  
+  /* duplication des volumes et des fractions de volumes */
+  runs,[hbcFLD]*!test(&r0:e==[§feda])
+  {
+    §flda=[mm]
+    dupl,[§flda]
+    §fldp=[mm]
+    ral,[§fldp]&r0:e=[§fedp]
+    ral,[§fldp]&q4:etat=ACTUEL
+    [§fldp]&q5:[[§flda]&d0:]
+    [§fldp]&q6:[[§flda]&d1:]
+    runs,[hbcFCD]*!test(&r0:l==[§flda])
+    { 
+      §fcda=[mm]
+      dupl,[§fcda]
+      §fcdp=[mm]
+      ral,[§fcdp]&r0:e=[§fedp],l=[§fldp]
+      ral,[§fcdp]&q4:etat=ACTUEL
+      [§fcdp]&q5:[[§fcda]&d0:]
+      [§fcdp]&q6:[[§fcda]&d1:]
+    }
+  }
+  /* duplication des volumes et des fractions de volumes projets */
+  /*          en pseudo volumes et fractions de volumes          */
+  runs,[epcFLd]*!test(&r0:e==[§feda])
+  {
+    §flda=[mm]
+    dupl,[§flda],[hbcFLD]
+    §fldp=[mm]
+    ral,[§fldp]&r0:e=[§fedp]
+    ral,[§fldp]&q4:etat=PROJET
+    [§fldp]&q5:[[§flda]&d0:]
+    [§fldp]&q6:[[§flda]&d1:]
+    runs,[epcFCd]*!test(&r0:l==[§flda])
+    { 
+      §fcda=[mm]
+      dupl,[§fcda],[hbcFCD]
+      §fcdp=[mm]
+      ral,[§fcdp]&r0:e=[§fedp],l=[§fldp]
+      ral,[§fcdp]&q4:etat=PROJET
+      [§fcdp]&q5:[[§fcda]&d0:]
+      [§fcdp]&q6:[[§fcda]&d1:]
+    }
+  }
+  runs,[hbcFCL]*!test(&r0:e==[§feda])
+  {
+    dupl,[mm]
+    ral,[mm]&r0:e=[§fedp]
+  }
+  runs,[epcFCl]*!test(&r0:e==[§feda])
+  {
+    dupl,[mm],[hbcFCL]
+    ral,[mm]&r0:e=[§fedp]
+  }
+  
+  /*          Duplication des plans         */
+  /* et modifications des domaines associés */
+  runs,jtPlan*!test(&r0:e==[§feda])
+  {
+    §plana=[mm]
+    dupl,[§plana]
+    §planp=[mm]
+    ral,[§planp]&r0:e=[§fedp]
+    /* Renommage */
+    §i=[pos([§plana]&v0:Nom,`>`)]
+    if,"[§i]=-1"
+    then
+    {
+      §prefixe="[§ind] > "
+      §titre=[[§plana]&v0:Nom]
+    }
+    else
+    {
+      §prefixe=[xtr([§plana]&v0:Nom,0,[§i])]
+      §titre=[xtr([§plana]&v0:Nom,[§i])]
+    }
+    if,"trim(§prefixe)==`F`"
+    then
+    {
+      ral,[§planp]&v0:Nom="[§ind] [§titre]"
+    }
+    else
+    {
+      ral,[§planp]&v0:Nom="[trim(§prefixe)][§ind] [§titre]"
+    }
+    /* Modification du domaine du plan */
+    runr,[§planp],K
+    {
+      if,"[rr]:>>`%DOM:DOM=`"
+      then
+      {
+        §doma=[xtr([rr]:,[9+pos([rr]:,`%DOM:DOM=`)])]
+        if,"xtr(§doma,0,1)==chr(34)"
+        then
+        {
+          §doma=[xtr(§doma,1,[len(§doma)-2])]
+        }
+        domo,[§doma],[§planp]
+        §domp=[§doma]_[§ind]
+        domi,[§domp],[§planp]
+        ral,[rr]:[xtr([rr]:,0,[9+pos([rr]:,`%DOM:DOM=`)])][§domp]
+      }
+    }
+    §j=0
+    whil,"len([§planp]&k{§j}:)"
+    {
+      if,"[§planp]&k[§j]:>>`!dom([§doma])`"
+      then
+      {
+        §i=[pos([§planp]&k[§j]:,`!dom([§doma])`)]
+        §avant=[xtr([§planp]&k[§j]:,0,[§i])]
+        §apres=[xtr([§planp]&k[§j]:,[§i+len(`!dom([§doma])`)])]
+        [§planp]&k[§j]:[§avant][`!dom([§domp])`][§apres]
+      }
+      else
+      {
+        §j=[§j+1]
+      }
+    }
+    /* foncier dans le domaine */
+    domi,[§domp],([hbcFCD]+[hbcFCL])*!dom([§doma])*!test(&r0:e==[§fedp])
+    domo,[§doma],([hbcFCD]+[hbcFCL])*!dom([§doma])*!test(&r0:e==[§fedp])
+    /* fonds de plan dans le domaine */
+    domi,[§domp],!dom([§doma])*(!dom(TOPO%)+!dom(ARCHI%))
+    /* Modification des instructions */
+    §j=0
+    whil,"len([§planp]&k{§j}:)"
+    {
+      if,"[§planp]&k[§j]:>>`+Dimg`"
+      then
+      {
+        §i=[pos([§planp]&k[§j]:,`+Dimg`)]
+        §avant=[xtr([§planp]&k[§j]:,0,[§i])]
+        §apres=[xtr([§planp]&k[§j]:,[§i+len(`+Dimg`)])]
+        [§planp]&k[§j]:[§avant][§apres]
+      }
+      else
+      {
+        §j=[§j+1]
+      }
+    }
+    runr,[§planp],K
+    {
+      if,"[rr]:==`tra,[§feda]`"
+      {
+        [rr]:
+      }
+      if,"[rr]:==`epRFCD=2`"
+      {
+        [rr]:epRFCD=1
+      }
+      if,"[rr]:==`tra,{mm}`"
+      {
+        [rr]:
+      }
+	  if,"[rr]:==`tra,!dom([§domp])*([epcFCd]+[epcFCl])`"
+      {
+        [rr]:
+      }
+	  if,"[rr]:==`tra,!dom([§domp])*(!dom(TOPO%)+!dom(ARCHI%))`"
+      {
+        [rr]:
+      }
+	  if,"[rr]:==`tra,{{mm}&r0:e}`"
+      {
+        [rr]:
+      }
+    }
+    renr,[§planp],K
+    [§planp]&k:[`tra,!dom([§domp])*([epcFCd]+[epcFCl])`]
+    [§planp]&k:[`tra,!dom([§domp])*(!dom(TOPO%)+!dom(ARCHI%))`]
+    [§planp]&k:[`tra,{{mm}&r0:e}`]
+    [§planp]&k:[`tra,{mm}`]
+	/* Application d'un modèle EPAD */
+	org,[§planp],MD=EP_CAR_A2_E
+  }
+  
+  /* Création du projet */
+  [hbcFep]&q1:nom=[§nom],indice=[§ind]
+  [mm]&r0:a=[§feda],p=[§fedp]
+  
+  marq,10,`¹Projet « [§nom] » créé¹`
+}
+
+rout,FLDvoisin(§fld)
+{
+  var,§fed,§fcd
+  var,§domplan,§plan,§plandessous,§plandessus
+  
+  §fed=[[§fld]&r0:e]
+  !EpFLDslc=0
+  
+  runs,([hbcFCD]+[epcFCd])*!test(&r0:l==[§fld])
+  {
+    /* Pour chaque fraction de volume */
+	§fcd=[mm]
+    /* On parcours l'ensemble des plans de l'eddv */
+	runs,jtPlan*!test(&r0:e==[§fed])
+	{
+	  §domplan=[[mm]&d0:]
+	  §plan=[mm]
+	  if,app_dom(§fcd,§domplan)
+	  {
+	    /* si la fraction appartient au plan */
+		/* on cherche les voisins du plans */
+		runs,!zonl([§fcd],0.05)*([hbcFCD]+[epcFCd])*!dom([§domplan])
+		{
+		  !EpFLDslc<[[mm]&r0:l]
+		}
+		/* on cherche les voisins du dessous */
+		if,§plan><prem(`epplan`,§fed)
+		{
+		  §plandessous=[prec(`epplan`,§plan)]
+		  §domplan=[[§plandessous]&d0:]
+		  runs,!zoni([§fcd],-0.01)*([hbcFCD]+[epcFCd])*!dom([§domplan])
+		  {
+		    !EpFLDslc<[[mm]&r0:l]
+		  }
+		}
+		/* on cherche les voisins du dessus */
+		§plandessus=[suiv(`epplan`,§plan)]
+		if,§plandessus><`0`
+		{
+		  if,"[§plandessus]&r0:e==§fed"
+		  {
+		    §domplan=[[§plandessus]&d0:]
+		    runs,!zoni([§fcd],-0.01)*([hbcFCD]+[epcFCd])*!dom([§domplan])
+		    {
+		      !EpFLDslc<[[mm]&r0:l]
+		    }
+		  }
+		}
+	  }
+	}
+  }
+  !EpFLDslc>[§fld]
+}
+
+rout,FLDplan(§fld)
+{
+  var,§fed,§fcd
+  var,§domplan,§plan
+  
+  §fed=[[§fld]&r0:e]
+  !EpjtPlanslc=0
+  
+  runs,([hbcFCD]+[epcFCd])*!test(&r0:l==[§fld])
+  {
+    /* Pour chaque fraction de volume */
+	§fcd=[mm]
+    /* On parcours l'ensemble des plans de l'eddv */
+	runs,jtPlan*!test(&r0:e==[§fed])
+    {
+	  §domplan=[[mm]&d0:]
+	  §plan=[mm]
+	  if,app_dom(§fcd,§domplan)
+	  {
+	    !EpjtPlanslc<[§plan]
+	  }
+    }
+  }
+}
+
+rout,FLDnordre(§fld)
+{
+  var,§plan
+  
+  run,FLDplan([§fld])
+  
+  !EpjtCartslc=0
+  runs,jtCart
+  {
+    §plan=[[mm]&r0:p]
+	if,app_sel(§plan,`!EpjtPlanslc`)
+	{
+	  !EpjtCartslc<[mm]
+	}
+  }
+}

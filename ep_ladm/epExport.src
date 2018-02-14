@@ -1,0 +1,443 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         13 12 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+proc,JtDebug=1
+
+/* Liste des routines (en ordre alphabétique)                             */
+
+/*  NetFED(§mat) Modifie le descriptif dont le matricule est donné dans   */
+/*         §mat pour le faire correspondre au standard EPADESA            */
+/*         dernière modification : 05 03 2013 (SD)                        */
+
+
+/* E=ral,[mm]&V2:Im="{epDimgDir}[xtr([mm]&V2:Im,6)]"[ex] */
+
+/* Procédures utiles                                                      */
+proc,EpficDbl=[base]\doublons.txt
+
+/* Utilisation de la boite à outils composants de l'EPADESA               */
+/*    et autres nécessaire à celles-ci                                    */
+#include "\\serveurtop\topstation$\util\ep_commun\epTexteOutils.inc"
+/*   -> rout,ImprIdent(§txt,§rang,§asci)                                  */
+
+/* ------------------------- DEBUT DES ROUTINES ------------------------- */
+
+rout,EcriPers(§sel,§ecri_com,§identr,§identt)
+/* Ecrit les éléments LA_point de l'export de la sélection §sel           */
+/*   §ecri_com est un bool pour ecrire ou non la balise <cityObjectMember>*/
+/*   §tab indique la tabulation intiale */
+{
+  !EpEcriPers=0
+  !EpEcriPers=[§sel]*CPro
+  
+  runs,!EpEcriPers
+  {
+       
+    if,"§ecri_com"
+    {
+      run,ImprIdent(<cityObjectMember>,[§identr],[§identt])
+	  §identr=[§identr+1]
+    }
+    run,ImprIdent(<ladm:LA_Party gml:id="Party_[mm]">,[§identr],[§identt])
+    run,ImprIdent(<ladm:LA_beginLifespanVersion>[&Q0:dtc]</ladm:LA_beginLifespanVersion>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:LA_name>[&V7:denomination]</ladm:LA_name>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:LA_pID>Party_[mm]</ladm:LA_pID>,[§identr+1],[§identt])
+    /*LA_role run,ImprIdent(<ladm:LA_role></ladm:LA_role>,[§identr+1],[§identt]) */
+	if,"[&V0:sex]==`+`"
+    {
+      run,ImprIdent(<ladm:LA_type>Personne morale</ladm:LA_type>,[§identr+1],[§identt])
+    }
+    if,"[&V0:sex]><`+`"
+    {
+      run,ImprIdent(<ladm:LA_type>Personne physique</ladm:LA_type>,[§identr+1],[§identt])
+    }
+    run,ImprIdent(</ladm:LA_Party>,[§identr],[§identt])
+    
+    if,"§ecri_com"
+    {
+      §identr=[§identr-1]
+      run,ImprIdent(</cityObjectMember>,[§identr],[§identt])
+    }
+  }
+  !sele,!EpEcriPers
+}
+
+rout,EcriDroiProp(§sel,§ecri_com,§identr,§identt)
+/* Ecrit les éléments LA_point de l'export de la sélection §sel           */
+/*   §ecri_com est un bool pour ecrire ou non la balise <cityObjectMember>*/
+/*   §tab indique la tabulation intiale */
+{
+  !EpEcriDroiProp=0
+  !EpEcriDroiProp=[§sel]*CDro
+  
+  runs,!EpEcriDroiProp
+  {
+       
+    if,"§ecri_com"
+    {
+      run,ImprIdent(<cityObjectMember>,[§identr],[§identt])
+	  §identr=[§identr+1]
+    }
+    run,ImprIdent(<ladm:LA_Right gml:id="Ri_[mm]">,[§identr],[§identt])
+    run,ImprIdent(<ladm:LA_beginLifespanVersion>[&Q0:dtc]</ladm:LA_beginLifespanVersion>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:LA_rID>Dr_[mm]</ladm:LA_rID>,[§identr+1],[§identt])
+	run,EcriPers([&R0:P],0,[§identr+1],[§identt])
+    /*LA_unitRef  run,ImprIdent(<ladm:LA_unitRef></ladm:LA_unitRef>,[§identr+1],[§identt])*/
+    /*LA_asource  run,ImprIdent(<ladm:LA_asourceRef></ladm:LA_asourceRef>,[§identr+1],[§identt])*/
+	run,ImprIdent(<ladm:LA_type>Droit de propriété</ladm:LA_type>,[§identr+1],[§identt])
+    run,ImprIdent(</ladm:LA_Right>,[§identr],[§identt])
+    
+    if,"§ecri_com"
+    {
+      §identr=[§identr-1]
+      run,ImprIdent(</cityObjectMember>,[§identr],[§identt])
+    }
+  }
+  !sele,!EpEcriDroiProp
+}
+
+rout,EcriPoint(§sel,§ecri_com,§identr,§identt)
+/* Ecrit les éléments LA_point de l'export de la sélection §sel           */
+/*   §ecri_com est un bool pour ecrire ou non la balise <cityObjectMember>*/
+/*   §tab indique la tabulation intiale */
+{
+  var,§mat
+  var,§point_type
+  
+  §mat=[epcFB]+[epcFC]+[epcFG]+[epcFP]+[epcFS]+[epcKf]+[epcKfn]
+  
+  !EpEcriPoint=0
+  !EpEcriPoint=[§sel]*([§mat])
+  
+  runs,!EpEcriPoint
+  {
+    if,":R==epcFB"
+    {
+      §point_type=borne
+    }
+    if,":R><epcFB"
+    {
+      §point_type=pas_borne
+    }
+    
+    if,"§ecri_com"
+    {
+      run,ImprIdent(<cityObjectMember>,[§identr],[§identt])
+	  §identr=[§identr+1]
+    }
+    run,ImprIdent(<ladm:LA_Point gml:id="Pt_[mm]">,[§identr],[§identt])
+	run,ImprIdent(<gml:name>[&V59:mori]</gml:name>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:LA_beginLifespanVersion>[&Q0:dtc]</ladm:LA_beginLifespanVersion>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:LA_interpolationRole>isolé</ladm:LA_interpolationRole>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:LA_originalLocation>,[§identr+1],[§identt])
+    run,ImprIdent(<gml:pointProperty>,[§identr+2],[§identt])
+    run,ImprIdent(<gml:Point srsName="http://www.opengis.net/def/crs/EPSG/0/5707">,[§identr+3],[§identt]) /* &O57:srid */
+    run,ImprIdent(<gml:pos srsDimension="2">[:X] [:Y]</gml:pos>,[§identr+4],[§identt])	
+    /*run,ImprIdent(<gml:pos srsDimension="2">[&O57:xo] [&O57:yo]</gml:pos>,[§identr+4],[§identt])*/
+    run,ImprIdent(</gml:Point>,[§identr+3],[§identt])
+    run,ImprIdent(</gml:pointProperty>,[§identr+2],[§identt])
+    run,ImprIdent(</ladm:LA_originalLocation>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:LA_pID namespace="EPADESA">[mm]</ladm:LA_pID>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:LA_pointType>[§point_type]</ladm:LA_pointType>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:refSource xlink:href="#[&V59:ir]"/>,[§identr+1],[§identt])
+    run,ImprIdent(</ladm:LA_Point>,[§identr],[§identt])
+    if,"§ecri_com"
+    {
+	  §identr=[§identr-1]
+      run,ImprIdent(</cityObjectMember>,[§identr],[§identt])
+    }
+  }
+  
+  !sele,!EpEcriPoint
+}
+rout,EcriLsP(§identr,§identt)
+/* Ecrit un LineString avec des éléments gml:pos */
+{
+  run,ImprIdent(<gml:LineString>,[§identr],[§identt])
+  run,ImprIdent(<gml:pos>[deb_x] [deb_y]</gml:pos>,[§identr+1],[§identt])
+  run,ImprIdent(<gml:pos>[fin_x] [fin_y]</gml:pos>,[§identr+1],[§identt])
+  run,ImprIdent(</gml:LineString>,[§identr],[§identt])
+}
+
+rout,EcriLsPl(§identr,§identt)
+/* Ecrit un LineString avec des éléments gml:poslist */
+{
+  run,ImprIdent(<gml:LineString>,[§identr],[§identt])
+  run,ImprIdent(<gml:posList srsDimension="2">[deb_x] [deb_y] [fin_x] [fin_y]</gml:posList>,[§identr+1],[§identt])
+  run,ImprIdent(</gml:LineString>,[§identr],[§identt])
+}
+
+rout,EcriLsPp(§identr,§identt)
+/* Ecrit un LineString avec des éléments gml:pointProperty */
+{
+  run,ImprIdent(<gml:LineString>,[§identr],[§identt])
+  run,ImprIdent(<gml:pointProperty>,[§identr+1],[§identt])
+  run,ImprIdent(<gml:Point gml:id="LS__[ctr_m]LsPp[deb_m]">,[§identr+2],[§identt])
+  run,ImprIdent(<gml:pos>[deb_x] [deb_y]</gml:pos>,[§identr+3],[§identt])
+  run,ImprIdent(<gml:Point>,[§identr+2],[§identt])
+  run,ImprIdent(</gml:pointProperty>,[§identr+1],[§identt])
+  run,ImprIdent(<gml:pointProperty>,[§identr+1],[§identt])
+  run,ImprIdent(<gml:Point gml:id="LS_[ctr_m]LsPp[fin_m]">,[§identr+2],[§identt])
+  run,ImprIdent(<gml:pos>[fin_x] [fin_y]</gml:pos>,[§identr+3],[§identt])
+  run,ImprIdent(<gml:Point>,[§identr+2],[§identt])
+  run,ImprIdent(</gml:pointProperty>,[§identr+1],[§identt])
+  run,ImprIdent(</gml:LineString>,[§identr],[§identt])
+}
+
+rout,EcriCvPl(§identr,§identt)
+/* Ecrit un Curve avec des éléments gml:poslist */
+/* erreur non résolue */
+{
+  run,ImprIdent(<gml:Curve>,[§identr],[§identt])
+  run,ImprIdent(<gml:segments>,[§identr+1],[§identt])
+  run,ImprIdent(<gml:ArcString>,[§identr+2],[§identt])
+  run,ImprIdent(<gml:posList srsDimension="2">[deb_x] [deb_y] [ctr_x] [ctr_y] [fin_x] [fin_y]</gml:posList>,[§identr+3],[§identt])
+  run,ImprIdent(</gml:ArcString>,[§identr+2],[§identt])
+  
+/*  run,ImprIdent(<gml:ArcByCenterPoint>,[§identr+2],[§identt]) */
+/*  run,ImprIdent(<gml:posList srsDimension="2">[deb_x] [deb_y] [ctr_x] [ctr_y] [fin_x] [fin_y]</gml:posList>,[§identr+3],[§identt]) */
+/*  run,ImprIdent(<gml:radius>[cer_r]</gml:radius>,[§identr+3],[§identt]) */
+/*  run,ImprIdent(<gml:startAngle>[deb_g]</gml:startAngle>,[§identr+3],[§identt]) */
+/*  run,ImprIdent(<gml:endAngle>[fin_g]</gml:endAngle>,[§identr+3],[§identt]) */
+/*  run,ImprIdent(</gml:ArcByCenterPoint>,[§identr+2],[§identt]) */
+  run,ImprIdent(</gml:segments>,[§identr+1],[§identt])
+  run,ImprIdent(</gml:Curve>,[§identr],[§identt])
+}
+
+rout,EcriRing(§mat,§contentChoice,§xlink,§identr,§identt)
+/* Ecrit un élément LinearRing correpondant à la géométrie du composant §mat */
+/*   §contentChoice est à choisir pari gml:pos                            */
+/*                                     gml:pointProperty                  */
+/*                                     gml:posList                        */
+/*   §xlink est un bool si gml:pointProperty                              */
+/*                                                                        */
+/*   §arc déterminé selon le type d'arc :                                 */
+/*        0: Le tracé horizontal n'est pas défini (arc fantôme).          */
+/*        1: Arc simple. La trace est un segment de droite.               */
+/*        2: Arc simple. La trace est un arc de parabole.                 */
+/*        3: Arc simple. La trace est un arc de cercle.                   */
+/*        4: Arc composite quelconque.                                    */
+/*        5: Arc composite dont la trace est un arc de clothoïde.         */
+/*   Les différents types d'arcs en GML sont détaillés à l'adresse :      */
+/*        http://www.datypic.com/sc/niem21/e-gml32_segments.html          */
+
+{
+  var,§pos,§arc
+  if,"§contentChoice==`gml:posList`"
+  {
+    §pos=Pl
+  }
+  
+  run,ImprIdent(<gml:Ring>,[§identr],[§identt])
+  runl,[§mat]
+  {
+    §arc=[selon(typ_h+1,`0`,`Ls`,`Cv`,`Cv`,`Cv`,`Cv`)]
+    if,"§arc><0"
+    {
+      run,ImprIdent(<gml:curveMember>,[§identr],[§identt])
+      run,Ecri[§arc][§pos]([§identr+1],[§identt])
+      run,ImprIdent(</gml:curveMember>,[§identr],[§identt])
+    }
+  }
+  
+  run,ImprIdent(</gml:Ring>,[§identr],[§identt])
+}
+
+rout,EcriSect(§mat,§identr,§identt)
+{
+  run,ImprIdent(<ladm:sectionRef gml:id="SUSect_[&V1:pre][&V1:sec].[mm]">,[§identr],[§identt])
+  run,ImprIdent(<ladm:LA_beginLifespanVersion>[&Q0:dtc]</ladm:LA_beginLifespanVersion>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:LA_hierachyLevel>6</ladm:LA_hierachyLevel>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:LA_sugID>[&V1:pre][&V1:sec].[mm]</ladm:LA_sugID>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:prefixe>[&V1:pre]</ladm:prefixe>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:numSection>[&V1:sec]</ladm:numSection>,[§identr+1],[§identt])
+  run,EcriCommune([§mat],[§identr+1],[§identt])
+  run,ImprIdent(</ladm:sectionRef>,[§identr],[§identt])
+  
+}
+
+rout,EcriCommune(§mat,§identr,§identt)
+{
+  run,ImprIdent(<ladm:communeRef gml:id="SUCom_[&V1:com].[mm]">,[§identr],[§identt])
+  run,ImprIdent(<ladm:LA_beginLifespanVersion>[&Q0:dtc]</ladm:LA_beginLifespanVersion>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:LA_hierachyLevel>5</ladm:LA_hierachyLevel>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:LA_name>[&T4:nom_com]</ladm:LA_name>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:LA_sugID>[&V1:com].[mm]</ladm:LA_sugID>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:codeInsee>[&V1:com]</ladm:codeInsee>,[§identr+1],[§identt])
+  run,EcriDept([§mat],[§identr+1],[§identt])
+  run,ImprIdent(</ladm:communeRef>,[§identr],[§identt])
+  
+}
+
+rout,EcriDept(§mat,§identr,§identt)
+{
+  run,ImprIdent(<ladm:departementRef gml:id="SUDep_[&V1:dep].[mm]">,[§identr],[§identt])
+  run,ImprIdent(<ladm:LA_beginLifespanVersion>[&Q0:dtc]</ladm:LA_beginLifespanVersion>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:LA_hierachyLevel>4</ladm:LA_hierachyLevel>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:LA_name>[&T4:nom_dep]</ladm:LA_name>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:LA_sugID>[&V1:dep].[mm]</ladm:LA_sugID>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:codeInsee>[&V1:dep]</ladm:codeInsee>,[§identr+1],[§identt])
+  run,ImprIdent(</ladm:departementRef>,[§identr],[§identt])
+  
+}
+
+rout,EcriBAUnit(§mat,§identr,§identt)
+{
+  run,ImprIdent(<ladm:LA_BAUnit gml:id="BAU_[mm]">,[§identr],[§identt])
+  run,ImprIdent(<ladm:LA_beginLifespanVersion>[&Q0:dtc]</ladm:LA_beginLifespanVersion>,[§identr+1],[§identt])
+  run,ImprIdent(<ladm:LA_type>***</ladm:LA_type>,[§identr+1],[§identt])
+  /* type: basic property unit, leased unit, rightofuse unit... */
+  run,ImprIdent(<ladm:LA_uID>BAU_[mm]</ladm:LA_uID>,[§identr+1],[§identt])
+  /*LA_rrr      run,ImprIdent(<ladm:></ladm:>,[§identr+1],[§identt])*/
+  /*LA_party si baunitAsParty ->  run,ImprIdent(<ladm:LA_party></ladm:LA_party>,[§identr+1],[§identt])*/
+  /*LA_asource  run,ImprIdent(<ladm:></ladm:>,[§identr+1],[§identt])*/
+  /*LA_ssource  run,ImprIdent(<ladm:></ladm:>,[§identr+1],[§identt])*/
+  run,ImprIdent(</ladm:LA_BAUnit>,[§identr],[§identt])
+  
+}
+
+rout,EcriParcel(§sel,§ecri_com,§identr,§identt)
+/* Ecrit les éléments LA_point de l'export de la sélection §sel           */
+/*   §ecri_com est un bool pour ecrire ou non la balise <cityObjectMember>*/
+/*   §tab indique la tabulation intiale */
+{
+  
+  var,§mat
+  var,§point_type
+  
+  §mat=[hbcPaf]
+  
+  !EcriParcel=0
+  !EcriParcel=[§sel]*([§mat])
+  
+  runs,!EcriParcel
+  {
+    §mat=[mm]
+    if,"§ecri_com"
+    {
+      run,ImprIdent(<cityObjectMember>,[§identr],[§identt])
+	  §identr=[§identr+1]
+    }
+    
+    run,ImprIdent(<ladm:FR_Parcelle gml:id="Pa_[mm]">,[§identr],[§identt])
+    run,ImprIdent(<ladm:LA_beginLifespanVersion>[&Q0:dtc]</ladm:LA_beginLifespanVersion>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:LA_referencePoint>,[§identr+1],[§identt])
+    run,ImprIdent(<gml:pointProperty>,[§identr+2],[§identt])
+    run,ImprIdent(<gml:Point srsName="http://www.opengis.net/def/crs/EPSG/0/5707">,[§identr+3],[§identt]) /* &O57:srid */
+    run,ImprIdent(<gml:pos srsDimension="2">[:X] [:Y]</gml:pos>,[§identr+4],[§identt])
+    run,ImprIdent(</gml:Point>,[§identr+3],[§identt])
+    run,ImprIdent(</gml:pointProperty>,[§identr+2],[§identt])
+    run,ImprIdent(</ladm:LA_referencePoint>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:LA_suID namespace="EPADESA">[mm]</ladm:LA_suID>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:numParcelle >[&V1:num]</ladm:numParcelle>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:contenance>[&T1:cad]</ladm:contenance>,[§identr+1],[§identt])
+    run,ImprIdent(<ladm:lod0Area>,[§identr+1],[§identt])
+    run,ImprIdent(<gml:MultiSurface gml:id="S_[mm]">,[§identr+2],[§identt])
+    run,ImprIdent(<gml:surfaceMember>,[§identr+3],[§identt])
+    run,ImprIdent(<gml:Polygon gml:id="SP_[mm]">,[§identr+4],[§identt])
+    run,ImprIdent(<gml:interior>,[§identr+5],[§identt])
+    run,EcriRing([§mat],gml:posList,0,[§identr+6],[§identt])
+    run,ImprIdent(</gml:interior>,[§identr+5],[§identt])
+    run,ImprIdent(</gml:Polygon> ,[§identr+4],[§identt])
+    run,ImprIdent(</gml:surfaceMember>,[§identr+3],[§identt])
+    run,ImprIdent(</gml:MultiSurface>,[§identr+2],[§identt])
+    run,ImprIdent(</ladm:lod0Area>,[§identr+1],[§identt])
+    run,EcriSect([§mat],[§identr+1],[§identt])
+	run,EcriBAUnit([§mat],[§identr+1],[§identt])
+    run,ImprIdent(</ladm:FR_Parcelle>,[§identr],[§identt])
+    
+
+    
+    if,"§ecri_com"
+    {
+      run,ImprIdent(</cityObjectMember>,[§identr-1],[§identt])
+    }
+  }
+  
+  !sele,!EcriParcel
+}
+
+rout,Ajoute(§sel)
+{
+  var,§mat,§cpt
+  
+  !Ajoute=[§sel]*[hbcPaf]
+  
+  runs,!Ajoute
+  {
+    §mat=[mm]
+    §cpt=[[§mat]&V0:cpt]
+    [§sel]<!test(&V0:cpt==[§cpt])*CDro
+  }
+  
+  [§sel]<!util([§sel]*CDro)*CPro /* On ajoute les personnes */
+
+  
+  !sele,!Ajoute
+}
+
+rout,EcriSel(§sel,§fic,§ecri_com,§nom_model)
+/* ecrit les objets de la sélection §sel dans le fichier §fic */
+{
+  var,§adeNmSpace,§adeLocation
+  §adeNmSpace=C://Users/arabaud/Documents/format_CityGML/_ADE/ADE_Points
+  §adeLocation=C://Users/arabaud/Documents/format_CityGML/_ADE/ADE_Points/ADE_points.xsd
+  
+  /* Création des variables d'identation */
+  var,§identr,§identt
+  §identr=0
+  §identt=9 /* 32=espace 9=tab */ 
+  
+  /* On s'assure d'avoir tous les éléments nécessaires */
+  !EcriSel=0
+  !EcriSel=!util([§sel])
+ 
+  run,Ajoute(!EcriSel)
+  
+  /* on "ouvre le fichier" */
+  list,file=[§fic],raz=1
+  
+  /* Entête du fichier */
+  impr,<?xml version="1.0" encoding="windows-1252"?>
+  
+  impr,<!--
+  rdcl,!EcriSel
+  impr,-->
+  
+  /* Balise ouvrante du citymodel */
+  run,ImprIdent(<CityModel,[§identr],[§identt])
+  run,ImprIdent(xmlns="http://www.opengis.net/citygml/2.0",[§identr+1],[§identt])
+  run,ImprIdent(xmlns:gml="http://www.opengis.net/gml",[§identr+1],[§identt]) 
+  run,ImprIdent(xmlns:xlink="http://www.w3.org/1999/xlink",[§identr+1],[§identt])
+  run,ImprIdent(xmlns:xAL="urn:oasis:names:tc:ciq:xsdschema:xAL:2.0",[§identr+1],[§identt])
+  run,ImprIdent(xmlns:ladm="C://Users/arabaud/Documents/format_CityGML/_ADE/ADE_Points",[§identr+1],[§identt])
+  run,ImprIdent(xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance",[§identr+1],[§identt])
+  run,ImprIdent(xsi:schemaLocation="[§adeNmSpace],[§identr+1],[§identt])
+  run,ImprIdent([§adeLocation]">,[§identr+6],[§identt])
+
+  /* Element de base */
+  run,ImprIdent(<gml:name>[§nom_model]</gml:name>,[§identr+1],[§identt]) 
+  
+  run,EcriPoint(!EcriSel,[§ecri_com],[§identr+1],[§identt])
+  run,EcriParcel(!EcriSel,[§ecri_com],[§identr+1],[§identt])
+  
+  /* Balise fermante du citymodel */
+  impr,</CityModel>
+  
+  /* On "referme" les fichier */
+  list
+  
+  !sele,!EcriSel
+}
+
+/*                                                                                                   */
+/*                                  Commandes TopStation                                             */
+/*                                                                                                   */
+/*  lanc,EcriSel(Fpar.1740,C:\Users\arabaud\Desktop\test.gml,1,Model_test),[EpUtil]\ep_ladm\epExport */
+/*  cmpl,Fpar.1740 ; CPro ; CDro                                                                     */
+/*  rdcl,!test(&V0:cpt==`******+00003`)                                                              */
+
+

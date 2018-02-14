@@ -1,0 +1,890 @@
+/* version 0.15 du                                                        */
+/*  dernière modification :                                               */
+/*         12 05 2017 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+/*         VD Vianney Dugrain (vdugrain@epadesa.fr)                       */
+
+/* Utilisation de la boite à outils graphique EPADESA                       */
+#include "..\ep_commun\epGuiOutils.inc"
+#include "..\ep_commun\epListeOutils.inc"
+#include "..\ep_commun\epNumOutils.inc"
+#include "..\ep_commun\epRalOutils.inc"
+#include "..\ep_commun\epSridOutils.inc"
+#include "..\ep_commun\epTexteOutils.inc"
+#include "..\ep_commun\epTypeOutils.inc"/*(pour epRalOutils et epEdvOutils)*/
+
+
+proc,JtDebug=1
+
+
+/*--------------------------------------------------------------------------*/
+/*                                PROCEDURES                                */
+/*                         par ordre alphabétique                           */
+/*--------------------------------------------------------------------------*/
+
+proc,EpPsalti"Nom de la procédure du système plannimétrique"=epSalti
+proc,EpPsplani"Nom de la procédure du système altimétrique"=epSplani
+proc,Hc=[12+[udiay<1.8]]
+proc,Ht=[Hc+2+2*[udiay<1.8]]
+proc,TitreCre=¹Création d'un sommet foncier — sommet : [Ma]¹
+proc,TitreMod=¹Modification du sommet foncier — sommet : [Ma]¹
+proc,TitreRep=¹Reproduction d'un sommet foncier — sommet : [Ma]¹
+
+/*--------------------------------------------------------------------------*/
+/*                                ROUTINES                                  */
+/*                         par ordre alphabétique                           */
+/*--------------------------------------------------------------------------*/
+
+rout,EditCase
+{
+  lanc,EditEPo,[jtCart]\ent_pofonc_edit
+}
+
+rout,ExecCase(§pref)
+{
+  var,§r
+  
+  if,defprc(`[§pref]Rd`)
+  {
+    §r=[[§pref]Rd]
+  }
+  else
+  {
+    §r=[%CDT:RADK]
+  }
+  if,defprc(`[§pref]Ly`)
+  {
+    Ly=[[§pref]Ly]
+  }
+  else
+  {
+    Ly=0
+  }
+  if,defprc(`[§pref]Pr`)
+  {
+    Pr=[[§pref]Pr]
+  }
+  else
+  {
+    Pr=0
+  }
+  if,defprc(`[§pref]Co`)
+  {
+    Co=[[§pref]Co]
+  }
+  else
+  {
+    Co=256
+  }
+  if,defprc(`[§pref]Z`)
+  {
+    Z=[[§pref]Z]
+  }
+  else
+  {
+    Z=0
+  }
+  run,CreComp([§r])
+}
+
+rout,MajListe
+{
+  if,"defprc(`ListeOk`)<>1"
+  {
+    run,MajCsvToEpl([juCartEP]\epLst_pofonc.csv,1)
+    run,MajCsvToEpl([epUtil]\epLst_SysR.csv,1)
+    ListeOk=1
+    marq,11
+  }
+}
+
+rout,Init
+{
+  if,"defprc(`epUsr`)<>1"
+  {
+    epUsr=
+  }
+  run,InitRpqt
+  if,"defprc(`IdpAuto`)<>1"
+  {
+    IdpAuto=0
+  }
+  run,LecArgs
+  if,"defprc(`XYoAuto`)<>1" /* initialisation dans les cas autres que Cre */
+  {
+    XYoAuto=0
+  }
+  IoAuto=1 /* pour automatiser Io */
+  DtcAuto=1 /* pour automatiser Id */
+  run,CreeFenetre
+}
+
+rout,CreComp(§r)
+{
+  Cas=Cre
+  run,MajListe
+  Ma=[ml(`[§r]`)]
+  [Ma]:MD=EP_PNT_PARCELLE
+  marq,12
+  X=
+  Y=
+  !Jrpqt=0
+  IdpAuto=1 /* pour automatiser l'attribution d'un identifiant */
+  run,Init
+  XYoAuto=1 /* pour répercuter immédiatement le XY en XYo */
+}
+
+rout,DupComp(§ma)
+{
+  fdia
+  run,MajListe
+  dupl,[§ma],[[§ma]:R].
+  [mm]:Ph=0
+  marq,12
+  /* Cas = Cre */
+  Cas=Rep
+  Ma=[mm]
+  !Jrpqt=0
+  run,Init
+}
+
+rout,ModComp(§ma)
+{
+  fdia
+  run,MajListe
+  Cas=Mod
+  Ma=[§ma]
+  !Jrpqt=0
+  run,Init
+}
+
+rout,InitRpqt
+{
+  NatQ=0
+  PrecQ=0
+  ZQ=0
+  RadQ=0
+  SridQ=0
+  DtcQ=0
+  IoQ=0
+  InQ=0
+  IrQ=0
+  VidQ=0
+  VioQ=0
+  VirQ=0
+}
+
+rout,LecArgs
+{
+  var,§aa
+  
+  X=[[Ma]:X]
+  Y=[[Ma]:Y]
+  Z=[[Ma]:Z]
+  Md=[[Ma]:MD]
+  Srid=[[Ma]&O57:srid]
+  if,"[Srid==``]"
+  {
+    if,"defprc(EpPsplani)"
+    then
+    {
+      Srid=[[EpPsplani]]
+    }
+    else
+    {
+      run,SRIDbase(Srid) /* Le système de la base est le système par défaut */
+    }
+  }
+  Xo=[[Ma]&O57:xo]
+  if,"[Xo==``]"
+  {
+    Xo=[X]
+  }
+  Yo=[[Ma]&O57:yo]
+  if,"[Yo==``]"
+  {
+    Yo=[Y]
+  }
+  Dtc=[[Ma]&Q0:dtc]
+  §aa=20
+  if,"[[Ma]:AN>90]"
+  {
+    §aa=19
+  }
+  if,"[Dtc==``]"
+  {
+    Dtc=[[Ma]:JO]/[[Ma]:MO]/[§aa][[Ma]:AN]
+  }
+  In=[[Ma]&Q0:in]
+  if,"[In==``]"
+  {
+    In="aspiré"
+  }
+  Io=[[Ma]&Q0:io]
+  if,"[Io==``]"
+  {
+    if,"defprc(`epUsr`)"
+    {
+      Io=[epUsr] /* procédure définie dans [epInitDir]\ep_locales.txt */
+    }
+  }
+  Ir=[[Ma]&Q0:ir]
+  Nat=[[Ma]&T0:Nat]
+  Idp=[[Ma]&T1:Idp]
+  if,"[IdpAuto=1]"
+  {
+    Idp=[Ma]
+  }
+  Prec=[[Ma]&V1:Prec]
+  if,"[Prec==``]"
+  {
+    Prec=9
+  }
+  Rmat=[[Ma]&V57:ir]
+  if,"[Rmat==``]"
+  {
+    if,"Cas==`Cre`"
+    {
+      Rmat=[epcKf]
+    }
+  }
+  if,"[Rmat==``]"
+  {
+    Rmat=[[Ma]:r]
+  }
+  Vid=[[Ma]&V59:id]
+  Vio=[[Ma]&V59:io]
+  Vir=[[Ma]&V59:ir]
+  Vmori=[[Ma]&V59:mori]
+  /* on formate les procédures qui contiennent du texte et qui seront utilisée dans des listes déroulantes */
+  run,PrcTexte(In)
+  run,PrcTexte(Nat)
+  run,PrcTexte(Rmat)
+}
+
+rout,QAONat
+/* Remplissage du menu déroulant du complément d'information sur la nature du sommet */
+/*  en fonction de la nature */
+{
+  var,§liste,§mat
+  §liste=sommet
+  /* valeurs possible pour les bornes */
+  run,FormateTexte(epcFB,§mat)
+  if,"Rmat==§mat"
+  {
+    §liste=borne
+  }
+  /* valeurs possible pour les clous */
+  run,FormateTexte(epcFC,§mat)
+  if,"Rmat==§mat"
+  {
+    §liste=clou
+  }
+  /* valeurs possible pour les gravures */
+  run,FormateTexte(epcFG,§mat)
+  if,"Rmat==§mat"
+  {
+    §liste=gravure
+  }
+  qmod,id=CB_NAT
+  {
+    run,QAOlstCMP([§liste]) /* remplissage de la case à option avec la liste ad hoc */
+  }
+}
+
+rout,CreeFenetre
+{
+  var,§h,§hf,§bl,§c,§lmax,§nmbr_item,§lgauche,§href,§cref,§lf,§ldroite,§lcentre
+  
+  §nmbr_item=21 /* nombre de ligne dans la fenêtre */
+ 
+  §lgauche=90 /* largeur de la colonne de gauche   (étiquette)       */
+  §lcentre=90 /* largeur de la colonne de centrale (zone de saisie)  */
+  §ldroite=10 /* largeur de la colonne de droite   (bouton poussoir) */
+  §href=2     /* interligne */
+  §cref=2     /* séparateur de colonne */
+  §lf=[§lgauche+§lcentre+§ldroite+4*§cref]    /* largeur de la fenêtre par défaut */
+  §hf=[§nmbr_item*Ht+2*§href] /* hauteur de la fenêtre par défaut */
+  
+  dial,EP_ENT_POFONC,l=[§lf],h=[§hf],lmin=[§lf],hmin=[§hf],lmax=512,hmax=[§hf],tx={Titre[Cas]},ferm=1
+  /*    PREMIERE PARTIE : CARACTERISTIQUES DU SOMMET                                               */
+  §h=[§href]                                                   /* nouvelle ligne : titre de partie */
+  §c=[§cref]
+  qc,tx,TX_LBLPNT,[§c],[§h],120,[Hc],ft=2,j=2,tx="¹Caractéristiques du sommet : ¹"
+  §h=[§h+Ht]                                    /* nouvelle ligne : Identifiant du plan (&vt1:Idp) */
+  §c=[§cref]
+  qc,tx,TX_IDP,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Identifiant graphique : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_IDP,[§c],[§h],[§lcentre],[Hc],tx=[Idp],rout=ValidIdp
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_IDP,[§c],[§h],[§ldroite],[Hc],iv=1,et=0,opt=1
+  qdim,TX_IDP,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_IDP,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_IDP,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                       /* nouvelle ligne : famille du sommet (&v57:ir) */
+  §c=[§cref]
+  qc,tx,TX_RAD,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Nature du sommet :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,op,OP_RAD,[§c],[§h],[§lcentre],[6*Hc],rout=ValidRad
+  {
+    run,QAOlstCMP(radicalKf) /* remplissage de la case à option avec la liste "radicalKf" */
+  }
+  run,QMODlstET(OP_RAD,radicalKf,Rmat) /* Choix de la valeur initiale pour correspondre à la valeur enregistrée dans Rmat */
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_RAD,[§c],[§h],[§ldroite],[Hc],et=[RadQ],opt=1,rout=ValidRadQ
+  qdim,TX_RAD,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_RAD,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_RAD,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                   /* nouvelle ligne : complément d'information sur la nature du sommet */
+  §c=[§cref]
+  qc,tx,TX_NAT,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Complément nature : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,cb,CB_NAT,[§c],[§h],[§lcentre],[6*Hc],rout=ValidNat
+  run,QAONat
+  /* si &t0:Nat initial est vide on vide le contenu de la combobox */
+  run,DelChr34(Nat,Nat)
+  if,"Nat==``"
+  then
+  {
+    qmod,CB_NAT,tx=""
+  }
+  else
+  {
+    qmod,CB_NAT,tx=[Nat]
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_NAT,[§c],[§h],[§ldroite],[Hc],et=[NatQ],opt=1,rout=ValidNatQ
+  qdim,TX_NAT,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,CB_NAT,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_NAT,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                                                 /* nouvelle ligne : X */
+  §c=[§cref]
+  qc,tx,TX_POSX,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Position X :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_POSX,[§c],[§h],[§lcentre],[Hc],tx=[X],vrif=val,tdig=xops,rout=ValidXY
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_POSX,[§c],[§h],[§ldroite],[Hc],iv=1,et=0,opt=1
+  qdim,TX_POSX,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_POSX,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_POSX,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                                                 /* nouvelle ligne : Y */
+  §c=[§cref]
+  qc,tx,TX_POSY,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Position Y :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_POSY,[§c],[§h],[§lcentre],[Hc],tx=[Y],vrif=val,tdig=yops,rout=ValidXY
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_POSY,[§c],[§h],[§ldroite],[Hc],iv=1,et=0,opt=1
+  qdim,TX_POSY,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_POSY,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_POSY,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  /* §h=[§h+Ht]                                                                   nouvelle ligne : Z */
+  /* §c=[§cref] */
+  /* qc,tx,TX_ALTI,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Altitude : ¹" */
+  /* §c=[§c+§lgauche+§cref] */
+  /* qc,ed,ED_ALTI,[§c],[§h],[§lcentre],[Hc],tx={Z},vrif=val,rout=ValidZ */
+  /* §c=[§c+§lcentre+§cref] */
+  /* qc,bp,BP_ALTI,[§c],[§h],[§ldroite],[Hc],et=[ZQ],opt=1,rout=ValidZQ */
+  /* qdim,TX_ALTI,dx=0.00,dy=0.00,dl=0.00,dh=0.00 */
+  /* qdim,ED_ALTI,dx=0.00,dy=0.00,dl=1.00,dh=0.00 */
+  /* qdim,BP_ALTI,dx=1.00,dy=0.00,dl=0.00,dh=0.00 */
+  §h=[§h+Ht]                                                          /* nouvelle ligne : précision */
+  §c=[§cref]
+  qc,tx,TX_PREC,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Classe de précision abs. : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,op,OP_PREC,[§c],[§h],[§lcentre],[6*Hc],rout=ValidPrec
+  {
+    run,QAOlstCMP(precision) /* remplissage de la case à option avec la liste "precision" */
+  }
+  run,QMODlstET(OP_PREC,precision,Prec) /* Choix de la valeur initiale pour correspondre à la valeur enregistrée dans Prec */
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_PREC,[§c],[§h],[§ldroite],[Hc],et=[PrecQ],opt=1,rout=ValidPrecQ
+  qdim,TX_PREC,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_PREC,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_PREC,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  /*    DEUXIEME PARTIE : METADONNEE SOMMET                                                        */
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_LBLORG,[§c],[§h],120,[Hc],ft=2,j=2,tx="¹Origine du sommet : ¹"
+  §h=[§h+Ht]
+  qc,tx,TX_VIR,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Doc. de référence : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_VIR,[§c],[§h],[§lcentre],[Hc],tx={Vir},rout=ValidVir
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_VIR,[§c],[§h],[§ldroite],[Hc],et=[VirQ],opt=1,rout=ValidVirQ
+  qdim,TX_VIR,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_VIR,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_VIR,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_VID,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Date du document : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_VID,[§c],[§h],[§lcentre],[Hc],tx={Vid},rout=ValidVid
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_VID,[§c],[§h],[§ldroite],[Hc],et=[VidQ],opt=1,rout=ValidVidQ
+  qdim,TX_VID,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_VID,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_VID,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_VIO,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Organisme : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_VIO,[§c],[§h],[§lcentre],[Hc],tx={Vio},rout=ValidVio
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_VIO,[§c],[§h],[§ldroite],[Hc],et=[VioQ],opt=1,rout=ValidVioQ
+  qdim,TX_VIO,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_VIO,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_VIO,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_VMORI,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Matricule : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_VMORI,[§c],[§h],[§lcentre],[Hc],tx={Vmori},rout=ValidVmori
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_VMORI,[§c],[§h],[§ldroite],[Hc],iv=1,et=0,opt=1
+  qdim,TX_VMORI,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_VMORI,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_VMORI,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_SRID,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Projection : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,op,OP_SRID,[§c],[§h],[§lcentre],[6*Hc],rout=ValidSrid
+  {
+    run,QAOlstCMP(srid) /* remplissage de la case à option avec la liste "srid" */
+  }
+  run,QMODlstET(OP_SRID,srid,Srid) /* Choix de la valeur initiale pour correspondre à la valeur enregistrée dans Srid) */
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_SRID,[§c],[§h],[§ldroite],[Hc],et=[SridQ],opt=1,rout=ValidSridQ
+  qdim,TX_SRID,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_SRID,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_SRID,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_POSXO,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Position X : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_POSXO,[§c],[§h],[§lcentre],[Hc],tx={Xo},vrif=val,rout=ValidXYo
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_POSXO,[§c],[§h],[§ldroite],[Hc],iv=1,et=0,opt=1
+  qdim,TX_POSXO,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_POSXO,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_POSXO,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_POSYO,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Position Y : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_POSYO,[§c],[§h],[§lcentre],[Hc],tx={Yo},vrif=val,rout=ValidXYo
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_POSYO,[§c],[§h],[§ldroite],[Hc],iv=1,et=0,opt=1
+  qdim,TX_POSYO,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_POSYO,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_POSYO,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  /*    TROISIEME PARTIE : METADONNEE SAISIE                                                       */
+  §h=[§h+Ht]                                                   /* nouvelle ligne : titre de partie */
+  §c=[§cref]
+  qc,tx,TX_LBLCMP,[§c],[§h],120,[Hc],ft=2,j=2,tx="¹Saisie du composant [Ma] : ¹"
+  §h=[§h+Ht]                                     /* nouvelle ligne : date de dernière modification */
+  §c=[§cref]
+  qc,tx,TX_DTC,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Dernière modif. : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_DTC,[§c],[§h],[§lcentre],[Hc],tx={Dtc},cint=vv,rout=ValidDtc
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_DTC,[§c],[§h],[§ldroite],[Hc],et=[DtcQ],opt=1,rout=ValidDtcQ
+  qdim,TX_DTC,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_DTC,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_DTC,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                            /* nouvelle ligne : organisme ayant saisi */
+  §c=[§cref]
+  qc,tx,TX_IO,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Organisme ayant saisi : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_IO,[§c],[§h],[§lcentre],[Hc],tx=[Io],cint=vv,rout=ValidIo
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_IO,[§c],[§h],[§ldroite],[Hc],et=[IoQ],opt=1,rout=ValidIoQ
+  qdim,TX_IO,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_IO,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_IO,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                                         /* nouvelle ligne : nature */
+  §c=[§cref]
+  qc,tx,TX_IN,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Forme de la saisie : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,op,OP_IN,[§c],[§h],[§lcentre],[6*Hc],rout=ValidIn
+  {
+    run,QAOlstCMP(nature) /* remplissage de la case à option avec la liste "nature" */
+  }
+  run,QMODlstET(OP_IN,nature,In) /* Choix de la valeur initiale pour correspondre à la valeur enregistrée dans In */
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_IN,[§c],[§h],[§ldroite],[Hc],et=[InQ],opt=1,rout=ValidInQ
+  qdim,TX_IN,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_IN,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_IN,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]                                                          /* nouvelle ligne: références */
+  §c=[§cref]
+  qc,tx,TX_IR,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Référence : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_IR,[§c],[§h],[§lcentre],[Hc],tx={Ir},rout=ValidIr
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_IR,[§c],[§h],[§ldroite],[Hc],et=[IrQ],opt=1,rout=ValidIrQ
+  qdim,TX_IR,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_IR,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BP_IR,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht+§href]                                                     /* nouvelle ligne : boutons */
+  §c=[§cref]
+  qc,bf,BF_BEOK,[§c],[§h],20,[Hc],j=5,tx="¹OK¹",rout=BfBeok
+  qc,bf,BF_RPQT,24,[§h],48,[Hc],j=5,tx="¹Répercuter¹",rout=BfRpqt
+  qc,bf,BF_AIDE,[§lf-§cref-32],[§h],32,[Hc],j=5,tx="¹Aide¹",rout=BfAide
+  qdim,BF_BEOK,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_RPQT,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_AIDE,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  
+  evnt,entr=BfBeok,bdro=BfBeok,ferm=BfFerm
+  qset,foc=ED_POSX,mod=0
+}
+
+rout,ValidDtc
+{
+  Dtc=[tx(ED_DTC)]
+  DtcAuto=0
+  run,Valid
+}
+
+rout,ValidDtcQ
+{
+  DtcQ=[et(BP_DTC)]
+  run,Valid
+}
+
+rout,ValidIdp
+{
+  Idp=[tx(ED_IDP)]
+  run,Valid
+}
+
+rout,ValidIo
+{
+  Io=[tx(ED_IO)]
+  IoAuto=0
+  run,Valid
+}
+
+rout,ValidIoQ
+{
+  IoQ=[et(BP_IO)]
+  run,Valid
+}
+
+rout,ValidIn
+{
+  run,ETlstPRC([et(OP_IN)],nature,In)
+  run,Valid
+}
+
+rout,ValidInQ
+{
+  InQ=[et(BP_IN)]
+  run,Valid
+}
+
+rout,ValidIr
+{
+  Ir=[tx(ED_IR)]
+  run,Valid
+}
+
+rout,ValidIrQ
+{
+  IrQ=[et(BP_IR)]
+  run,Valid
+}
+
+rout,ValidNat
+{
+  Nat=[tx(CB_NAT)]
+  run,Valid
+}
+
+rout,ValidNatQ
+{
+  NatQ=[et(Bp_NAT)]
+  run,Valid
+}
+
+rout,ValidPrec
+{
+  run,ETlstPRC([et(OP_PREC)],precision,Prec)
+  run,Valid
+}
+
+rout,ValidPrecQ
+{
+  PrecQ=[et(BP_PREC)]
+  run,Valid
+}
+
+rout,ValidRad
+{
+  run,ETlstPRC([et(OP_RAD)],radicalKf,Rmat)
+  run,QAONat
+  run,Valid
+}
+
+rout,ValidRadQ
+{
+  RadQ=[et(BP_RAD)]
+  run,Valid
+}
+
+rout,ValidSrid
+{
+  run,ETlstPRC([et(OP_SRID)],srid,Srid)
+  run,Valid
+}
+
+rout,ValidSridQ
+{
+  SridQ=[et(BP_SRID)]
+  run,Valid
+}
+
+rout,ValidVid
+{
+  Vid=[tx(ED_VID)]
+  run,Valid
+}
+
+rout,ValidVidQ
+{
+  VidQ=[et(BP_VID)]
+  run,Valid
+}
+
+rout,ValidVio
+{
+  Vio=[tx(ED_VIO)]
+  run,Valid
+}
+
+rout,ValidVioQ
+{
+  VioQ=[et(BP_VIO)]
+  run,Valid
+}
+
+rout,ValidVir
+{
+  Vir=[tx(ED_VIR)]
+  run,Valid
+}
+
+rout,ValidVirQ
+{
+  VirQ=[et(BP_VIR)]
+  run,Valid
+}
+
+rout,ValidVmori
+{
+  Vmori=[tx(ED_VMORI)]
+  run,Valid
+}
+
+rout,ValidXY
+{
+  X=[tx(ED_POSX)]
+  Y=[tx(ED_POSY)]
+  if,"XYoAuto=1"
+  {
+    Xo=[X]
+    Yo=[Y]
+    qmod,id=ED_POSXO,tx=[Xo]
+    qmod,id=ED_POSYO,tx=[Yo]
+  }
+  if,"%SRI:MODE==`D`"
+  {
+    In="digitalisé"
+    run,QMODlstET(OP_IN,nature,In)
+  }
+  run,Valid
+}
+
+rout,ValidXYo
+{
+  Xo=[tx(ED_POSXO)]
+  Yo=[tx(ED_POSYO)]
+  run,Valid
+}
+
+rout,ValidZ
+{
+  Z=[tx(ED_ALTI)]
+  run,Valid
+}
+
+rout,ValidZQ
+{
+  ZQ=[et(BP_ALTI)]
+  run,Valid
+}
+
+rout,MajAuto
+{
+  var,§aa
+  
+  /* mise à jour automatique de &q0:io */
+  if,"[IoAuto=1]@[Io><epUsr]"
+  {
+    Io=[epUsr]
+    qmod,ED_IO,tx={Io}
+  }
+  
+  /* mise à jour automatique de & q0:dtc */
+  if,"DtcAuto=1"
+  {
+    §aa=20
+    if,"[[Ma]:AN>90]"
+    {
+      §aa=19
+    }
+    Dtc=[[Ma]:JO]/[[Ma]:MO]/[§aa][[Ma]:AN]
+    qmod,ED_DTC,tx=[Dtc]
+    DtcAuto=0
+  }  
+}
+
+rout,Valid
+{
+ 
+  run,MajAuto
+   
+  anul,12,saut=0
+  list,[base]\Listing,raz=1
+  /* impr,!cmpe,[Ma],V0-V999 */
+  impr,[Ma]:X=[X],Y=[Y],Z=[Z],MD=[Md]
+  impr,ral,[Ma]&O57:srid=[Srid],xo=[Xo],yo=[Yo]
+  impr,ral,[Ma]&Q0:dtc=[Dtc]
+  impr,run,EcritRal(In,[Ma],Q0,in,txt)
+  impr,run,EcritRal(Io,[Ma],Q0,io,txt)
+  impr,run,EcritRal(Ir,[Ma],Q0,ir,txt)
+  impr,run,EcritRal(Nat,[Ma],T0,Nat,txt)
+  impr,run,EcritRal(Idp,[Ma],T1,Idp,txt)
+  impr,ral,[Ma]&V1:Prec=[Prec]
+  impr,run,EcritRal(Rmat,[Ma],V57,ir,txt)
+  impr,ral,[Ma]&V59:id=[Vid]
+  impr,run,EcritRal(Vio,[Ma],V59,io,txt)
+  impr,run,EcritRal(Vmori,[Ma],V59,mori,txt)
+  impr,run,EcritRal(Vir,[Ma],V59,ir,txt)
+  !Jrpqt>[Ma]
+  run,Repercut
+  list
+  exec,[base]\Listing
+  qset,mod=1
+}
+
+rout,Enreg
+{
+  anul,11
+  if,"[Cas==`Mod`]#[[X><``]@[Y><``]]"
+  {
+    run,Valid
+    marq,10,`[Titre[Cas]]`
+  }
+  else
+  {
+    !Jrpqt>[Ma]
+    anul,10,saut=0
+    if,"nmbr(`!Jrpqt`)"
+    {
+      list,[base]\Listing,raz=1
+      run,Repercut
+      list
+      exec,[base]\Listing
+      marq,10,`¹Répercuter attributs¹`
+    }
+  }
+}
+
+rout,Repercut
+{
+  runs,!Jrpqt
+  {
+    /* impr,!cmpe,[mm],V0-V999 */
+    var,§in,§io,§ir
+    §in=[[mm]&Q0:in]
+    §io=[[mm]&Q0:io]
+    §ir=[[mm]&Q0:ir]
+    impr,[mm]:Z=[si(ZQ,Z,:Z)]
+    impr,ral,[mm]&O57:srid=[si(SridQ,Srid,[mm]&O57:srid)]
+    impr,ral,[mm]&Q0:dtc=[si(DtcQ,Dtc,&Q0:dtc)]
+    impr,run,EcritRal([si(IoQ,`Io`,`§io`)],[mm],Q0,io,txt)
+    impr,run,EcritRal([si(InQ,`In`,`§in`)],[mm],Q0,in,txt)
+    impr,run,EcritRal([si(IrQ,`Ir`,`§ir`)],[mm],Q0,ir,txt)
+    /* les 2 if sont des rustines temporaires à modifier */
+    if,"NatQ"
+    {
+      impr,run,EcritRal([si(NatQ,`Nat`,`[mm]&T0:Nat`)],[mm],T0,Nat,txt)
+    }
+    impr,ral,[mm]&V1:Prec=[si(PrecQ,Prec,&V1:Prec)]
+    if,"RadQ"
+    {
+      impr,run,EcritRal([si(RadQ,`Rmat`,`[mm]&V57:ir`)],[mm],V57,ir,txt)
+    }
+    impr,ral,[mm]&V59:id=[si(VidQ,Vid,&V59:id)],io="[si(VioQ,Vio,&V59:io)]",ir="[si(VirQ,Vir,&V59:ir)]"
+  }
+}
+
+rout,BfBeok
+{
+  run,Enreg
+  !Jrpqt=0
+  if,"Cas==`Mod`"
+  {
+    fdia
+    lanc,Modifier,[jtCart]\Modifier
+    qmod,ED_COMP,tx="[Ma]"
+  }
+  else
+  {
+    if,"defpnt(Ma)"
+    {
+      run,DupComp([Ma])
+    }
+    else
+    {
+      fdia
+    }
+  }
+}
+
+rout,BfFerm
+{
+  if,modif
+  {
+    note
+    qpop,"¹Enregistrer les données modifiées ?¹",j=5
+    {
+      qap,"¹Oui¹",dfo=1
+      {
+        run,Enreg
+      }
+      qap,"¹Non¹"
+    }
+  }
+  !Jrpqt=0
+}
+
+rout,BfRpqt
+{
+  var,§t
+  §t=¹Répercuter sur quels composants?¹
+  chsl,nom=!Jrpqt,selc=!tra*!onc_md(EP_PNT_%),titr={§t},ok=Valid
+}
+
+rout,BfAide
+{
+  !prce,JtAide_@
+  JtAide_a"¹Créer/Reproduire/Modifier un sommet foncier¹"=[juCartEP]\aide\ent_pofonc.txt
+  JtAide_b"¹Caractéristiques du sommet¹"=[juCartEP]\aide\ent_pofonc_1.txt
+  JtAide_c"¹Métadonnées sur le sommet¹"=[juCartEP]\aide\ent_pofonc_2.txt
+  JtAide_d"¹Métadonnées sur le composant¹"=[juCartEP]\aide\ent_pofonc_3.txt
+  JtAide_e"¹Répercuter sur d'autres composants¹"=[jtCart]\aide\Repercuter.txt
+  aide,JtAide_@
+}

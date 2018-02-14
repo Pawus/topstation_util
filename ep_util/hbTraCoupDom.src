@@ -1,0 +1,59 @@
+proc,JtDebug=1
+
+#include ".\hbOutils.inc"
+proc,EPAD=EPADESA
+
+rout,Fenetre
+{
+    var,§fcd,§i,§ind,§t
+
+    §t=¹[EPAD] Tracer coupes h. même domaine Dn¹
+
+    dial,HB_TCD,l=208,h=30,tx={§t},ferm=1
+    qc,tx,TX_FCD  ,002,002,146,012,j=5,tx="Coupe horizontale de volume"
+    qc,ed,ED_FCD  ,150,002,056,012,j=2,rdig=IdFcd
+    qc,bf,BF_OK   ,002,016,044,012,j=5,tx="¹OK¹",rout=BfOk
+    qc,bf,BF_AIDE ,164,016,042,012,j=5,tx="¹Aide¹",rout=BfAide  
+    evnt,bdro=BkOk
+  
+  	rout,IdFcd(§x,§y)
+	{
+        runs,[hbcFCD]*!tra*!zonp([§x],[§y],0.01)
+        {
+            qmod,ED_FCD,tx=[mm]
+            run,BfOk
+            [fi]
+        }
+	}
+   
+    rout,BfOk
+    {
+        §fcd=[tx(ED_FCD)]
+        if,"nmbr(§fcd)"
+        {
+            §ind=0
+            for,"1->§i","§i<=25","§i+1->§i"
+            {
+                if,"nmbr(`[§fcd]*!dom(D[§i])`)"
+                {
+                    §ind=[§i]
+                    [fi]
+                }
+            }
+            if,"§ind=0"
+            {
+                run,Message(La coupe h. de volume [§fcd] n'a pas de domaine compris entre D1 à D25)
+            }
+            else
+            {
+                tra,[hbcFCD]*!dom(D[§ind])
+                run,Message(Coupes h. de volumes de domaine D[§ind] tracées)
+            }            
+        }
+    }
+}
+
+rout,BfAide
+{
+	aide,{epUtil}\aide\hbTraCoupDom.txt
+}

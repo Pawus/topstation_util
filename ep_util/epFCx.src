@@ -1,0 +1,71 @@
+/* version 0.1 du                                                           */
+/*  dernière modification :                                                 */
+/*         19 05 2015 (SD)                                                  */
+/*  auteur :                                                                */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                                */
+
+proc,JtDebug=1
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :     */
+#include ".\epFCx.inc"
+#include "..\ep_commun\epCmpOutils.inc"
+#include "..\ep_commun\epDateOutils.inc"
+#include "..\ep_commun\epRalOutils.inc"
+#include "..\ep_commun\epTexteOutils.inc"
+#include "..\ep_commun\epTypeOutils.inc"
+#include "..\ep_commun\epNumOutils.inc"
+
+/* Procédures de l'environnement                                            */
+
+
+/* Liste des routines                                                       */
+/*  LancFcd2Fcl lance une fenêtre de sélection d'un composant afin de lui   */
+/*           appliquer la routine Fcd2Fcl                                   */
+/*  LancFcd2Fcl lance une fenêtre de sélection d'une sélection de           */
+/*           composants afin d'appliquer la routine Fcd2Fcl à chacun d'eux  */
+
+/*--------------------------------------------------------------------------*/
+/*                                ROUTINES                                  */
+/*                         par ordre alphabétique                           */
+/*--------------------------------------------------------------------------*/
+rout,LancFcd2Fcl
+/*  LancFcd2Fcl lance une fenêtre de sélection d'un composant afin de lui   */
+/*           appliquer la routine Fcd2Fcl                                   */
+/*  Dernière modification : 19 05 2015 (SD)                                 */
+{
+  var,§titr
+  
+  §titr="¹Selection de la coupe de volume à traiter¹"
+  
+  chma,prop=,selc=[hbcFCD]*!visb,titr={§titr},ok=Fcd2FclOk
+  
+  rout,Fcd2FclOk(§mat)
+  {
+    run,Fcd2Fcl([§mat])
+    marq,10,`¹Limites de volume créées à partir de la coupe de volume [§mat]¹`
+    /* message à optimiser en utilisant le xxxx de hbcFCD"xxxx"=FCD */
+  }
+}
+
+rout,LancFcd2FclS
+/*  LancFcd2Fcl lance une fenêtre de sélection d'une sélection de           */
+/*           composants afin d'appliquer la routine Fcd2Fcl à chacun d'eux  */
+/*  Dernière modification : 19 05 2015 (SD)                                 */
+{
+  var,§titr
+  
+  §titr="¹Selection des coupes de volume à traiter¹"
+  
+  !LancFcd2FclS=0
+  chsl,nom=!LancFcd2FclS,selc=[hbcFCD]*!visb,titr={§titr},ok=Fcd2FclSok
+  
+  rout,Fcd2FclSok
+  {
+    runs,!LancFcd2FclS
+    {
+      run,Fcd2Fcl([mm])
+    }
+    marq,10,`¹Limites de volume créées à partir d'une sélection de coupes de volume¹`
+  }
+   !sele,!LancFcd2FclS
+}

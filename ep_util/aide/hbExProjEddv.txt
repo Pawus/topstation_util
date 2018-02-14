@@ -1,0 +1,42 @@
+
+EXPORTER PROJETS D'EDDV ET PARCELLAIRE FONCIER
+	
+	Cette fonction d'export permet de créer un fichier de composants dans le but soit d'alimenter une
+	base de travail à partir de la CaLif, soit de livrer un ou des projets d'EDDV aboutis dans la base
+	CaLif.	
+	
+	Le bouton de fonction "Projet(s)" donne accès à la liste des projets. On peut y sélectionner un 
+	ou plusieurs projets, en utilisant les touches <shift> et <ctrl>. Le bouton Ok permet de valider 
+	la sélection. Cette case doit être servie pour pouvoir lancer l'export. Et elle ne peut être remplie 
+	que par la seule sélection !HbProjets ainsi constituée. Toute autre sélection de composants sera ignorée.
+	
+	Le bouton de fonction "Parcellaire foncier" donne accès à une fenêtre de sélection de parcelles 
+	projetées et limites projetées, et en plus pour la base CaLif, de parcelles et de limites existantes. 
+	Si cette case est servie, ce qui n'est pas obligatoire, elle ne peut être remplie que par la seule 
+	sélection !HbParFonc ainsi constituée. Toute autre sélection de composants sera ignorée.	
+
+	Enfin, le bouton de fonction "Fichier" permet de définir le nom du fichier d'export avec son chemin.	
+	
+	Puis en appuyant sur <Ok>, des vérifications sont opérées:	
+	     -	un EDDV à exporter ne doit être concerné que par un projet et un seul	
+	     -	un plan associé à un EDDV ne doit être associé qu'à un seul domaine	
+	     - 	une image représentée dans un plan d'EDDV ne doit être représentée que dans ce plan (domaine 
+		unique).	
+	     -	enfin un projet d'EDDV ne doit être exporté qu'une fois. Si on veut néanmoins passer outre, 
+		il faudra modifier manuellement son attribut &v57:exp.	
+	Si l'export ne peut être réalisé pour l'une ou plusieurs des raisons ci-dessus, les anomalies détectées 
+	sont alors listées afin d'apporter les rectifications nécessaires.	
+	
+	Si l'export s'est réalisé, les projets des EDDV avec tous leurs composants utiles sont listés dans le 
+	fichier en totalité. Si le fichier comporte des composants faisant appel à des images, la liste des 
+	images à joindre à la livraison est éditée.	
+	
+	Enfin, chaque projet exporté reçoit un attribut:
+		&v57:exp=1	
+	
+BONNE PRATIQUE DANS LA BASE CaLIF
+	
+	il est intéressant d'associer les plans d'assiette et coupes à l'EDDV avant export de façon à ce que lors 
+	du réimport dans la base, ces plans soient également mis à jour.	
+	
+ 

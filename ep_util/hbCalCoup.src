@@ -1,0 +1,743 @@
+proc,JtDebug=1
+
+/*	15/09/2013																																				*/
+/*		rout,CalCoup  et rout,CoupPlace																														*/	
+/*		Rectifié bog déplacement d'une coupe existante lors d'un nouveau calcul de coupe d'une même ligne de coupe en ajoutant une sel existante !HbAcCoup	*/
+
+
+#include ".\hbOutils.inc"
+proc,EPAD=EPADESA
+proc,AltBas=10 				/* Altitude de la base pour une coupe correspondant à l'abscisse du premier point de la coupe */
+proc,AltMax=120             /* Altitude max représentée des élévations des coupes     */
+proc,AltMin=10              /* Altitude mini représentée des élévations des coupes    */
+proc,HautBat=20				/* Hauteur du bâtiment dépassant l'altitude maxi de la FCD la plus haute */
+proc,EchProf=200			/* Echelle de la coupe */
+proc,Style=Swis
+
+rout,Fenetre
+{
+    var,§t
+
+    §t=¹[EPAD] Calculer coupe schématique¹
+
+    dial,HB_CCS,l=230,h=44,tx={§t}
+    qc,tx,TX_LC ,002,002,076,012,j=8,tx="¹Ligne de coupe¹"
+    qc,ed,ED_LC ,080,002,048,012,j=2,vrif=lin,tdig=LIN,selc=[hbcQCL],rout=Valid
+    qc,tx,TX_XBG,002,016,076,012,j=8,tx="¹Coupe: X bas gauche¹"
+    qc,ed,ED_XBG,080,016,048,012,j=2,vrif=val,tdig=XDIG,rout=Valid
+    qc,tx,TX_YBG,130,016,048,012,j=8,tx="¹Y bas gauche¹"
+    qc,ed,ED_YBG,180,016,048,012,j=2,vrif=val,tdig=YDIG,rout=Valid
+    qc,bf,BF_OK	,002,030,050,012,j=5,tx="OK",rout=BfOk,iv=1
+    qc,bf,BF_AID,178,030,050,012,j=5,tx="Aide",rout=BfAide
+
+    
+    rout,Valid
+    {
+        if,"[tx(ED_LC)><``]@[tx(ED_XBG)><``]@[tx(ED_YBG)><``]"
+        {
+            qmod,BF_OK,iv=0
+            evnt,entr=BfOk,bdro=BfOk
+        }
+    }
+    
+    rout,BfOk
+    {
+        run,CalCoup([tx(ED_LC)],[tx(ED_XBG)],[tx(ED_YBG)])
+    }
+    
+    rout,BfAide
+    {
+        aide,file={epUtil}\aide\hbCalCoup.txt
+    }
+}
+
+rout,CalCoup(§qcl,§xbg,§ybg)
+{
+	!HbAncCoup=!test(&q1:vue==[§qcl])
+    run,TransfoChem([§qcl])
+    run,Detect3D([§qcl])
+    run,CreBas[Lgn3D]([§qcl])   
+    run,CoupIntBat([§qcl])      /* intersection avec les batiments  */
+    run,CoupIntFed([§qcl])      /* intersection avec les EDDV       */
+    run,CoupIntFcd([§qcl])      /* intersection avec les coupes h   */   
+    run,CoupZmax([§qcl])        
+    if,"Lgn3D"
+    {
+        run,CoupProLong([§qcl])
+    }
+    run,CoupElev([§qcl])    
+    run,CoupQVuBal([§qcl])
+    run,CoupQVuFed([§qcl])
+    run,CoupQVuFcd([§qcl])
+    run,CoupPlace([§qcl],[§xbg],[§ybg])
+    run,Rmat_Q_KQ([§qcl])
+    marq,10,`Calcul de la coupe [§qcl]`
+    fdia
+}
+
+rout,Rmat_Q_KQ(§qcl)
+{
+    !HbCoupe=QVuB-QVuS*!test(&q1:vue==[§qcl])
+    runs,!nev(!HbCoupe)*!pnt*~[hbcFLD]
+    {   
+        ral,[mm]&q0:mori="[mm]"
+        rmat,[mm],[%cmp.j:rad].
+    }
+    runs,!HbCoupe
+    {
+        ral,[mm]&q0:mori="[mm]"
+        rmat,[mm],[hbcQQL]
+        [mm]:cl=61
+    }
+    runs,QVuTex*!test(&q1:vue==[§qcl])
+    {
+        ral,[mm]&q0:mori="[mm]"
+        rmat,[mm],[hbcQX]
+    }
+}
+
+rout,CoupPlace(§chem,§xbg,§ybg)
+{
+  var,§d,§pnt1,§pnt2,§pnt3
+
+  !HbRota=!test(&q1:vue==[§chem])*~!HbAncCoup
+  !HbRota=!util(!HbRota)*!pnt
+  !HbRota>F%+!nev(F%)
+  runs,QVuBas*!test(&Q1:vue==[§chem])
+  {
+    runl,[mm]
+    {
+      §pnt1=[deb_m]
+      [fi2]
+    }
+  }
+  runs,QVuBas*!test(&Q1:vue==[§chem])
+  {
+    runl,[mm]
+    {
+      §pnt2=[deb_m]
+    }
+  }
+  dgis,[gplan],[§pnt1],numd=99
+  dipp,[§pnt1],[§pnt2],prcd=§d
+  alde,99,[§pnt1],[§d],proc=Pcal
+  §pnt3=[mm]
+  rota,sel=!HbRota,cntr=[§pnt1],dpar=[§pnt2],ariv=[§pnt3]
+  dpla,dx=[§xbg-[§pnt1]:x],dy=[§ybg-[§pnt1]:y],sel=!HbRota
+  !cmpe,[§pnt3]
+  supd,99
+}
+
+
+rout,CoupQVuBal(§chem)
+{
+  var,§qlbal,§kqbal,§i,§d
+
+  runs,QLBal*!test(&Q1:vue==[§chem])
+  {
+    §i=0
+    §qlbal=[mm]
+    runl,[§qlbal]
+    {
+      §kqbal=[deb_m]
+      dipl,[§kqbal],lign=[§chem],prcs=§d
+      KQBalb:x=[ABS-[[§kqbal]&Q1:zomi]+AltBas],y=[ORD+§d]
+      lin,cma=*[mm]
+      [mm]&q1:[[§kqbal]&q1:]
+      KQBalh:x=[ABS-[AltMaxFcd-AltBas+HautBat]],y=[ORD+§d]
+      lin,cma=/[mm]
+      [mm]&q1:[[§kqbal]&q1:]      
+      lin,cma="=QVuBa"
+      §i=[[§i]+1]
+      if,"§i=2"
+      {
+        invl,[mm]
+        join,QVuBa[[mm]:i-1],[mm],matl=QVuBal
+        ferm,[mm]
+        cenz,[mm]
+        [mm]&q1:[[§kqbal]&q1:]
+        [mm]&t0:nom=[[[mm]&Q1:coupb]&t0:nom]
+        [mm]:g=[gplan]
+        [mm]:md=1,cl=8
+      }
+    }
+  }
+  !cmpf,QLBal+QVuBa
+}
+
+rout,CoupQVuFcd(§chem)
+{
+  var,§qlfcd,§kqfcd,§i,§d,§qvutex1,§qvutex2
+
+  runs,QLFcd*!test(&Q1:vue==[§chem])
+  {
+    §i=0
+    §qlfcd=[mm]
+    runl,[§qlfcd]
+    {
+      §kqfcd=[deb_m]
+      dipl,[§kqfcd],lign=[§chem],prcs=§d
+      KQFcdb:x=[ABS-[[§kqfcd]&Q1:zomi]+AltBas],y=[ORD+§d]
+      lin,cma=*[mm]
+      [mm]&q1:vue=[§chem],zomi=[[§kqfcd]&Q1:zomi%2],zoma=[[§kqfcd]&Q1:zoma%2]
+      dupl,[mm],QVuTex
+      §qvutex1=[mm]
+      [mm]:g=[gplan],PH=2,MD=JT_ENT_TS,J=9,cl=63
+      [mm]&t0:[[§kqfcd]&Q1:zomi%2]
+      [mm]&v1:ly="CUBATURES_T"
+      [mm]&V5:Cx=.6,Cy=.6,Cf=,It=0
+      [mm]&V6:St="[Style]"
+      
+      KQFcdh:x=[ABS-[[§kqfcd]&Q1:zoma]+AltBas],y=[ORD+§d]
+      lin,cma=/[mm]
+      [mm]&q1:vue=[§chem],zomi=[[§kqfcd]&Q1:zomi%2],zoma=[[§kqfcd]&Q1:zoma%2]
+      dupl,[mm],QVuTex
+      §qvutex2=[mm]
+      [mm]:g=[gplan],PH=2,MD=JT_ENT_TS,J=7,cl=63
+      [mm]&t0:[[§kqfcd]&Q1:zoma%2]
+      [mm]&v1:ly="CUBATURES_T"
+      [mm]&V5:Cx=.6,Cy=.6,Cf=,It=0
+      [mm]&V6:St="[Style]"
+            
+      lin,cma="=QVuFc"
+      §i=[[§i]+1]
+      if,"§i=2"
+      {
+        invl,[mm]
+        join,QVuFc[[mm]:i-1],[mm],matl=QVuFcd
+        ferm,[mm]
+        cenz,[mm]
+        [mm]&q1:[[§kqfcd]&q1:]
+        [mm]&r0:L=[[[mm]&Q1:couph]&r0:L]
+        [mm]&v0:[[§kqfcd]&v0:]
+        [mm]:ph=2,g=[gplan],md=[[[mm]&Q1:couph]:md]
+        if,"[mm]:md==`EP_ZON_VOLUME`"
+        {
+            [mm]:md=hbf_coupevol_v
+        }
+        dupl,[mm],QVuFco                        /* Contour en trait plein        */
+        [mm]:md=jsc_mj_tco,cl=61
+        [§qvutex1]:j=3
+        [§qvutex2]:j=1
+      }
+    }
+  }
+  !cmpf,QLFcd+QVuFc
+}
+
+rout,CoupQVuFed(§chem)
+{
+  var,§qlfed,§kqfed,§i,§d
+
+  runs,QLFed*!test(&Q1:vue==[§chem])
+  {
+    §qlfed=[mm]
+    §i=0
+    runl,[§qlfed]
+    {
+      §kqfed=[deb_m]
+      dipl,[§kqfed],lign=[§chem],prcs=§d
+      KQFedb:x=[ABS],y=[ORD+§d]
+      lin,cma=*[mm]
+      [mm]&q1:vue=[§chem],edd=[[§kqfed]&Q1:edd]
+      KQFedh:x=[ABS-AltMaxFcd+AltBas],y=[ORD+§d]
+      lin,cma=/[mm]
+      [mm]&q1:vue=[§chem],edd=[[§kqfed]&Q1:edd]
+      §i=[[§i]+1]
+      lin,cma="=QVuFed"
+      if,"§i=2"
+      {
+        [mm]:x=[ABS-AltMaxFcd+AltBas-2],y=[ORD+§d-2]
+      }
+      else
+      {
+        [mm]:x=[ABS-AltMaxFcd+AltBas-2],y=[ORD+§d+2]
+      }
+      [mm]:md=HBF_EDD,cl=61
+      [mm]&q1:vue=[§chem],edd=[[§kqfed]&Q1:edd],nab=[[[§kqfed]&Q1:edd]&Q1:nab]
+    }
+  }
+  !cmpf,QLFed
+}
+
+				/* Elévations des points de la QLR */
+rout,CoupElev(§chem)
+{
+  var,§i
+
+  §i=1  
+  runs,KQDebb
+  {
+    lin,*[mm]
+    KQDebh:x=[[mm]:x-AltMaxFcd+AltBas-HautBat],y=[[mm]:y]
+    [mm]&q1:vue=[§chem]
+    lin,/[mm]
+    lin,cma="=QVuDeb"
+    [mm]&q1:vue=[§chem]
+    [mm]:md=HBQ_VUE_LIMITE,cl=61
+    if,"§i"
+    {
+        QVuTex:x=[[[mm]:pf]:x],y=[[[mm]:pf]:y],g=[gplan],PH=2,MD=JT_ENT_TS,J=3,cl=63
+        [mm]&q1:vue=[§chem]
+        [mm]&t0:[[§chem]&t0:ideb]
+        [mm]&v0:Pr=0,Co=256,Lw=30
+        [mm]&v1:ly="CUBATURES_T"
+        [mm]&V5:Cx=2,Cy=2,Cf=,It=20
+        [mm]&V6:St="[Style]"
+        §i=0
+    }
+  }
+  runs,KQCoub
+  {
+    lin,*[mm]
+    KQCouh:x=[[mm]:x-AltMaxFcd+AltBas-HautBat],y=[[mm]:y]
+    [mm]&q1:vue=[§chem]
+    lin,/[mm]
+    lin,cma="=QVuCou"
+    [mm]&q1:vue=[§chem]
+    [mm]:md=HBQ_VUE_COUDE,cl=61
+  }
+  runs,KQFinb
+  {
+    lin,*[mm]
+    KQFinh:x=[[mm]:x-AltMaxFcd+AltBas-HautBat],y=[[mm]:y]
+    [mm]&q1:vue=[§chem]
+    lin,/[mm]
+    lin,cma="=QVuFin"
+    [mm]&q1:vue=[§chem]
+    [mm]:md=HBQ_VUE_LIMITE,cl=61
+  }
+  QVuTex:x=[[[mm]:pf]:x],y=[[[mm]:pf]:y],g=[gplan],PH=2,MD=JT_ENT_TS,J=9,cl=63
+  [mm]&q1:vue=[§chem]
+  [mm]&t0:[[§chem]&t0:ifin]
+  [mm]&v0:Pr=0,Co=256,Lw=30
+  [mm]&v1:ly="CUBATURES_T"
+  [mm]&V5:Cx=2,Cy=2,Cf=,It=20
+  [mm]&V6:St="[Style]"  
+}
+
+rout,TransfoChem(§qcl)
+{
+    runs,[§qcl]*~!ral(c)
+    {
+        dupl,[§qcl],[hbcQQL]
+        [mm]:md=0
+        run,BriChain([mm])
+        runl,[§qcl]		/* met dans l'ordre les lignes QQL */
+        {
+            chmi,[§qcl],[hbcQQL]*!onc([deb_m])*!HbSell
+        }
+        !cmpe,[§qcl],l
+    }
+}
+
+rout,Detect3D(§qcl)
+{
+    Lgn3D=1
+    runl,[§qcl]
+    {
+        if,"deb_z==``"
+        {
+            Lgn3D=0
+            [fi]
+        }
+    }
+}
+
+
+
+				/* Création du profil en long de la ligne QCL si en 3D */
+rout,CoupProLong(§chem)
+{
+  runs,QVuBas
+  {
+    runl,[mm]
+    {
+      KQVuPl:x=[deb_x-[deb_m]&q1:zpori-AltBas+HautBat],y=[[deb_m]:y]
+      lin,*[mm]
+      QVuTex:x=[deb_x-[deb_m]&q1:zpori-AltBas+HautBat],y=[[deb_m]:y],g=[gplan],PH=2,MD=JT_ENT_TS,J=9,cl=63
+      [mm]&q1:vue=[§chem]
+      [mm]&t0:[[deb_m]&q1:zpori%2]
+      [mm]&v1:ly="CUBATURES_T"
+      [mm]&V5:Cx=.6,Cy=.6,Cf=,It=0
+      [mm]&V6:St="[Style]"
+    }
+  }
+  lin,cma="=QVuPl"
+  [mm]:md=jsc_mj_tim,ph=1,cl=61
+  [mm]&q1:vue=[§chem]
+}
+					/* Création d'une base à partir de §qcl 2D */
+rout,CreBas0(§qcl)
+{
+  var,§d,§g1,§g2,§lgn
+  
+  runl,[§qcl]
+  {
+    ABS=[deb_x]				/* correspond à l'altitude AltBas */
+    ORD=[deb_y]
+    [fi]
+  }
+  hbTemp=1
+  runc,[§qcl]
+  {
+    §lgn=[mm]
+    ral,[§lgn]&t0:nom=[[§qcl]&t1:nom]
+    runl,[§lgn]
+    {
+      §g1=[deb_g]
+      dipl,[deb_m],[§qcl],prcs=§d
+      KQDebb:[ABS],[ORD+§d],ph=2	/* début d'une coupe */
+      ral,[mm]&q1:vue=[§qcl]
+      lin,*[mm]      
+      [fi]
+    }
+    if,"hbTemp"
+    {
+        QVuTex:x=[[mm]:x],y=[[mm]:y],g=[gplan],PH=2,MD=JT_ENT_TS,J=9,cl=63
+        [mm]&q1:vue=[§qcl]
+        [mm]&t0:[[§qcl]&t1:nom]
+        [mm]&v0:Pr=0,Co=256,Lw=30
+        [mm]&v1:ly="CUBATURES_T"
+        [mm]&V5:Cx=2,Cy=2,Cf=,It=20
+        [mm]&V6:St="[Style]"    
+        hbTemp=0
+    }
+    runl,[§lgn]
+    {
+      if,"deb_t<4"
+      {
+        §g2=[deb_g]
+      }
+      if,"§g2><§g1"
+      {
+        §g1=[deb_g]
+        dipl,[deb_m],[§qcl],prcs=§d
+        KQCoub:[ABS],[ORD+§d],ph=2	/* coude en XY ou en Z */
+        ral,[mm]&q1:vue=[§qcl]
+        lin,*[mm]
+      }
+      if,"deb_t=4"
+      {
+        dipl,[deb_m],[§qcl],prcs=§d
+        KQFinb:[ABS],[ORD+§d],ph=2	/* fin */
+        ral,[mm]&q1:vue=[§qcl]
+        lin,*[mm] 
+      }
+    }
+    lin,cma="=QVuBas"
+    [mm]:x=[[[mm]:pd]:x],y=[[[mm]:pd]:y],ph=1,cx=1.5,md=hbq_vue_base,cl=61
+    [mm]&q1:vue=[§qcl]
+    [mm]&t1:altb=[AltBas%2]
+  }
+}
+
+					/* Création d'une base en enregistrant les Z des points de §qcl 3D */
+rout,CreBas1(§qcl)
+{
+  var,§d,§g1,§g2,§lgn,§z1,§z2
+  
+  runl,[§qcl]
+  {
+    ABS=[deb_x]				/* correspond à l'altitude AltBas */
+    ORD=[deb_y]
+    [fi]
+  }
+  hbTemp=1
+  runc,[§qcl]
+  {
+    §lgn=[mm]
+    ral,[§lgn]&t0:nom=[[§qcl]&t0:nom]
+    runl,[§lgn]
+    {
+      §g1=[deb_g]
+      dipl,[deb_m],[§qcl],prcs=§d
+      KQDebb:[ABS],[ORD+§d],ph=2	/* début d'une coupe */
+      §z1=[deb_z]
+      [mm]&q1:zpori=[deb_z]
+      ral,[mm]&q1:vue=[§qcl]
+      lin,*[mm]      
+      [fi]
+    }
+    if,"hbTemp"
+    {
+        QVuTex:x=[[mm]:x],y=[[mm]:y],g=[gplan],PH=2,MD=JT_ENT_TS,J=9,cl=63
+        [mm]&q1:vue=[§qcl]
+        [mm]&t0:[[§qcl]&t1:nom]
+        [mm]&v0:Pr=0,Co=256,Lw=30
+        [mm]&v1:ly="CUBATURES_T"
+        [mm]&V5:Cx=2,Cy=2,Cf=,It=20
+        [mm]&V6:St="[Style]"    
+        hbTemp=0
+    }
+    runl,[§lgn]
+    {
+      if,"deb_t<4"
+      {
+        §g2=[deb_g]
+        §z2=[deb_z]
+      }
+      if,"[§g2><§g1]#[§z2><§z1]"
+      {
+        §g1=[deb_g]
+        §z1=[deb_z]
+        dipl,[deb_m],[§qcl],prcs=§d
+        KQCoub:[ABS],[ORD+§d],ph=2	/* coude en XY ou en Z */
+        [mm]&q1:zpori=[deb_z]
+        ral,[mm]&q1:vue=[§qcl]
+        lin,*[mm]
+      }
+      if,"deb_t=4"
+      {
+        dipl,[deb_m],[§qcl],prcs=§d
+        KQFinb:[ABS],[ORD+§d],ph=2	/* fin */
+        [mm]&q1:zpori=[deb_z]
+        ral,[mm]&q1:vue=[§qcl]
+        lin,*[mm] 
+      }
+    }
+    lin,cma="=QVuBas"
+    [mm]:x=[[[mm]:pd]:x],y=[[[mm]:pd]:y],ph=1,cx=1.5,md=hbq_vue_base,cl=61
+    [mm]&q1:vue=[§qcl]
+    [mm]&t1:altb=[AltBas%2]
+  }
+}
+				/* voir plus tard à faire un sous-programme en ajoutant les arguments */
+				/* §radpnt §radzon et §zon	*/
+rout,CoupIntBat(§chem)
+{
+  var,§lgn
+
+  runc,[§chem]
+  {
+    §lgn=[mm]
+    !HbBal=[hbcBAL]*!test(&q1:zomi><0)*!zonl([§lgn],-0.01)
+    !HbBalDeb=!HbBal*!zonp([[§lgn]:PD],0)
+    run,CoupIntBat2([§chem],[mm])
+  }
+}
+
+rout,CoupIntBat2(§chem,§lgn)
+{
+  var,§bal
+
+  runs,!HbBalDeb
+  {
+    §bal=[mm]
+    dupl,[[§lgn]:PD],KQBal
+    [mm]&q1:vue=[§chem],coupb=[§bal],zomi=[[§bal]&q1:zomi]
+    lin,*[mm]
+    ill,lign=[§lgn],sel=[§bal],proc=VuIntCalBal,vise=0
+					/* si le nombre de points à la fin est impaire, la coupe contient le point fin 	*/
+					/* de la ligne. Il faut alors le dupliquer en KQFcd				*/
+    if,"pil_n=1"
+    {
+      dupl,[[§lgn]:PF],KQBal
+      [mm]&q1:vue=[§chem],coupb=[§bal],zomi=[[§bal]&q1:zomi]
+      lin,*[mm]
+      run,VuIntLinBal
+    }
+  }
+  
+  runs,!HbBal*~!HbBalDeb
+  {
+    §bal=[mm]
+    ill,lign=[§lgn],sel=[§bal],proc=VuIntCalBal,vise=0
+    if,"pil_n=1"
+    {
+      dupl,[[§lgn]:PF],KQBal
+      [mm]&q1:vue=[§chem],coupb=[§bal],zomi=[[§bal]&q1:zomi]
+      lin,*[mm]
+      run,VuIntLinBal
+    }
+  }
+
+  rout,VuIntCalBal
+  {
+    KQBal:[xc],[yc]
+    [mm]&q1:vue=[§chem],coupb=[§bal],zomi=[[§bal]&q1:zomi]
+    lin,*[mm]
+    if,"pil_n=2"
+    {
+      run,VuIntLinBal
+    }
+  }
+  
+  rout,VuIntLinBal
+  {
+    lin,cma="=QLBal"
+    [mm]&q1:vue=[§chem],coupb=[§bal]
+  }
+}
+
+rout,CoupIntFed(§chem)
+{
+  var,§lgn
+
+  runc,[§chem]
+  {
+    §lgn=[mm]
+    !HbFed=[hbcFED]*!zonl([§lgn],-0.01)
+    !HbFedDeb=!HbFed*!zonp([[§lgn]:PD],0)
+    run,CoupIntFed2([§chem],[mm])
+  }
+}
+
+rout,CoupIntFed2(§chem,§lgn)
+{
+  var,§fed
+
+  runs,!HbFedDeb
+  {
+    §fed=[mm]
+    dupl,[[§lgn]:PD],KQFed
+    [mm]&q1:vue=[§chem],edd=[§fed]		/* enregistrement de la coupe horizontale */
+    lin,*[mm]
+    ill,lign=[§lgn],sel=[§fed],proc=VuIntCalFed,vise=0
+					/* si le nombre de points à la fin est impaire, la coupe contient le point fin 	*/
+					/* de la ligne. Il faut alors le dupliquer en KQFcd				*/
+    if,"pil_n=1"
+    {
+      dupl,[[§lgn]:PF],KQFed
+      [mm]&q1:vue=[§chem],edd=[§fed]
+      lin,*[mm]
+      run,VuIntLinFed
+    }
+  }
+  
+  runs,!HbFed*~!HbFedDeb
+  {
+    §fed=[mm]
+    ill,lign=[§lgn],sel=[§fed],proc=VuIntCalFed,vise=0
+    if,"pil_n=1"
+    {
+      dupl,[[§lgn]:PF],KQFed
+      [mm]&q1:vue=[§chem],edd=[§fed]
+      lin,*[mm]
+      run,VuIntLinFed
+    }
+  }
+
+  rout,VuIntCalFed
+  {
+    KQFed:[xc],[yc]
+    [mm]&q1:vue=[§chem],edd=[§fed]
+    lin,*[mm]
+    if,"pil_n=2"
+    {
+      run,VuIntLinFed
+    }
+  }
+  
+  rout,VuIntLinFed
+  {
+    lin,cma="=QLFed"
+    [mm]&q1:vue=[§chem],edd=[§fed]
+  }
+}
+
+rout,CoupIntFcd(§chem)
+{
+  var,§lgn
+
+  runc,[§chem]
+  {
+    §lgn=[mm]
+    !HbFcd=[hbcFCD]*!onc([hbcFED])*!zonl([§lgn],-0.01)
+    !HbFcdDeb=!HbFcd*!zonp([[§lgn]:PD],0)
+    run,CoupIntFcd2([§chem],[mm])
+  }
+}
+
+rout,CoupIntFcd2(§chem,§lgn)
+{
+  var,§fcd
+
+  runs,!HbFcdDeb
+  {
+    §fcd=[mm]
+    dupl,[[§lgn]:PD],KQFcd
+    [mm]&q1:vue=[§chem],couph=[§fcd]		/* enregistrement de la coupe horizontale */
+    ral,[mm]&v0:niv=[[§fcd]&v0:niv],ind=[[§fcd]&v0:ind]
+    lin,*[mm]
+    ill,lign=[§lgn],sel=[§fcd],proc=VuIntCal,vise=0
+					/* si le nombre de points à la fin est impaire, la coupe contient le point fin 	*/
+					/* de la ligne. Il faut alors le dupliquer en KQFcd				*/
+    if,"pil_n=1"
+    {
+      dupl,[[§lgn]:PF],KQFcd
+      [mm]&q1:vue=[§chem],couph=[§fcd]
+      ral,[mm]&v0:niv=[[§fcd]&v0:niv],ind=[[§fcd]&v0:ind]
+      lin,*[mm]
+      run,VuIntLin
+    }
+  }
+  
+  runs,!HbFcd*~!HbFcdDeb
+  {
+    §fcd=[mm]
+    ill,lign=[§lgn],sel=[§fcd],proc=VuIntCal,vise=0
+    if,"pil_n=1"
+    {
+      dupl,[[§lgn]:PF],KQFcd
+      [mm]&q1:vue=[§chem],couph=[§fcd]
+      ral,[mm]&v0:niv=[[§fcd]&v0:niv],ind=[[§fcd]&v0:ind]
+      lin,*[mm]
+      run,VuIntLin
+    }
+  }
+
+  rout,VuIntCal
+  {
+    KQFcd:[xc],[yc]
+    [mm]&q1:vue=[§chem],couph=[§fcd]
+    ral,[mm]&v0:niv=[[§fcd]&v0:niv],ind=[[§fcd]&v0:ind]
+    lin,*[mm]
+    if,"pil_n=2"
+    {
+      run,VuIntLin
+    }
+  }
+  
+  rout,VuIntLin
+  {
+    lin,cma="=QLFcd"
+    [mm]&q1:vue=[§chem],couph=[§fcd]
+    ral,[mm]&v0:niv=[[§fcd]&v0:niv],ind=[[§fcd]&v0:ind]
+  }
+}
+
+rout,CoupZmax(§chem)
+{
+  var,§kqfcd,§fcd,§dom,§i,§zoma,§zomi
+
+  AltMaxFcd=0
+  runs,KQFcd*!test(&Q1:vue==[§chem])
+  {
+    §kqfcd=[mm]
+    §fcd=[[§kqfcd]&q1:couph]
+    if,"[§fcd]&v1:altinf<AltMin"
+    {
+        §zomi=[AltMin]
+    }
+    else
+    {
+        §zomi=[[§fcd]&v1:altinf]
+    }
+    if,"[§fcd]&v1:altsup<AltMax"
+    {
+        §zoma=[[§fcd]&v1:altsup]
+        if,"AltMaxFcd<[§fcd]&v1:altsup"
+        {
+            AltMaxFcd=[[§fcd]&v1:altsup]
+        }
+    }
+    else
+    {
+        §zoma=[AltMax]
+        AltMaxFcd=[AltMax]
+    }    
+    ral,[§kqfcd]&q1:zomi=[§zomi],zoma=[§zoma]    
+  }
+}
+

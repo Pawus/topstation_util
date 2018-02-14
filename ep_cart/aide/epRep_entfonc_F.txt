@@ -1,0 +1,21 @@
+
+
+LOT
+
+On entends par parcellaire l'ensemble des composants définissant un projet de division d'une parcelle foncière.
+
+La force de représentation de ces composants est indiquée sur le second caractère de la procédure epRf.
+
+MODELE
+
+Liste des modèles utilisant cette représentation :
+
+    EP_ZON_LOT
+
+CHARTE GRAPHIQUE EPADESA
+
+Les emprises des lots ayant vocation à être conservés par l’EPADESA et l’EPGD sont figurées sous un aplat d’une couleur des champs chromatiques jaune, vert, bleu ou violet. Celles des autres lots sont figurées sous un aplat d’une couleur des champs chromatiques rose, orange, rouge ou brun.
+		
+En représentation forte, la superficie de chaque lot est indiquée, dans le système métrique, sous l’identification du lot et de manière centrée.
+En représentation forte les sommet et points caractéristiques du lot seront représentés.
+	

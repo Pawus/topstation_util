@@ -1,0 +1,58 @@
+
+MÉTADONNÉES SUR LE SOMMET
+
+Attribut &V59:ir - document de référence
+
+	Cet attribut enregistre le document qui défini le sommet et dont sont issus les attributs
+	du composant. La plupart du temps, il s'agit de l'identifiant du plan tel qu'indiqué dans
+	le registre foncier. Cela peut également être les références d'un DA ou d'un relevé topographique
+	
+	Cet attribut est obligatoire.
+
+Attribut &V59:id - date du document
+
+	Cet attribut enregistre la date de diffusion du document enregistré dans l'attribut &V59:ir.
+	
+	Cet attribut est obligatoire.
+
+Attribut &V59:io - organisme à l'origine du document de référence
+
+	Cet attribut enregistre l'organisme à l'origine du document enregistré dans l'attribut &V59:ir.
+	
+	Cet attribut est obligatoire.
+
+Attribut &V59:mori - identifiant du point sur le document de référence
+
+	Cet attribut enregistre l'identifiant du sommet sur la document enregistré dans l'attribut &V59:ir
+	
+	Cet attribut est obligatoire.
+
+Attribut &057:srid - projection
+
+	Cet attribut enregistre la projection (système de référence) dans lequel les informations de localisation
+	du document enregistré dans l'attribut &V59:ir sont exprimées.
+	
+	La valeur est à choisir parmis la liste proposée.
+	
+	Cet attribut est obligatoire.
+
+Attribut &057&:xo - position X
+
+	Cet attribut enregistre la coordonnée X (easting) du sommet exprimée dans le
+	document enregistré dans l'attribut &V59:ir.
+	
+	Dans le cas d'une création de composant, toute modification des coordonnées du composant entraine
+	l'instanciation de cet attribut par la valeur X du composant.
+	
+	Cet attribut est obligatoire.
+
+Attribut &057:yo - position Y
+
+	Cet attribut enregistre la coordonnée Y (northing) du sommet exprimée dans le
+	document enregistré dans l'attribut &V59:ir.
+	
+	Dans le cas d'une création de composant, toute modification des coordonnées du composant entraine
+	l'instanciation de cet attribut par la valeur Y du composant.
+	
+	Cet attribut est obligatoire.
+	

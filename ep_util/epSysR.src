@@ -1,0 +1,259 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         16 09 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+/*         VD Vianney Dugrain (vdugrain@epadesa.fr)                       */
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+#include "..\ep_commun\epGuiOutils.inc"
+#include "..\ep_commun\epListeOutils.inc"
+#include "..\ep_commun\epNumOutils.inc"
+#include "..\ep_commun\epRalOutils.inc"
+#include "..\ep_commun\epSridOutils.inc"
+#include "..\ep_commun\epTexteOutils.inc"
+
+
+/* Liste des routines                                                     */
+/*  CreeFenetre() Créer la fenetre de gestion des systèmes de références  */
+/*         Cette routine continent des routines internes                  */
+/*         dernière modification : 14 10 2013 (SD)                        */
+/*  Init() Initialise les procédures pour le fonctionnement de l'appli.   */
+/*         dernière modification : 16 09 2013 (SD)                        */
+/*  LancSysR() Routine d'appel de l'applicatif depuis le menu dans        */
+/*         l'environnement général                                        */
+/*         dernière modification : 16 09 2013 (SD)                        */
+/*  MajListe() Met à jour les composants de listes de valeurs nécessaires */
+/*         à la bonne execution des routines de modification des          */
+/*         attributs des plans                                            */
+/*         dernière modification : 16 09 2013 (SD)                        */
+
+proc,JtDebug=1
+
+
+/*--------------------------------------------------------------------------*/
+/*                                PROCEDURES                                */
+/*                         par ordre alphabétique                           */
+/*--------------------------------------------------------------------------*/
+
+proc,EpPsalti"Nom de la procédure du système altimétrique"=epSalti
+proc,EpPsplani"Nom de la procédure du système plannimétrique"=epSplani
+proc,EpIalti"Valeur initiale de procédure du système altimétrique"=[[EpPsalti]]
+proc,EpIplani"Valeur initiale de procédure du système plannimétrique"=[[EpPsplani]]
+proc,EpListSrid"Nom du fichier contennat les liste utiles"={epUtil}\epLst_SysR.csv
+proc,Hc=[12+[udiay<1.8]]
+proc,Hc2=[6+[udiay<1.8]]
+proc,Ht=[Hc+2+2*[udiay<1.8]]
+proc,Ht2=[Hc2+1+1*[udiay<1.8]]
+
+
+/*--------------------------------------------------------------------------*/
+/*                                ROUTINES                                  */
+/*                         par ordre alphabétique                           */
+/*--------------------------------------------------------------------------*/
+
+rout,CreeFenetre
+{
+  var,§h,§hf,§bl,§c,§lmax,§nmbr_item,§lgauche,§href,§hlign,§cref,§lf,§ldroite,§lcentre
+  
+  §nmbr_item=8 /* nombre de ligne dans la fenêtre */
+ 
+  §lgauche=58     /* largeur de la colonne de gauche   (étiquette)       */
+  §lcentre=174     /* largeur de la colonne de centrale (zone de saisie)  */
+  §ldroite=12     /* largeur de la colonne de droite   (bouton poussoir) */
+  §href=2         /* interligne */
+  §hlign=12       /* hauteur de ligne */
+  §cref=2         /* séparateur de colonne */
+  §lf=[§lgauche+§lcentre+§ldroite+8*§cref]  /* largeur de la fenêtre par défaut */
+  §hf=[[§nmbr_item*Ht]%0]             /* hauteur de la fenêtre par défaut */
+
+  var,§t
+  §t=¹Gestion des systèmes de référence¹ 
+  
+  dial,EP_SYSR,l=[§lf],h=[§hf],lmin=[§lf],hmin=[§hf],lmax=[§lf],hmax=[§hf],tx={§t}
+  
+  §h=[§href] 
+  
+  /***   Planimétrie   ***********************************************************************/
+  §c=[§cref]
+  qc,gr,GR_PLANI,[§c],[§h],[§lf-4],[§hlign+§href+1*§hlign+3*§href],tx="¹Système géodésique¹",ft=2
+  
+  §h=[§h+§hlign]  /* nouvelle ligne : Système */
+  §c=[§cref+4]
+  qc,tx,TX_SYST,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Nom :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,tx,TX_SYSTG,[§c],[§h],[§lcentre],[Hc],j=2,,eval=&T0:nom,tx=[SysG]
+  
+  §h=[§h+2*§hlign]
+  §c=[§cref]
+  qc,gr,GR_PROJ,[§c],[§h],[§lf-4],[§hlign+§href+1*§hlign+3*§href],tx="¹Projection associée¹",ft=2
+  
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_PROJ,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Nom :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_PROJ,[§c],[§h],[§lcentre],[6*Hc],j=2
+  {
+        run,QaoSrid
+  }
+
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_PROJ,[§c],[§h],[§ldroite],[Hc],opt=1
+   
+  /***   Altimétrie     **********************************************************************/
+  §h=[§h+2*§hlign+§href]
+  §c=[§cref]
+  qc,gr,GR_ALTI,[§c],[§h],[§lf-4],[§hlign+§href+1*§hlign+3*§href],tx="¹Système altimétrique¹",ft=2
+ 
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_ALTI,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Nom :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_ALTI,[§c],[§h],[§lcentre],[6*Hc],j=2
+  {
+        run,QaoSraid
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_ALTI,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  /***   OK     ******************************************************************************/
+  §h=[§h+2*§hlign]
+  qc,bf,BF_BEOK,2,[§h],48,[Hc],j=5,tx="¹OK¹",rout=BfBeok
+  qc,bf,BF_RPQT,52,[§h],48,[Hc],j=5,tx="¹Annuler¹",rout=BfAnul
+  qc,bf,BF_AIDE,[§lf-50],[§h],48,[Hc],j=5,tx="¹Aide¹",rout=BfAide
+
+  rout,BfBeok
+  {
+    run,Enreg
+    anul,10
+    fdia
+  }
+  
+  rout,BfAide
+  {
+    
+  }
+  
+  rout,BfAnul
+  {
+    anul,10
+    fdia
+  }
+  
+  rout,Enreg
+  {
+    var,§alti,§plani
+    §alti=[tx(OP_ALTI)]
+    §plani=[tx(OP_PROJ)]
+    
+    prcm,nom=[EpPsalti]
+    run,QtoV(§alti,[EpPsalti],sraid)
+    prcp,nom=[EpPsalti]
+    prcc,nom=[EpPsalti]
+    
+    prcm,nom=[EpPsplani]
+    run,QtoV(§plani,[EpPsplani],srid)
+    prcp,nom=[EpPsplani]
+    prcc,nom=[EpPsplani]
+  }
+  
+  rout,QaoSrid
+  {
+    var,§ok,§liste,§srid,§ind,§et
+  
+    run,SELcmpLST(srid,§liste) /* selection du bon composant liste et stockage dans le composant §liste */
+  
+    if,"§liste><`vide`"
+    {
+      §et=1
+      runr,comp=[§liste],type=V
+      {
+        §ind=[ii]
+        §srid=[[§liste]&V[§ind]:]
+        run,CheckSrid(§srid,§ok)
+        if,"§ok"
+        {
+          if,"[§liste]&V[§ind]:==EpIplani"
+          then
+          {
+            qao,et=0,tx=[[§liste]&Q[§ind]:]
+          }
+          else
+          {
+            qao,et=[§et],tx=[[§liste]&Q[§ind]:]
+            §et=[§et+1]
+          }
+        }
+      }
+    }
+  }
+  
+  rout,QaoSraid
+  {
+    var,§ok,§liste,§sraid,§ind,§et
+  
+    run,SELcmpLST(sraid,§liste) /* selection du bon composant liste et stockage dans le composant §liste */
+  
+    if,"§liste><`vide`"
+    {
+      §et=1
+	  runr,comp=[§liste],type=V
+      {
+        §ind=[ii]
+		if,"[§liste]&V[§ind]:==EpIalti"
+        then
+        {
+          qao,et=0,tx=[[§liste]&Q[§ind]:] 
+        }
+        else
+        {
+          qao,et=[§et],tx=[[§liste]&Q[§ind]:] 
+          §et=[§et+1]
+        }
+      }
+    }
+  }
+}
+
+
+
+rout,Init
+{
+  var,§srid_ok
+  
+  run,DetSysG(SysG)
+  if,"defprc(EpPsplani)"
+  then
+  {
+    Srid=[[EpPsplani]]
+    run,CheckSrid(Srid,§srid_ok)
+    if,"1-§srid_ok"
+    {
+      run,SRIDbase(Srid) /* En cas d'incompatibilité mise au système par défaut */
+    }
+  }
+  else
+  {
+    run,SRIDbase(Srid) /* Mise au système par défaut */
+  }
+}
+
+rout,LancSysR
+{
+  run,MajListe
+  run,Init
+  run,CreeFenetre
+}
+
+rout,MajListe
+/* Créé ou met à jour les composants "listes" nécessaires à la bonne      */
+/*  exécution des routines                                                */
+/*  La procédure ListeOk permet de réaliser cette opération qu'une fois   */
+{
+  if,"defprc(`ListeOk`)<>1"
+  {
+    run,MajCsvToEpl({EpListSrid},1)
+    ListeOk=1
+    marq,11
+  }
+}

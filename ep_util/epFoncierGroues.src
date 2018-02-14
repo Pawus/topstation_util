@@ -1,0 +1,199 @@
+/*	lanc,RecupereProp,D:\travail\TopStation\Fichiers source\FoncierGroues.src	*/
+
+#include "..\ep_commun\epDateOutils.inc"
+
+proc,JtDebug=1
+
+rout,AjoutMut
+{
+  runs,Cpar
+  {
+	[mm]&V58:mut=
+  }
+}
+
+rout,AjoutCat
+{
+  runs,K
+  {
+	[mm]&q0:cat=0
+  }
+}
+
+rout,RecupereProp
+{
+  !Sec=Cfeu.2+Cfeu.21+Cfeu.60+Cfeu.61+Cfeu.62+Cfeu.63+Cfeu.64+Cfeu.80
+  !Parcelle=0
+  !Prop=0
+  !Cpt=0
+  var,§sec,§par
+  runs,!Sec
+  {
+    §sec=[mm]
+    runs,Cpar
+    {
+      if,"[[mm]&V1:com=[§sec]&V40:Commune]@[[mm]&V1:sec==[§sec]&V40:Section]"
+	  {
+		!Parcelle=!Parcelle+[mm]
+	  }
+    }
+  }
+  runs,!Parcelle
+  {
+    §par=[mm]
+    runs,CDro
+	{
+	  if,"[§par]&V0:CPT==[mm]&V0:cpt"
+	  {
+	    impq,[mm]&R0:P
+		!Cpt=!Cpt+[mm]
+/*		!Prop=!Prop+[[mm]&R0:P]	*/
+	  }
+	}
+  }
+}
+
+rout,MajProp
+{
+  var,§cpt,§par,§cpro
+  runs,Cpar
+  {
+	§par=[mm]
+    §cpt=[mm]&V0:cpt
+	runs,CDro
+	{
+	  if,"[mm]&V0:cpt==[§cpt]"
+	  {
+	    §cpro=[[mm]&R0:P]
+		impq,[§cpro]&V7:denomination
+		[§par]&V57:prop="[[§cpro]&V7:denomination]"
+	  }
+	}
+  }
+}
+
+rout,Imp
+{
+  var,§date
+  run,DateCourante(§date)
+  impq,[§date]
+  jtPlan.1&T5:date=[§date]
+  marq,10,`¹Changement de date du plan¹`
+  prsa,Plan
+  plne
+  plna,jtPlan.1
+  imp,auto=0
+}
+
+rout,GestCouches
+{
+  var,§t
+  §t=Gestion des couches
+  dial,DI_AFF,l=260,h=68,lmin=260,hmin=68,lmax=260,hmax=68,tx={§t}
+  qc,gr,GR_INFO,002,002,256,048,tx="¹Choisissez les informations à afficher :¹",ft=2
+  qc,oc,OC_PROP,024,012,224,012,tx="¹Propriété parcellaire¹"
+  qc,oc,OC_MUT1,024,024,224,012,tx="¹Mutabilité foncière¹"
+  qc,oc,OC_CATG,024,036,224,012,tx="¹Catégories des terrains RFF-SNCF¹"
+  qc,bf,BF_OK,002,052,056,012,tx="¹Oké¹",rout=AfficheCouches
+}
+
+rout,AfficheCouches
+{
+  var,§prop,§mut1,§mut2,§catg
+  §prop=[et(OC_PROP)]
+  §mut1=[et(OC_MUT1)]
+  §catg=[et(OC_CATG)]
+  if,"[§prop=1]@[§mut1=1]"
+  {
+    tra,Mut
+	tra,Prop
+    runs,Cpar
+	{
+	  org,[mm],MD=EP_TEINTE_PROP_MUT
+	  jtPlan.1&T3:soustitre="Mutabilité et propriété foncière"
+	}
+	runs,ParC
+	{
+	  org,[mm],MD=EP_TEINTE_MUT
+	}
+	marq,10,`¹Modification d'affichage des couches¹`
+  }
+  else
+  {
+    if,"[§prop=1]"
+	{
+	  tra,Prop
+	  gom,Mut
+	  gom,ParC
+	  runs,Cpar
+      {
+	    org,[mm],MD=EP_TEINTE_PROP
+      }
+	  jtPlan.1&T3:soustitre="Propriété foncière"
+	  marq,10,`¹Modification d'affichage des couches¹`
+	}
+	else
+    {
+	  tra,Mut
+	  tra,ParC
+	  gom,Prop
+	  runs,Cpar
+	  {
+	    org,[mm],MD=EP_TEINTE_MUT
+	  }
+	  runs,ParC
+	  {
+	    org,[mm],MD=EP_TEINTE_MUT
+	  }
+	  jtPlan.1&T3:soustitre="Mutabilité foncière"
+	  marq,10,`¹Modification d'affichage des couches¹`
+    }
+  }
+  if,"[§prop=0]@[§mut1=0]"
+  {
+    gom,Mut
+	gom,Prop
+	runs,Cpar
+	{
+	  org,[mm],MD=EP_TEINTE_VIDE
+	}
+	jtPlan.1&T3:soustitre="Catégories RFF-SNCF"
+	marq,10,`¹Modification d'affichage des couches¹`
+  }
+  if,"[§catg=1]"
+  {
+	tra,Cat
+  }
+  else
+  {
+    gom,Cat
+  }
+}
+
+rout,TraCat
+/* OBSOLETE	*/
+{
+  var,§cpt
+  §cpt=0
+  !SelK=Cat*!visb
+  runs,!SelK
+  {
+	§cpt=[§cpt+1]
+  }
+  if,"§cpt>0"
+  {
+	gom,Cat
+  }
+  else
+  {
+	tra,Cat
+  }
+}
+
+rout,Affiche
+{
+  runs,CPro
+  {
+	impq,[mm]&V7:denomination
+  }
+}

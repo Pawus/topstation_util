@@ -1,0 +1,766 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         11 09 2013 (VD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+/*         VD Vianney Dugrain (vdugrain@epadesa.fr)                       */
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+/*  epPlanOutils                                                          */
+#include "..\ep_commun\epPlanOutils.inc"
+#include "..\ep_commun\epTexteOutils.inc"
+#include "..\ep_commun\epNumOutils.inc"
+#include "..\ep_commun\epListeOutils.inc"
+#include "..\ep_commun\epGuiOutils.inc"
+#include "..\ep_commun\epRalOutils.inc"
+#include "..\ep_commun\epTypeOutils.inc"
+
+/* Liste des routines                                                     */
+/*  CreePlan(§fed) Créer un plan nouveau lié à la volumétrie §fed         */
+/*		Dernière modification : 28/02/2013								  */
+
+proc,JtDebug=1
+
+/*--------------------------------------------------------------------------*/
+/*                       PROCEDURES PERSONNALISABLES                        */
+/*--------------------------------------------------------------------------*/
+
+proc,MdPlan=EP_CAR_A2_E /* modèle de plan par défaut                     */
+proc,MdCart=EP_CRT_A2   /* modèle de cartouche par défaut                */
+proc,BlkFen=$0.201      /* symbole pour visualiser le rectangle de base  */
+
+/*--------------------------------------------------------------------------*/
+/*                     PROCEDURES  NON PERSONNALISABLES                     */
+/*--------------------------------------------------------------------------*/
+
+proc,Hc=[12+[udiay<1.8]]
+proc,Ht=[Hc+2+2*[udiay<1.8]]
+proc,Hc2=[6+[udiay<1.8]]
+proc,Ht2=[Hc2+1+1*[udiay<1.8]]
+
+proc,TitreCre=¹Création d'un plan¹
+proc,TitreMod=¹Modification d'un plan¹
+proc,TitreRep=¹Reproduction d'un plan¹
+
+/*--------------------------------------------------------------------------*/
+/*                        ROUTINES PERSONNALISABLES                         */
+/*                         par ordre alphabétique                           */
+/*--------------------------------------------------------------------------*/
+
+rout,ChoixMdl
+{
+  /* Cette routine permet de choisir le modèle qui habillera le plan        */
+  ChoixMdEPADESA=EP_CAR_%
+  chmd,"EP_CAR_A2_E",ChoixMdEPADESA,0,¹Choix du modèle¹,ValidMdl1
+}
+
+rout,MajListe
+{
+  if,"defprc(`ListeOk`)<>1"
+  {
+    run,MajCsvToEpl([juCartEP]\epLst_plan.csv,1)
+	ListeOk=1
+	marq,11
+  }
+}
+
+/*--------------------------------------------------------------------------*/
+/*                      ROUTINES NON PERSONNALISABLES                       */
+/*                        par ordre alphabétique                            */
+/*--------------------------------------------------------------------------*/
+
+rout,AfficheRbase
+{
+  /* Cette routine permet de visualiser le rectangle de base définie par le */
+  /*   composant enregistré dans la pocédure MaR, en affichant le symbole   */
+  /*   déterminé par la procédure BlkFen                                    */
+  
+  [MaR]:X=[X],Y=[Y],G=[G],PH=7,MD=JT_ENT_BL
+  ral,[MaR]&v0:Pr=7,Co=6,Lw=-1
+  ral,[MaR]&v1:Ly="0"
+  ral,[MaR]&v5:Ex=[Cx],Ey=[Cy],Es=1,Sl=1
+  ral,[MaR]&v6:Bl="[BlkFen]"
+  tra,[MaR]
+}
+
+rout,BfAide
+{
+  !prce,JtAide_@
+  JtAide_a"¹Créer/Reproduire/Modifier un plan¹"=[juCartEP]\aide\ent_plan.txt
+  JtAide_b"¹Répercuter sur d'autres composants¹"=[jtCart]\aide\Repercuter.txt
+  aide,JtAide_@
+}
+
+rout,BfBeok
+{
+  run,Enreg
+  !Jrpqt=0
+  if,"Cas==`Mod`"
+  {
+    fdia
+    lanc,Modifier,[jtCart]\Modifier
+    qmod,ED_COMP,tx="[Ma]"
+  }
+  else
+  {
+    run,DupComp([Ma])
+  }
+}
+
+rout,BfFerm
+{
+  if,"[modif#[Cas==`Cre`]]"
+  {
+    note
+    qpop,"¹Enregistrer les données modifiées ?¹",j=5
+    {
+      qap,"¹Oui¹",dfo=1
+      {
+	    run,Enreg
+      }
+      qap,"¹Non¹"
+	  {
+	    !cmpe,[MaR]
+	  }
+    }
+  }
+  !Jrpqt=0
+}
+
+rout,BfRpqt
+{
+  var,§t
+  §t=¹Choix des plans sur lesquels répercuter ?¹
+  chsa,nom=!Jrpqt,selc=jtPlan*~[Ma],titr={§t},tri={mm}&V0:Nom,eval={mm}&V0:Nom,ok=Valid
+}
+
+rout,CreComp(§r)
+/* Crée un plan portant le radical §r et crée le cartouche correspondant (format A4 en position BD) */
+{
+  var,§dom
+  
+  Cas=Cre
+  run,MajListe
+  Ma=[ml(§r)]
+  Cart=[ml(`jtCart`)]
+
+  
+  /* on détermine les dimensions du plan */
+  /* aujourd'hui par défaut A0 au 1/500  */
+  Lplan={LA0}
+  Hplan={HA0}
+  Md=[MdPlan]
+  Ec=500
+  
+  run,CalculeMarge(Md,MaG,MaD,MaH,MaB)
+  Cy=[[[Hplan-[MaH]-[MaB]]*Ec]/1000]
+  Cx=[[[Lplan-[MaG]-[MaD]]*Ec]/1000]
+  
+  /* on créé le plan */
+  [Ma]:X=[xmvue],Y=[ymvue],G=100,Cx=[Cx],Cy=[Cy],MD=[Md]
+  [Ma]&V0:Nom="[Ma]",Ec=[Ec]
+  [Ma]&T0:commune=0
+  
+  /* on créé le cartouche */
+  [Cart]:Cx=110.000,Cy=153.500,MD=[MdCart],J=0
+  [Cart]&V0:Nom="[Ma]:Cartouche principal",J=7,Dx=2.50,Dy=-2.50,Cx=22.00,Cy=30.70
+  [Cart]&R0:P=[Ma] 
+    
+  /* on définie le domaine du plan */
+  §dom=[upcn(§r)][[Ma]:i]
+  [Ma]&D0:[§dom]
+  [Cart]&D0:[§dom]
+  
+  /* on ajoute les instructions qui seront exécutées à l'affichage du plan */
+  [Ma]&K0:gom,!tout
+  [Ma]&K1:%DOM:DOM="[§dom]"
+  [Ma]&K2:tra,!dom([§dom])
+  
+  /* on ajoute tous les composants tracés dans le domaine du plan */
+  domi,[§dom],!visb*~(jtCart+jtPlan)
+  
+  marq,11
+  
+  /* on ouvre la fenêtre de saisie */
+  run,InitRpqt
+  run,LecArgs
+  run,CreeFenetre
+ 
+}
+
+rout,CreeFenetre
+{
+  var,§h,§hf,§bl
+  
+  §hf=[11*Ht+4]
+  dial,EP_ENT_PLAN,l=306,h=[§hf],lmin=306,hmin=[§hf],lmax=512,hmax=[§hf],tx={Titre[Cas]},ferm=1,croi=1
+  §h=2
+  
+  qc,gr,GR_COMPO,1,[§h],304,[2*Ht+Ht2+2],tx=¹[Ma]¹,FT=2
+  qdim,GR_COMPO,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht2]
+  
+  qc,tx,TX_NOM,2,[§h],60,[Hc],j=8,tx=¹Nom : ¹
+  qc,ed,ED_NOM,64,[§h],238,[Hc],tx=[Nom],cint=vv,rout=ValidNom
+  qdim,TX_NOM,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_NOM,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht]
+    
+  qc,bf,BF_MDL,14,[§h],48,[Hc],j=8,tx=¹Md : ¹,rout=ChoixMdl
+  qc,ed,ED_MDL,64,[§h],176,[Hc],tx=[Md],vrif=MDL
+  qc,bf,BF_AUTO,242,[§h],48,[Hc],j=5,tx=¹Auto¹
+  qc,bp,BP_MDL,292,[§h],10,[Hc],et=[MdQ],opt=1
+  qdim,BP_MDL,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_MDL,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_MDL,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BF_AUTO,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]
+  
+  §h=[§h+Ht2]
+  qc,gr,GR_VUE,1,[§h],304,[3*Ht+Ht2+2],tx=¹Vue¹
+  qdim,GR_VUE,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht2]
+  
+  qc,tx,TX_ECH,2,[§h],60,[Hc],j=8,tx=¹Échelle : 1/¹
+  qc,cb,CB_ECH,64,[§h],82,164,tx=[Ec],vrif=int,rout=ValidEc
+  {
+    qao,1,"250"
+    qao,2,"500"
+    qao,3,"750"
+    qao,4,"1000"
+    qao,5,"2000"
+    qao,6,"2500"
+  }
+  qc,bp,BP_ECH,148,[§h],10,[Hc],et=[EcQ],opt=1
+  qdim,BP_ECH,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qc,tx,TX_POSX,160,[§h],26,[Hc],j=8,tx=¹X :¹
+  qc,ed,ED_POSX,188,[§h],102,[Hc],tx=[X],vrif=val,racc=TraiteSouris,rout=ValidXY
+  qdim,ED_POSX,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  qc,bp,BP_POSX,292,[§h],10,[Hc],et=[XQ],opt=1
+  qdim,BP_POSX,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,TX_POSX,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qdim,TX_ECH,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,CB_ECH,dx=0.00,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  
+  qc,bf,BF_G,14,[§h],48,[Hc],j=8,tx=¹Gisement : ¹,rout=GisComp
+  qc,ed,ED_G,64,[§h],82,[Hc],tx=[G],cint=vv,vrif=val,racc=TraiteGis,rout=ValidG
+  qc,tx,TX_POSY,160,[§h],26,[Hc],j=8,tx=¹Y :¹
+  qc,bp,BP_G,148,[§h],10,[Hc],et=[GQ],opt=1
+  qc,ed,ED_POSY,188,[§h],102,[Hc],tx=[Y],vrif=val,racc=TraiteSouris,rout=ValidXY
+  qdim,ED_POSY,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  qc,bp,BP_POSY,292,[§h],10,[Hc],et=[YQ],opt=1
+  qdim,BP_POSY,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BP_G,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qdim,TX_POSY,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_G,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_G,dx=0.00,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  
+  qc,tx,TX_POSZ,160,[§h],26,[Hc],j=8,tx=¹Z :¹
+  qdim,TX_POSZ,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qc,ed,ED_POSZ,188,[§h],102,[Hc],tx=[Z],vrif=val,rout=ValidZ
+  qdim,ED_POSZ,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  
+  §h=[§h+Ht2]
+  qc,gr,GR_PAPIER,1,[§h],304,[2*Ht+Ht2],tx=¹Présentation¹
+  qdim,GR_PAPIER,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht2]
+  
+  qc,tx,TX_FORM,2,[§h],60,[Hc],j=8,tx=¹Format : ¹
+  qc,op,OP_FORM,64,[§h],82,164,et=[Form+1],rout=ValidCxCy
+  {
+    qao,1," A0"
+    qao,2," A1"
+    qao,3," A2"
+    qao,4," A3"
+    qao,5," A4"
+    qao,6," Personnel"
+  }
+  qdim,TX_FORM,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_FORM,dx=0.00,dy=0.00,dl=0.50,dh=0.00
+  qc,tx,TX_ORIENT,160,[§h],26,[Hc],j=8,tx=¹Orient. : ¹
+  qc,op,OP_ORIENT,188,[§h],102,164,et=[si(Cx>Cy,2,1)],rout=ValidCxCy
+  {
+    qao,1," Portrait"
+    qao,2," Paysage"
+  }
+  qdim,TX_ORIENT,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_ORIENT,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  qc,bp,BP_CXCY,292,[§h],10,[2*Hc+4],et=[CxCyQ],opt=1
+  qdim,BP_CXCY,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]
+  
+  qc,tx,TX_L0,2,[§h],144,[Hc],j=8,tx=¹Dimension papier (longueur x hauteur) : ¹
+  qdim,TX_L0,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qc,ed,ED_L,148,[§h],49,[Hc],j=8,tx=[Lplan],IV=[FormIV],vrif=int,rout=ValidLH
+  qdim,ED_L,dx=0.00,dy=0.00,dl=0.50,dh=0.50
+  qc,tx,TX_L,148,[§h],49,[Hc],j=8,tx=[Lplan],IV=[2-FormIV]
+  qdim,TX_L,dx=0.00,dy=0.00,dl=0.50,dh=0.50
+  qc,tx,TX_M,199,[§h],20,[Hc],j=5,tx=" * "
+  qdim,TX_M,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qc,ed,ED_H,221,[§h],49,[Hc],j=2,tx=[Hplan],IV=[FormIV],vrif=int,rout=ValidLH
+  qdim,ED_H,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  qc,tx,TX_H,221,[§h],49,[Hc],j=2,tx=[Hplan],IV=[2-FormIV]
+  qdim,TX_H,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  qc,tx,TX_H0,272,[§h],18,j=5,tx="mm"
+  qdim,TX_H0,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]
+    
+  §h=[§h+Ht2]
+  qc,bf,BF_BEOK,2,[§h],20,[Hc],j=5,tx="¹OK¹",rout=BfBeok
+  qc,bf,BF_RPQT,24,[§h],48,[Hc],j=5,tx="¹Répercuter¹",rout=BfRpqt
+  qc,bf,BF_AIDE,272,[§h],32,[Hc],j=5,tx="¹Aide¹",rout=BfAide
+  qdim,BF_BEOK,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_RPQT,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_AIDE,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  
+  evnt,entr=BfBeok,bdro=BfBeok,ferm=BfFerm
+  qset,foc=TX_NOM,mod=0
+}
+
+rout,CrePlan
+/* Appelle la routine de création de composant CreComp avec l'argument jtPlan */
+{
+  run,CreComp(jtPlan)
+}
+
+rout,DetFormat(§mod,§prc_L,§prc_H,§prc_ec,§prc_md,§prc_format)
+/* Cette routine permet de d'instancier la procédure Form avec le numéro du   */
+/*   format ISO A le plus proche des dimensions données par les procédures    */
+/*   Lplan & Hplan ou Cx & Cy avec une tolérance définie                      */
+/* Dans le cas ou aucun format ne correspond, la procédure Form est fixée à 6 */
+/*   et la procédure FormIV à 0. Dans le cas contraire, Form IV ets fixée à 2 */
+/* La variable §mod peut prendre deux valeurs :                               */
+/*   1) LH pour utiliser les procédures Lplan & Hplan (dimensions papier du   */
+/*     plan)                                                                  */
+/*   2) CxCy pour utiliser les procédures Cx & Cy (dimensions "terrain" du    */
+/*     plan)                                                                  */
+/* L'échelle du plan est donnée par la procédure Ec                           */
+{
+  var,§delta
+  §delta=5 /* tolérance de 5mm */
+  
+  var,§i,§portrait,§format
+  
+  var,§mag,§mad,§mah,§mab
+  var,§hplan,§lplan
+  
+  run,CalculeMarge([§prc_md],§mag,§mad,§mah,§mab)
+  
+  if,"§mod><`LH`"
+  then
+  {
+    §hplan=[[[§prc_H]/[§prc_ec]]*1000+[§mah]+[§mab]]
+    §lplan=[[[§prc_L]/[§prc_ec]]*1000+[§mag]+[§mad]]
+  }
+  else
+  {
+    §hplan=[[§prc_H]]
+    §lplan=[[§prc_L]]
+  }
+  
+  if,"§hplan>§lplan"
+  then
+  {
+    §portrait=1
+  }
+  else
+  {
+    §portrait=0
+  }
+  if,"[§portrait]"
+  {
+    §lplan=[§lplan+§hplan]
+    §hplan=[§lplan-§hplan]
+    §lplan=[§lplan-§hplan]
+  }
+
+  §format=6
+  /* test format ISO 216 */
+  for,"0->§i","§i<5","§i+1->§i"
+  {
+    if,"[[[§lplan]<[LA[§i]+§delta]]@[[§lplan]>[LA[§i]-§delta]]]"
+    {
+      if,"[[[§hplan]<[HA[§i]+§delta]]@[[§hplan]>[HA[§i]-§delta]]]"
+          {
+            §format=[§i]
+            §lplan=[LA[§i]]
+            §hplan=[HA[§i]]
+          }
+    }
+  }
+  if,"[§portrait]"
+  {
+    §lplan=[§lplan+§hplan]
+    §hplan=[§lplan-§hplan]
+    §lplan=[§lplan-§hplan]
+  }
+  
+  [§prc_format]=[§format]
+  if,"§mod==`LH`"
+  then
+  {
+    [§prc_L]=[§lplan]
+    [§prc_H]=[§hplan]
+  }
+}
+
+rout,DupComp(§ma)
+{
+  run,MajListe
+  fdia
+  dupl,[§ma],[[§ma]:R].
+  [mm]:Ph=0
+  marq,11
+  Ma=[mm]
+  run,InitRpqt
+  run,LecArgs
+  run,CreeFenetre
+}
+
+rout,Enreg
+{
+  !cmpe,[MaR]
+  !cmpe,epBase
+  
+  if,"[Cas==`Mod`]"
+  {
+    marq,10,`¹Modification du plan [[Ma]&V0:Nom] ([Ma])¹`
+  }
+    if,"[Cas==`Cre`]"
+  {
+    marq,10,`¹Création du plan [[Ma]&V0:Nom] ([Ma])¹`
+  }
+  !Jrpqt>[Ma]
+  if,"nmbr(`!Jrpqt`)"
+  {
+    list,[base]\Listing,raz=1
+    run,Repercut
+    list
+    exec,[base]\Listing
+    marq,10,`¹Répercussion des attributs¹`
+  }
+}
+
+rout,GisComp
+{
+  chma,titr="Sélectionner un composant",ok=MajGisComp
+}
+
+rout,InitRpqt
+/* Déclare et instancie toutes les procédures de valeurs qui seront récupérées en cas de répercussion */
+{
+  /* --- Paramètres de format et position du plan ---------------------------- */
+  !Jrpqt=0
+	
+  MdQ=0
+  EcQ=0
+  GQ=0
+  XQ=0
+  YQ=0
+  CxCyQ=0
+  CxQ=0
+  CyQ=0
+  
+  ZQ=0
+  PrQ=0
+  CoQ=0
+  LyQ=0
+}
+
+rout,LecArgs
+/* Affecte aux procédures les valeurs du formulaire de positionnement du plan */
+{
+  X=[[Ma]:X]
+  Y=[[Ma]:Y]
+  Z=[[Ma]:Z]
+  G=[[Ma]:G]
+  Cx=[[Ma]:Cx]
+  Cy=[[Ma]:Cy]
+  Md=[[Ma]:MD]
+  if,"[Z==``]"
+  {
+    Z=0
+  }
+  Nom=[[Ma]&V:Nom]
+  if,"[Nom==``]"
+  {
+    Nom="[Ma]"
+  }
+  
+  Ec=[[Ma]&V:Ec]
+  if,"[Ec==``]"
+  {
+    Ec=250
+  }
+  
+  run,DetFormat(CxCy,Cx,Cy,Ec,Md,Form)
+  run,DetFormIV
+  if,"FormIV=2"
+  {
+	if,"Cy>Cx"
+    then
+    {
+      Lplan=[HA[Form]]
+      Hplan=[LA[Form]]
+    }
+	else
+	{
+	  Lplan=[LA[Form]]
+      Hplan=[HA[Form]]
+	}
+  }
+  else
+  {
+    Hplan=[[Cy/Ec]*1000]
+	Lplan=[[Cx/Ec]*1000]
+  }
+  
+  MaR=[ml(`epBase`)]
+  run,AfficheRbase
+
+}
+
+rout,MajGisComp(§g)
+{
+  qmod,ED_G,tx="[[§g]:G]"
+  run,ValidG
+}
+
+rout,ModComp(§ma)
+{
+  run,MajListe
+  fdia
+  Cas=Mod
+  Ma=[§ma]
+  run,InitRpqt
+  run,LecArgs
+  run,CreeFenetre
+}
+
+rout,TraiteGis(§x,§y,§r,§n,§f)
+{
+  var,§gist
+  .:x=[§x],y=[§y],ph=1
+  dipp,pnt1=[Ma],pnt2=[mm],prcg=§gist
+  qmod,ED_G,tx="[§gist]"
+  run,ValidG
+}
+
+rout,TraiteSouris(§x,§y,§r,§n,§f)
+{
+  qmod,ED_POSX,tx=[§x]
+  qmod,ED_POSY,tx=[§y]
+  run,ValidXY
+}
+
+rout,ValidCxCy
+{
+  Form=[et(OP_FORM)-1]
+  
+  if,"[[Form]<5]"
+  then
+  {
+    Hplan=[HA[Form]]
+    Lplan=[LA[Form]]
+    FormIV=2
+  }
+  else
+  {
+    Hplan=[tx(ED_H)]
+    Lplan=[tx(ED_L)]
+    FormIV=0
+  }
+  
+  Cy=[[Hplan*Ec]/1000]
+  Cx=[[Lplan*Ec]/1000]
+  
+  if,"[[et(OP_ORIENT)]-1]"
+  then /* Paysage */
+  {
+    if,"Cy>Cx"
+        {
+          Cx=[Cx+Cy]
+          Cy=[Cx-Cy]
+          Cx=[Cx-Cy]
+          Lplan=[Lplan+Hplan]
+          Hplan=[Lplan-Hplan]
+          Lplan=[Lplan-Hplan]
+        }
+  }
+  else /* Portrait */
+  {
+    if,"Cx>Cy"
+        {
+          Cx=[Cx+Cy]
+          Cy=[Cx-Cy]
+          Cx=[Cx-Cy]
+          Lplan=[Lplan+Hplan]
+          Hplan=[Lplan-Hplan]
+          Lplan=[Lplan-Hplan]
+        }
+  }
+  
+  run,CalculeMarge(Md,MaG,MaD,MaH,MaB)
+  Cy=[Cy-[[MaH+MaB]*[Ec]/1000]]
+  Cx=[Cx-[[MaG+MaD]*[Ec]/1000]]
+  
+  if,"Cy<0"
+  then
+  {
+    Cy=0
+  }
+  if,"Cx<0"
+  then
+  {
+    Cx=0
+  }
+  
+  qmod,ED_H,tx=[Hplan],IV=[FormIV]
+  qmod,ED_L,tx=[Lplan],IV=[FormIV]
+  qmod,TX_H,tx=[Hplan],IV=[2-FormIV]
+  qmod,TX_L,tx=[Lplan],IV=[2-FormIV]
+  
+  run,Valid
+}
+
+rout,ValidEc
+{
+  Ec=[tx(CB_ECH)]
+  run,ValidCxCy
+}
+
+rout,ValidG
+{
+  G=[tx(ED_G)]
+  run,Valid
+}
+
+rout,ValidLH
+{
+  Lplan=[tx(ED_L)]
+  Hplan=[tx(ED_H)]
+  run,DetFormat(LH,Lplan,Hplan,Ec,Md,Form)
+  run,DetFormIV
+  qmod,OP_FORM,et=[Form]
+  run,ValidCxCy
+}
+
+rout,DetFormIV
+{
+  if,"Form<6"
+  {
+    FormIV=2
+  }
+  else
+  {
+    FormIV=0
+  }
+}
+
+rout,ValidMdl
+{
+  Md=[tx(ED_MDL)]
+  run,ValidCxCy
+}
+
+rout,ValidMdl1(§modl)
+{
+  qmod,ED_MDL,tx=[§modl]
+  run,ValidMdl
+}
+
+rout,ValidNom
+{
+  Nom=[tx(ED_NOM)]
+  run,Valid
+}
+
+rout,ValidXQ
+{
+  ZQ=[et(BP_POSX)]
+  run,Valid
+}
+
+rout,ValidXY
+{
+  X=[tx(ED_POSX)]
+  Y=[tx(ED_POSY)]
+  run,Valid
+}
+
+rout,ValidZ
+{
+  Z=[tx(ED_POSZ)]
+  run,Valid
+}
+
+rout,Valid
+{
+  anul,11,saut=0
+  list,[base]\Listing,raz=1
+  impr,!cmpe,[Ma],V0-V999
+  impr,[Ma]:X=[X],Y=[Y],Z=[Z],G=[G],Cx=[Cx],Cy=[Cy],MD=[Md]
+  impr,[Ma]&V0:Nom="[Nom]",Ec=[Ec]
+  impr,ral,[Ma]&T8:x=[X],y=[Y]
+  !Jrpqt>[Ma]
+  run,RpqtPlan
+  run,Repercut
+  list
+  exec,[base]\Listing
+  qset,mod=1
+  run,AfficheRbase
+}
+
+rout,RpqtPlan
+{
+	if,"[et(BP_MDL)]=1"
+	{
+	  MdQ=[tx(ED_MDL)]
+	}
+	if,"[et(BP_ECH)]=1"
+	{
+	  EcQ=[tx(CB_ECH)]
+	}
+	if,"[et(BP_POSX)]=1"
+	{
+	  XQ=[tx(ED_POSX)]
+	}
+	if,"[et(BP_G)]=1"
+	{
+	  GQ=[tx(ED_G)]
+	}
+	if,"[et(BP_POSY)]=1"
+	{
+	  YQ=[tx(ED_POSY)]
+	}
+	if,"[et(BP_CXCY)]=1"
+	{
+	  CxQ=[Cx]
+	  CyQ=[Cy]
+	}
+}
+
+
+rout,Repercut
+{
+  var,§nordre,§x,§y
+  
+  list,[base]\Listing,raz=0
+  runs,!Jrpqt
+  {
+    impr,!cmpe,[mm],V0-V999
+    impr,[mm]:Z=[si(ZQ,Z,:Z)]
+    impr,[mm]:Md=[si(MdQ,Md,:Md)]
+    impr,[mm]:X=[si(XQ,XQ,:X)]
+    impr,[mm]:Y=[si(YQ,YQ,:Y)]
+    impr,[mm]:G=[si(GQ,GQ,:G)]
+    impr,[mm]:Cx=[si(CxQ,CxQ,:Cx)]
+    impr,[mm]:Cy=[si(CyQ,CyQ,:Cy)]
+    impr,[mm]&V0:Nom="[&V:Nom]",Ec=[si(EcQ,Ec,&V:Ec)]
+    impr,[mm]&V1:Ly="[si(LyQ,Ly,&V:Ly)]"
+  }
+}
+

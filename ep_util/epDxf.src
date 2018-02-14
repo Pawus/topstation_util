@@ -1,0 +1,98 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         22 02 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+/*  aucune boite à outils                                                 */
+
+
+/* Liste des routines                                                     */
+/*  AplDuClq Ouvre une fenêtre de sélection de plusieurs composant pour   */
+/*      y appliquer la fonction DuClq                                     */
+/*		Dernière modification : 25/01/2013								  */
+/*  AplEnlvClq Ouvre une fenêtre de sélection d'un composant pour y a     */
+/*      appliquer la fonction EnlvClq                                     */
+/*		Dernière modification : 24/01/2013								  */
+/*	DuClq Force les attributs couleur, épaisseur et type de ligne des     */
+/*      composants appartennat à la sélection de composants !EpSlcDuClq   */
+/*      en "DuCalque"                                                     */
+/*		Dernière modification : 25/01/2013								  */
+/*	EnlvClq(§mat) Enlève du domaine actif les composants visibles         */
+/*      appartenant au même calque qu'un composant donné                  */
+/*		Dernière modification : 22/02/2013								  */
+/*	SelClq(§mat,§sel) Sélectionne les composants visibles appartenant au  */
+/*      le même calque qu'un composant donné et les places dans une       */
+/*      sélection définie 												  */
+/*		Dernière modification : 15/01/2013								  */
+
+
+proc,JtDebug=1
+
+rout,SelClq(§mat,§sel)
+/* Sélectionne les composants visibles dont le calque indiqué dans la     */
+/*  rallonge &v1:Ly est le même que le composant dont le matricule est    */
+/*  donné dans §mat et les place dans la sélection indiqué dans §sel      */
+{
+ /* pour bien, il faudrait vérifier que §sel est une sélection existante  */
+ [§sel]=!visb*!test(&v1:Ly==[[§mat]&v1:Ly])
+}
+
+rout,EnlvClq(§mat)
+/* Enlève du domaine actif et gomme les composants visibles dont le       */
+/*  calque indiqué dans la rallonge &v1:Ly est le même que le composant   */
+/*  dont le matricule est donné dans §mat                                 */
+{
+ var,§dom
+ §dom=[%DOM:DOM]
+ !EpTmpEnlvClq=0
+ run,SelClq([§mat],!EpTmpEnlvClq)
+ marq,11
+ domo,[§dom],!EpTmpEnlvClq
+ gom,!EpTmpEnlvClq
+ rgen
+ qpop,tx="¹Valider ?¹",j=0
+ {
+   qap,tx="¹Oui¹",dfo=1
+   {
+     marq,10,`¹Calque [[§mat]&v1:Ly] enlevé du domaine du plan ([§dom])¹`
+   }
+   qap,tx="¹Non¹"
+   {
+     anul,11,saut=0
+	 tra,!dom([§dom])
+   }
+ }
+ !sele,!EpTmpEnlvClq
+}
+
+rout,AplEnlvClq
+/* Ouvre une fenêtre de sélection de composant puis appelle EnlvClq       */
+{
+  chma,prop=,selc=!test(&v1:Ly><``),titr="¹Sélectionner composant¹",ok=EnlvClq,aide=[epUtil]\aide\epEnlvClq.txt
+}
+
+rout,AplDuClq
+/* Ouvre une fenêtre de sélection de composants puis appelle DuCalq       */
+{
+  !EpSlcDuClq=0
+  chsl,nom=!EpSlcDuClq,titr=¹Composants à traiter?¹,ok=DuClq,aide=[epUtil]\aide\epDuClq.txt
+}
+
+rout,DuClq
+/* Force les rallonges &v0:Co (couleur), &v0:Lw (épaisseur de ligne )     */
+/*  et &v2:Lt (type de ligne) des composants appartenant à la sélection   */
+/*  !EpSlcDuClq en leur valeur corrspondant à "DuCalque"                  */
+{
+  runs,!EpSlcDuClq
+  {
+    ral,[mm]&v0:Co=256       /* couleur du calque*/
+    ral,[mm]&v0:Lw=-1        /* epaisseur du trait du calque */
+    ral,[mm]&v2:Lt="ByLayer" /* type de trait du calque */
+  }
+  !sele,!EpSlcDuClq
+  marq,10,`¹Propriétés forcées en DuCalque¹`
+}
+
+

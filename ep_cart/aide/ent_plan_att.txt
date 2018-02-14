@@ -1,0 +1,19 @@
+
+
+DEFINITION DES ATTRIBUTS D'UN PLAN
+
+
+Par défaut, les valeurs courantes des attributs du plan sont spécifiées.
+
+Pour répercuter des attributs sur d'autres plans, cocher les champs à répercuter puis bouton "Répercuter", et choisir les plans.
+
+
+Nature de l'information :
+
+Calculée : composants recalculés à partir des éléments le definissant
+
+Digitalisée : composants digitalisés (visuellement) par un opérateur
+
+Importée : composants importés automatiquement (depuis un fichier dxf ou une base de données par exemples)
+
+Saisie : composants dont les coordonnées ont été saisies manuellement par un opérateur

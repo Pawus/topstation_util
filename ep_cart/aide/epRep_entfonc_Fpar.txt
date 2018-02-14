@@ -1,0 +1,28 @@
+
+
+PARCELLAIRE
+
+On entends par parcellaire l'ensemble des composants définissant une parcelle foncière.
+
+La force de représentation de ces composants est indiquée sur le premier caractère de la procédure epRf.
+
+MODELE
+
+Liste des modèles utilisant cette représentation :
+
+    EP_ZON_PARCELLE
+
+CHARTE GRAPHIQUE EPADESA
+		
+Les limites de parcelle sont représentées :
+
+    - pour une représentation « forte », sous un trait continu moyen de couleur rouge ;
+
+    - pour une représentation « courante », sous un trait continu moyen de couleur bleue ;
+
+    - pour une représentation « faible », sous un trait continu moyen de couleur bistre.
+
+En représentation faible les numéros de parcelle ne sont pas inscrits.
+
+
+	

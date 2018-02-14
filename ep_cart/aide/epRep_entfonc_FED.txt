@@ -1,0 +1,23 @@
+
+
+ETAT DESCRIPTIF DE DIVISION EN VOLUMES
+
+On entends par volumétrie l'ensemble des composants définissant un état descriptif de division en volumes.
+
+La force de représentation de ces composants est indiquée sur le troisième caractère de la procédure epRf.
+
+MODELE
+
+Liste des modèles utilisant cette représentation :
+
+    EP_ZON_EDDV
+
+CHARTE GRAPHIQUE EPADESA
+
+Pour une représentation forte, l’assiette est représentée sous aplat gris de lin.
+
+Pour une représentation courante, on n’hachure pas l’emprise.
+
+Pour une représentation faible, on n’hachure pas l’emprise, et on n’écrit pas le nom de l’état descriptif.
+	
+	

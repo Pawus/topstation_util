@@ -1,0 +1,178 @@
+/*	@	24/02/2012	*/
+/*  @	Création de composants DZ à partir des géométries Cpar, avec même matricule que Cpar	*/
+/*	@	Suppression des composants DZ correspondant à des parcelles qui font partie d'assiettes de volumétries	*/
+/*	@	Nécessite les composants Cpar et Fpar chargés dans la base, et nécessite DZ non chargé ou vide	*/
+/*	@	Auteur : Vianney Dugrain	*/
+
+/*	Lancement : lanc,SelectToDZ,D:\travail\TopStation\Fichiers source\themFoncier.src	*/
+
+/*	proc,epMdV=EP_ZON_THM_PROP	*/
+
+rout,Main
+{
+	odbc,data=Cadastre,auto=1			
+	lanc,ImpTout,[epUtil]\epImCdif.src	
+	run,SelectToDZ
+	run,DeleteFED
+	run,TracePlans
+}
+
+rout,SelectToDZ
+/*	Créée les composants DZ à partir des composants d'une selection	*/
+{
+	var,§cmp,§dz
+	!Select=Cpar.3228-Cpar.3239
+	runs,!Select
+	{
+		§cmp=[mm]
+		§dz=[ml(`DZ`)]
+		[§dz]&R0:F=[§cmp]
+		[§dz]:MD=EP_ZON_THM_PROP
+		[§dz]&Z0:[§cmp]
+		[§dz]&q0:dtc="[[§dz]:JO]/[[§dz]:MO]/20[[§dz]:AN]",io="EPADESA-DFJ",in="calculé"
+	}
+}
+
+
+rout,CparToDZ
+/*	Créée les composants DZ à partir des géométries Cpar	*/
+{
+	var,§cmp
+	
+	runs,Cpar.3228-Cpar.3239
+	/*	Pour chaque parcelle, création d'un nouveau composant DZ	*/
+	{
+		§cmp=[mm]
+		DZ.[[§cmp]:i]:MD=EP_THM_PROP
+		DZ.[[§cmp]:i]&Z0:[§cmp]
+	}
+	marq,10,`Cpar vers DZ`
+}
+
+rout,DeleteFED
+/*	Supprime dans DZ les parcelles qui sont comprises dans les assiettes de volumétrie	*/
+{
+	runs,FED
+	/*	Pour chaque volumétrie, suppression dans DZ des parcelles intersectées	*/
+	{
+		!cmpe,DZ*!zoni([mm],-0.50)
+	}
+	marq,10,`Suppression des assiettes de volumétrie`
+}
+
+rout,TracePlans
+/*	Création des plans de synthèse au 2500e	*/
+{
+	/***	----------------------	DEFINITION DES PLANS	-----------------------	***/
+	Mplan1=[ml(`jtPlan`)]
+	Dplan1=JTPLAN[xtr(Mplan1,7)]
+	[Mplan1]:LO=2.239167839°,LA=48.889451199°,Z=0.000,GN=129.061973,CX=2847.500,CY=1977.500,PH=7,PV=7,MD=EP_CAR_A2_E
+	domi,[Dplan1],[Mplan1]
+	[Mplan1]&K0:gom,!tout
+	[Mplan1]&K1:%DOM:DOM="[Dplan1]"
+	[Mplan1]&K2:tra,!dom([Dplan1])
+	[Mplan1]&K3:tra,(DZ+Cpar+Poin+FED+BAc)*!zonr(1)
+	[Mplan1]&K4:tra,(CDl+ILc+VX+YUc)
+	[Mplan1]&K5:tra,[mm]
+	[Mplan1]&Q0:dtc=[xtr(date,0,6)]20[xtr(date,6,2)],in="calculé",io="EPADESA/DJF"
+	[Mplan1]&T0:commune=9
+	[Mplan1]&T2:titre="Atlas foncier"
+	[Mplan1]&T3:soustitre="Planche 1"
+	[Mplan1]&T5:date=[xtr(date,0,6)]20[xtr(date,6,2)]
+	[Mplan1]&T6:indice="--",nordre="A530"
+	[Mplan1]&T7:alti=0,etude=0,prov=0
+	[Mplan1]&V0:Nom="Foncier2500_1",Ec=2500
+	
+	Mcart1=[ml(`jtCart`)]
+	[Mcart1]:LO=2.244307522°,LA=48.877253837°,GN=129.066284,CX=550.000,CY=767.500,PH=1,MD=EP_CRT_A2
+	[Mcart1]&D0:[Dplan1]
+	[Mcart1]&R0:P=[Mplan1]
+	[Mcart1]&V0:Nom="",J=7,Dx=2.50,Dy=-2.50,Cx=22.00,Cy=30.70
+	
+	Mplan2=[ml(`jtPlan`)]
+	Dplan2=JTPLAN[xtr(Mplan2,7)]
+	[Mplan2]:LO=2.228320062°,LA=48.904360834°,Z=0.000,GN=79.352877,CX=2847.500,CY=1977.500,PH=7,PV=7,MD=EP_CAR_A2_E
+	domi,[Dplan2],[Mplan2]
+	[Mplan2]&K0:gom,!tout
+	[Mplan2]&K1:%DOM:DOM="[Dplan2]"
+	[Mplan2]&K2:tra,!dom([Dplan2])
+	[Mplan2]&K3:tra,(DZ+Cpar+Poin+FED+BAc)*!zonr(1)
+	[Mplan2]&K4:tra,(CDl+ILc+VX+YUc)
+	[Mplan2]&K5:tra,[mm]
+	[Mplan2]&Q0:dtc=[xtr(date,0,6)]20[xtr(date,6,2)],in="calculé",io="EPADESA/DJF"
+	[Mplan2]&T0:commune=6
+	[Mplan2]&T2:titre="Atlas foncier"
+	[Mplan2]&T3:soustitre="Planche 2"
+	[Mplan2]&T5:date=[xtr(date,0,6)]20[xtr(date,6,2)]
+	[Mplan2]&T6:indice="--",nordre="A531"
+	[Mplan2]&T7:alti=0,etude=0,prov=0
+	[Mplan2]&V0:Nom="Foncier2500_2",Ec=2500
+	
+	Mcart2=[ml(`jtCart`)]
+	[Mcart2]:LO=2.239193699°,LA=48.909462093°,GN=79.361995,CX=550.000,CY=767.500,PH=1,MD=EP_CRT_A2
+	[Mcart2]&D0:[Dplan2]
+	[Mcart2]&R0:P=[Mplan2]
+	[Mcart2]&V0:Nom="",J=9,Dx=2.50,Dy=2.50,Cx=22.00,Cy=30.70
+	
+	Mplan3=[ml(`jtPlan`)]
+	Dplan3=JTPLAN[xtr(Mplan3,7)]
+	[Mplan3]:LO=2.209574995°,LA=48.902318319°,Z=0.000,GN=129.947157,CX=2847.500,CY=1977.500,PH=7,PV=7,MD=EP_CAR_A2_E
+	domi,[Dplan3],[Mplan3]
+	[Mplan3]&K0:gom,!tout
+	[Mplan3]&K1:%DOM:DOM="[Dplan3]"
+	[Mplan3]&K2:tra,!dom([Dplan3])
+	[Mplan3]&K3:tra,(DZ+Cpar+Poin+FED+BAc)*!zonr(1)
+	[Mplan3]&K4:tra,(CDl+ILc+VX+YUc)
+	[Mplan3]&K5:tra,[mm]
+	[Mplan3]&Q0:dtc=[xtr(date,0,6)]20[xtr(date,6,2)],in="calculé",io="EPADESA/DJF"
+	[Mplan3]&T0:commune=4
+	[Mplan3]&T2:titre="Atlas foncier"
+	[Mplan3]&T3:soustitre="Planche 3"
+	[Mplan3]&T5:date=[xtr(date,0,6)]20[xtr(date,6,2)]
+	[Mplan3]&T6:indice="--",nordre="A532"
+	[Mplan3]&T7:alti=0,etude=0,prov=0
+	[Mplan3]&V0:Nom="Foncier2500_3",Ec=2500	
+	
+	Mcart3=[ml(`jtCart`)]
+	[Mcart3]:LO=2.193254852°,LA=48.910649766°,GN=129.933471,CX=550.000,CY=767.500,PH=1,MD=EP_CRT_A2
+	[Mcart3]&D0:[Dplan3]
+	[Mcart3]&R0:P=[Mplan3]
+	[Mcart3]&V0:Nom="",J=3,Dx=-2.50,Dy=2.50,Cx=22.00,Cy=30.70
+	
+	!prce,Mplan%
+	!prce,Dplan%
+	
+	marq,10,`Import des plans au 2500e`
+}
+
+rout,DeleteFpar
+/*	OBSOLETE	*/
+{
+	/*	On parcourt la liste des parcelles	*/
+	runs,Cpar
+	{
+		var,§com,§sec,§num,§suppr
+		§suppr=0
+		§com=[[mm]&V1:com]
+		§sec=[[mm]&V1:sec]
+		§num=[[mm]&V1:num]
+		/*	On parcourt, pour chaque parcelle, la liste des assiettes de volumétries	*/
+		runs,Fpar
+		{
+			/*	Si une parcelle est assiette de volumétrie, §suppr vaut 1, sinon il vaut 0	*/
+			if,[[[mm]&V1:com]=§com]@[[[mm]&V1:sec]=§sec]@[[[mm]&V1:num]=§num]
+			{
+				§suppr=1
+			}
+			else
+			{
+				§suppr=0
+			}
+		}
+		/*	Si §suppr vaut 1, on supprime le composant Cpar	*/
+		if,§suppr=1
+		{
+			cmpf,[mm] /* pas bon */
+		}
+	}
+}

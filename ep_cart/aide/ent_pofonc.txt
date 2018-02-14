@@ -1,0 +1,19 @@
+
+CRÉER/REPRODUIRE/MODIFIER UN POINT FONCIER
+
+Cette fenêtre permet de créer ou modifier un sommet de fonds en renseignant les attributs prévus dans la structuration.
+
+La fenêtre se décompose en trois parties :
+
+	1) les caractéristiques du sommet, permettant de renseigner les coordonnées et leur précision ainsi que certaines informations
+	concernant la nature du sommet et son identification sur les plans de la base en cours ;
+	
+	2) les informations sur les élements de définition du sommet (document dont est issu le point, 
+	
+	3) Information sur le composant
+
+
+
+
+
+

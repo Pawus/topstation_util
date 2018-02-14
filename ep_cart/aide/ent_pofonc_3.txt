@@ -1,0 +1,37 @@
+
+MÉTADONNÉES SUR LE COMPOSANT
+
+Attribut &Q0:dtc - date de dernière modification
+
+	Cet attribut enregistre la date de denière modification du composant.
+	
+	Sa valeur est automatiquement mise à jour et fixée à celle du jour courant dès que l'un des attributs du composant est modifié.
+	La mise à jour automatique est suspendue dès lors que le champs est modifié manuellement par l'opérateur.
+	
+	Cet attribut est obligatoire.
+
+Attribut &Q0:io - organisme ayant saisi
+
+	Cet attribut enregistre le nom de l'organisme ayant modifié pour la dernière fois le composant (saisie ou modification des attributs du sommet).
+	
+	Sa valeur est automatiquement mise à jour et fixée à celle de la procédure epUsr dès que l'un des attributs du composant est modifié.
+	La mise à jour automatique est suspendue dès l'instant que la valeur de epUsr est identique à celle de &q0:io ou que le champs est
+	modifié manuellement par l'opérateur.
+	
+	Cet attribut est obligatoire.
+
+Attribut &Q0:in - forme de la saisie
+
+	Cet attribut enregistre la manière dont les coordonnées de ce composant ont été renseignées. Par défaut, il est fixé à la valeur
+	correspondant à une aspiration (accrochage), ce qui est la situation d'une création de point à partir d'un dxf.
+	
+	Lors d'une digitalisation, cet attribut est automatiquement fixé à la valeur correspondant à une digitalisation.
+	
+	Cet attribut est obligatoire.
+
+Attribut &Q0:ir - référence
+
+	Cet attribut enregistre une référence libre sur la saisie.
+	
+	Cet attribut est optionnel.
+

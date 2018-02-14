@@ -1,0 +1,57 @@
+proc,JtDebug=1
+
+#include ".\hbOutils.inc"
+proc,EPAD=EPADESA
+
+rout,Fenetre
+{
+    var,§fed,§planinf,§t
+
+    §t=¹[EPAD] Tracer les FCL du plan de Z supérieur¹
+
+    dial,HB_APE,l=208,h=20,tx={§t},ferm=1
+    qc,bf,BF_OK   ,002,004,044,012,j=5,tx="¹OK¹",rout=BfOk
+    qc,bf,BF_AIDE ,164,004,042,012,j=5,tx="¹Aide¹",rout=BfAide
+    evnt,entr=BfOk,bdro=BfOk
+    qset,foc=BF_OK
+  
+    rout,BfOk
+    {
+        §fed=[[jtMatPlan]&r0:E]
+        §planinf={}
+        if,"§fed><``"
+        {
+            !HbPlans=jtPlan*!onc([§fed])
+            §t={{mm}:z+11000}{{mm}&v0:nom}
+            runs,!HbPlans,tri=§t
+            {
+                if,"mm==jtMatPlan"
+                {
+                    §planinf=[mm]
+                }
+                else
+                {
+                    fdia
+                    if,"§planinf><``"
+                    {
+                        tra,[hbcFCL]*!dom([[mm]&d0:])
+                        [fi]
+                    }
+                    else
+                    {
+                        run,MessageFdia(Plan d'altitude la plus haute)    
+                    }
+                }
+            }
+        }
+        else
+        {
+            run,MessageFdia(Pas d'EDDV associé au plan en vigueur)
+        }
+    }
+}
+
+rout,BfAide
+{
+	aide,{epUtil}\aide\hbTraFCLPzsup.txt
+}

@@ -1,0 +1,154 @@
+
+proc,JtDebug=1
+
+proc,Hc=[12+[udiay<1.8]]
+proc,Ht=[Hc+2+2*[udiay<1.8]]
+
+proc,Titre=¹Représentation des données¹
+
+rout,Appel
+{
+  run,LecArgs
+  run,CreeFenetre
+}
+
+rout,LecArgs
+{
+  Fpar=1
+  F=1
+  FED=1
+  FCD=1
+  FIP=1
+  FID=1
+  Fot=1
+  if,defprc(`epRf`)
+  {
+    if,"len(epRf)==7"
+	{
+      Fpar=[xtr(epRf,0,1)]
+      F=[xtr(epRf,1,1)]
+      FED=[xtr(epRf,2,1)]
+      FCD=[xtr(epRf,3,1)]
+      FIP=[xtr(epRf,4,1)]
+      FID=[xtr(epRf,5,1)]
+      Fot=[xtr(epRf,6,1)]
+	}
+  }
+  TepRf=[Fpar][F][FED][FCD][FIP][FID][Fot]
+}
+
+rout,CreeFenetre
+{
+  var,§h,§hf,§bl
+  
+  §hf=[9*Ht+7]
+  dial,EP_REP_ENTFONC,l=240,h=[§hf],lmin=240,hmin=[§hf],lmax=512,hmax=[§hf],tx={Titre},ferm=1
+  §h=2
+  qc,tx,TX_LBLR0,60,[§h],60,[Hc],j=5,tx="¹faible¹"
+  qdim,TX_LBLR0,dx=0.25,dy=0.00,dl=0.25,dh=0.00
+  qc,tx,TX_LBLR1,120,[§h],60,[Hc],j=5,tx="¹courante¹"
+  qdim,TX_LBLR1,dx=0.50,dy=0.00,dl=0.25,dh=0.00
+  qc,tx,TX_LBLR2,180,[§h],60,[Hc],j=5,tx="¹forte¹"
+  qdim,TX_LBLR2,dx=0.75,dy=0.00,dl=0.25,dh=0.00
+  §h=[§h+Ht]
+  qc,tx,TX_FPAR,2,[§h],58,[Hc],j=8,tx="¹Parcellaire : ¹"
+  qc,JG,JG_FPAR,85,[§h],130,[Hc],j=5,et=[Fpar],vmin=0,vmax=2,rout=Change
+  qdim,TX_FPAR,dx=0.00,dy=0.00,dl=0.25,dh=0.00
+  qdim,JG_FPAR,dx=0.37,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  qc,tx,TX_F,2,[§h],58,[Hc],j=8,tx="¹Lot : ¹"
+  qc,JG,JG_F,85,[§h],130,[Hc],j=5,et=[F],vmin=0,vmax=2,rout=Change
+  qdim,TX_F,dx=0.00,dy=0.00,dl=0.25,dh=0.00
+  qdim,JG_F,dx=0.37,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  qc,tx,TX_FED,2,[§h],58,[Hc],j=8,tx="¹Volumétrie : ¹"
+  qc,JG,JG_FED,85,[§h],130,[Hc],j=5,et=[FED],vmin=0,vmax=2,rout=Change
+  qdim,TX_FED,dx=0.00,dy=0.00,dl=0.25,dh=0.00
+  qdim,JG_FED,dx=0.37,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  qc,tx,TX_FCD,2,[§h],58,[Hc],j=8,tx="¹Volume : ¹"
+  qc,JG,JG_FCD,85,[§h],130,[Hc],j=5,et=[FCD],vmin=0,vmax=2,rout=Change
+  qdim,TX_FCD,dx=0.00,dy=0.00,dl=0.25,dh=0.00
+  qdim,JG_FCD,dx=0.37,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  qc,tx,TX_FIP,2,[§h],58,[Hc],j=8,tx="¹Ténement : ¹"
+  qc,JG,JG_FIP,85,[§h],130,[Hc],j=5,et=[FIP],vmin=0,vmax=2,rout=Change
+  qdim,TX_FIP,dx=0.00,dy=0.00,dl=0.25,dh=0.00
+  qdim,JG_FIP,dx=0.37,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  qc,tx,TX_FID,2,[§h],58,[Hc],j=8,tx="¹Domaine : ¹"
+  qc,JG,JG_FID,85,[§h],130,[Hc],j=5,et=[FID],vmin=0,vmax=2,rout=Change
+  qdim,TX_FID,dx=0.00,dy=0.00,dl=0.25,dh=0.00
+  qdim,JG_FID,dx=0.37,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  qc,tx,TX_FOT,2,[§h],58,[Hc],j=8,tx="¹Occup. temp. : ¹"
+  qc,JG,JG_FOT,85,[§h],130,[Hc],j=5,et=[Fot],vmin=0,vmax=2,rout=Change
+  qdim,TX_FOT,dx=0.00,dy=0.00,dl=0.25,dh=0.00
+  qdim,JG_FOT,dx=0.37,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht+5]
+  qc,bf,BF_BEOK,5,[§h],20,[Hc],j=5,tx="¹OK¹",rout=BfBeok
+  qc,bf,BF_ANUL,155,[§h],40,[Hc],j=5,tx="¹Annuler¹",rout=BfAnul
+  qc,bf,BF_AIDE,200,[§h],35,[Hc],j=5,tx="¹Aide¹",rout=BfAide
+  qdim,BF_BEOK,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_ANUL,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_AIDE,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  
+  evnt,entr=BfBeok,bdro=BfBeok,ferm=BfFerm
+}
+
+rout,BfBeok
+{
+  fdia
+}
+
+rout,BfAnul
+{
+  fdia
+  epRf=[TepRf]
+  run,Retrace
+}
+
+rout,BfFerm
+{
+  if,modif
+  {
+    note
+    qpop,"¹Modifier la représentation ?¹",j=5
+    {
+      qap,"¹Oui¹",dfo=1
+      {
+        run,BfBeok
+      }
+      qap,"¹Non¹"
+	  {
+        run,BfAnul
+	  }
+    }
+  }
+}
+
+rout,BfAide
+{
+  !prce,JtAide_@
+  JtAide_a"¹Représentation des données foncières¹"=[juCartEP]\aide\epRep_entfonc.txt
+  JtAide_b"¹Parcellaire¹"=[juCartEP]\aide\epRep_entfonc_Fpar.txt
+  JtAide_c"¹Lot¹"=[juCartEP]\aide\epRep_entfonc_F.txt
+  JtAide_d"¹Volumétrie¹"=[juCartEP]\aide\epRep_entfonc_FED.txt
+  JtAide_e"¹Volume¹"=[juCartEP]\aide\epRep_entfonc_FCD.txt
+  JtAide_f"¹Ténement¹"=[juCartEP]\aide\epRep_entfonc_FIP.txt
+  JtAide_g"¹Domaine¹"=[juCartEP]\aide\epRep_entfonc_FID.txt
+  JtAide_h"¹Occup. temp.¹"=[juCartEP]\aide\epRep_entfonc_Fot.txt
+  aide,JtAide_@
+}
+
+rout,Retrace
+{
+  tra,!tra
+}
+
+rout,Change
+{
+  epRf=[et(JG_FPAR)][et(JG_F)][et(JG_FED)][et(JG_FCD)][et(JG_FIP)][et(JG_FID)][et(JG_FOT)]
+  run,Retrace
+  qset,mod=1
+}

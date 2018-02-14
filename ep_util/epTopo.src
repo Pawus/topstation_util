@@ -1,0 +1,18 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         18 09 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+/*         VD Vianney Dugrain (vdugrain@epadesa.fr)                       */
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+/*  epGeomOutils                                                          */
+#include "..\ep_commun\epGeomOutils.inc"
+#include "..\ep_commun\epCmpOutils.inc"
+
+proc,JtDebug=1
+
+rout,Main
+{
+  
+}

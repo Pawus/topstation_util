@@ -1,0 +1,25 @@
+/* version 0.9 du 12 02 2010 (SD)                                */
+
+proc,JtDebug=1
+
+rout,Setup(§ext,§dir)
+{
+  var,§l
+  §l=a
+  
+  !prce,epAdm%
+  epAdm={util}\ep_admin
+  pgu,epAdm%
+  
+  !prce,jtIcon[§ext]%
+  !prce,jtMenu[§ext]%
+  jtIcon[§ext]"¹CaLiF¹"=
+  jtMenu[§ext]"¹CaLiF¹"=
+  jtIcon[§ext][§l]"¹Nettoyer des sommets¹"=
+  jtMenu[§ext][§l]"¹Nettoyer des sommets¹"=lanc,NetPt,{epAdm}\epAdminCaLiF{ex}
+  §l=[chr(asc(§l)+1)]
+  jtIcon[§ext][§l]"¹Contrôle de la config. Epad¹"=
+  jtMenu[§ext][§l]"¹Contrôle de la config. Epad¹"=
+
+  mnu
+}

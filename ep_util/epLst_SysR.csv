@@ -1,0 +1,23 @@
+srid;_;_
+srid;typev;srid
+srid;typeq;txt
+srid;EPAD::0;Système local
+srid;EPAD::3;Lallemand (cadastre)
+srid;EPAD::1;Lambert I (NTF) - réalisation EPADESA
+srid;EPAD::2;Lambert I (NTF) - réalisation RATP (Nanterre Université)
+srid;IGNF::310024140;Lambert93 (RGF93)
+srid;IGNF::310024149;CC49 (RGF93)
+srid;IGNF::320002101;Lambert I (NTF)
+sraid;_;_
+sraid;typev;srid
+sraid;typeq;txt
+sraid;EPAD::101;Orthométrique Lallemand
+sraid;EPAD::102;IGN69 (normal)
+sridZone;_;_
+sridZone;typev;srid
+sridZone;typeq;txt
+sridZone;EPAD::1;LFN
+sridZone;EPAD::2;LFN
+sridZone;IGNF::310024140;L93
+sridZone;IGNF::310024149;L49
+sridZone;IGNF::320002101;LFN

@@ -1,0 +1,613 @@
+/*	@	22/02/2012	*/
+/*	@	Modifié le 28/06/2012	*/
+/*	@	Modifié le 27/08/2012	*/
+/*	@	Import de données cadastrales géométriques contenues dans PostGIS	*/
+/*	@	Auteur : Vianney Dugrain	*/
+
+/*	lanc,ImpCad,D:\travail\TopStation\Fichiers source\epImCdif.src	*/
+
+proc,JtDebug=1
+
+rout,ComDepImport
+/*	Import des communes et du département pour mise en place de la relation avec les sections	*/
+{
+	var,§dep,§nom,§com
+	ral,Cdep.92&Q0:dep=92,ind="",let="",nom="HAUTS-DE-SEINE",nab="HT-SEINE"
+	|	SELECT hbase.commune.ccodep AS "§dep:PRC",
+	|	hbase.commune.ccocom AS "§com:PRC",
+	|	hbase.commune.nomcom AS "§nom:PRC"
+	|	FROM hbase.commune;
+	{
+		ral,Ccom.92[§com]&Q0:ins=92[§com],dep=92,com=[§com],nom="[trim(§nom)]",art="",nab="",dmc=1
+		ral,Ccom.92[§com]&R0:D=Cdep.92
+	}
+}
+
+rout,SectionImport
+{
+	%CMP.J:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+	%CMP.L:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=	
+	%CMP.P:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+	%CMP.Z:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+
+	%CMP.J:RAD=J,PH=2,MD=P_POINT
+	%CMP.P:RAD=J,PH=2,MD=P_POINT
+	
+	var,§dep,§com,§nom,§mat,§id,§sec,§sub,§qupl,§copl,§eor,§icl,§sai,§dedi,§dis,§ly
+	
+	/*	run,ComDepImport	*/
+	
+	|	SELECT hbase.section_geom_[Proj].sectionid AS "§id:PRC",
+	|	hbase.section.ccocom AS "§com:PRC",
+	|	hbase.section.ccosec AS "§sec:PRC",
+	|	hbase.section.sub AS "§sub:PRC",
+	|	hbase.section.qupl AS "§qupl:PRC",
+	|	hbase.section.copl AS "§copl:PRC",
+	|	hbase.section.eor AS "§eor:PRC",
+	|	hbase.section.icl AS "§icl:PRC",
+	|	hbase.section.sai AS "§sai:PRC",
+	|	hbase.section.dedi AS "§dedi:PRC",
+	|	hbase.section.dis AS "§dis:PRC",
+	|	hbase.section.ly AS "§ly:PRC",
+	|	AsText(hbase.section_geom_[Proj].the_geom) AS "Section_Imp:WKT"
+	|	FROM hbase.section,hbase.section_geom_[Proj], perimetres.secteur_geom_cc49
+	|	WHERE hbase.section.sectionid=hbase.section_geom_[Proj].sectionid;
+/*	|	AND		ST_Intersects(hbase.section_geom_[Proj].the_geom,perimetres.secteur_geom_cc49.the_geom);	*/
+	
+	rout,Section_Imp
+	{
+		if,"wkt_npnts<8000"
+		{
+			/*** Si le type de l'entité un polygone ou un multipolygone ***/
+			if,"wkt_type==`POLYGON`"
+			{
+				wkcr,Cfeu,PH=2 /*	radical : Cfeu	*/
+				[mm->§mat]
+				[§mat]:ph=0
+				[§mat]:ph=2,MD=152
+				[§mat]&T0:[§sec]
+				ral,[§mat]&T1:sub=[§sub]
+				ral,[§mat]&T2:qupl=[§qupl],copl=[§copl],eor=[§eor],icl=[§icl]
+				ral,[§mat]&T3:sai=[§sai]
+				ral,[§mat]&T4:dedi=[§dedi],dis=[§dis]
+				ral,[§mat]&V1:ly="[§ly]",idu=[§com]000[§sec]01,qual=1,qupl=[§qupl],eor=[§eor],sec="[§sec]",pre="000"
+				ral,[§mat]&V40:commune="[§com]",section="[§sec]",feuille=1,echelle=[§eor],qual=1
+				ral,[§mat]&V41:type=DXF		
+				ral,Csec.[§id]&T0:pre=000,sec="[§sec]"
+				ral,Csec.[§id]&R0:C=Ccom.92[§com],D=Cdep.92
+				ral,[§mat]&R0:C=Ccom.92[§com],D=Cdep.92,S=Csec.[§id]
+			}
+		}
+	}
+	marq,10,`Création des sections`
+}
+
+rout,PoinImport
+{
+	%CMP.J:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+	%CMP.L:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=	
+	%CMP.P:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+	%CMP.Z:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+
+	%CMP.J:RAD=J,PH=2,MD=P_POINT
+	%CMP.P:RAD=J,PH=2,MD=P_POINT
+	
+	var,§epad_idperim,§epad_mat,§epad_lot
+	
+	|	SELECT 	perimetres.poin_geom_cc49.idperim AS "§epad_idperim:PRC",
+	|			AsText(perimetres.poin_geom_cc49.the_geom) AS "Epad_ImpPoin:WKT"
+	|	FROM	perimetres.poin_geom_cc49;
+	
+	rout,Epad_ImpPoin
+	{
+		if,"wkt_npnts<8000"
+		{
+			/*** Si le type de l'entité un polygone ou un multipolygone ***/
+			if,"wkt_type==`POLYGON`"
+			{
+				wkcr,Poin,PH=2 /*	radical : Poin	*/
+				[mm->§epad_mat]
+				[§epad_mat]:ph=0
+				[§epad_mat]:ph=2,MD=EP_ZON_POIN
+				ral,[§epad_mat]&V0:pr=0,co=256,lw=-1,sc=10
+				ral,[§epad_mat]&V1:ly="D-D-FARPIN--"
+				ral,[§epad_mat]&V2:lt="AXESX2"
+			}
+			else
+			{
+				if,"wkt_type==`MULTIPOLYGON`"
+				{
+					Poin:
+					[mm->§epad_mat]
+					wkru
+					{
+						wkcr,lot,ph=2
+						[mm->§epad_lot]
+						[§epad_lot]:ph=0
+						[§epad_lot]:ph=2,MD=z_lot
+						zoni,zone=[§epad_mat],selz=[§epad_lot]
+					}
+					[§epad_mat]:ph=2,MD=11
+				}
+			}
+		}
+	}
+	marq,10,`Création des POIN`
+}
+
+rout,CadastreImp(§nom,§rad,§mod)
+{
+	if,"§nom==`poin`"
+	{
+		run,PoinImport
+	}
+	else
+	{
+		if,"§nom==`section`"
+		{
+			run,SectionImport
+		}
+		else
+		{
+			if,"§nom==`parcelle`"
+			{
+				run,ParcelleImport
+			}
+			else
+			{
+				if,"§nom==`fed`"
+				{
+					run,FEDImport
+				}
+				else
+				{
+					var,§epad_mat,§epad_lot,§pr,§co,§lw,§sc,§ly,§lt
+					
+					/*** Mise en place des parcelles ***/
+					|	SELECT 	hbase.[§nom]_geom_[Proj].[§nom]id AS "§epad_mat:PRC",
+					|			hbase.[§nom].pr AS "§pr:PRC",
+					|			hbase.[§nom].co AS "§co:PRC",
+					|			hbase.[§nom].lw AS "§lw:PRC",
+					|			hbase.[§nom].sc AS "§sc:PRC",
+					|			hbase.[§nom].ly AS "§ly:PRC",
+					|			AsText(hbase.[§nom]_geom_[Proj].the_geom) AS "Epad_Imp:WKT"
+					|	FROM	hbase.[§nom]_geom_[Proj], hbase.[§nom], perimetres.secteur_geom_cc49
+					|	WHERE	hbase.[§nom].[§nom]id=hbase.[§nom]_geom_[Proj].[§nom]id;
+/*					|	AND		ST_Intersects(hbase.[§nom]_geom_[Proj].the_geom,perimetres.secteur_geom_cc49.the_geom);	*/
+					
+					rout,Epad_Imp
+					{
+						/*** Si le nombre de point est inférieur à 8000 ***/
+						if,"wkt_npnts<8000"
+						{			
+							/*** Teste si le type de l'entité de type GEOMETRY ou MOLTIGEOMETRY ***/
+							if,"[wkt_type==`POLYGON`]#[wkt_type==`LINESTRING`]#[wkt_type==`POINT`]"
+							{
+								wkcr,[§rad],PH=2
+								[mm->§epad_mat]
+								[§epad_mat]:ph=0
+								[§epad_mat]:ph=2,MD=[§mod]
+								ral,[§epad_mat]&V0:pr=[§pr],co=[§co],lw=[§lw],sc=[§sc]
+								ral,[§epad_mat]&V1:ly="[§ly]"
+								ral,[§epad_mat]&V2:lt="ByLayer"
+							}
+							else
+							{
+								if,"[wkt_type==`MULTIPOLYGON`]#[wkt_type==`MULTILINESTRING`]"
+								{
+									[§rad]:
+									[mm->§epad_mat]
+									wkru
+									{
+										wkcr,lot,ph=2
+										[mm->§epad_lot]
+										[§epad_lot]:ph=0
+										[§epad_lot]:ph=2,MD=[§mod]
+										zoni,zone=[§epad_mat],selz=[§epad_lot]
+									}
+									[§epad_mat]:ph=2,MD=[§mod]
+								}
+							}
+						}
+					}
+					marq,10,`Création des composants`
+				}
+			}
+		}
+	}
+}
+
+rout,ParcelleImport
+{
+	%CMP.J:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+	%CMP.L:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=	
+	%CMP.P:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+	%CMP.Z:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+
+	%CMP.J:RAD=J,PH=2,MD=P_POINT
+	%CMP.P:RAD=J,PH=2,MD=P_POINT
+
+	var,§epad_mat,§epad_lot,§id,§ccocom,§ccosec,§dnupla,§mat,§lot,§ccopre,§cad,§nom_com,§cpt,§pr,§co,§lw,§sc,§ly,§pddpid
+	
+	/*** Mise en place des parcelles ***/
+	|	SELECT 	hbase.parcelle_geom_[Proj].parcelleid AS "§id:PRC",
+	|		hbase.parcelle.ccocom AS "§ccocom:PRC",
+	|		hbase.parcelle.ccosec AS "§ccosec:PRC",
+	|		hbase.parcelle.ccopre AS "§ccopre:PRC",
+	|		hbase.parcelle.dnupla AS "§dnupla:PRC",
+	|		hbase.parcelle.cad AS "§cad:PRC",
+	|		hbase.parcelle.nom_com AS "§nom_com:PRC",
+	|		hbase.parcelle.cpt AS "§cpt:PRC",
+	|		hbase.parcelle.pr AS "§pr:PRC",
+	|		hbase.parcelle.co AS "§co:PRC",
+	|		hbase.parcelle.lw AS "§lw:PRC",
+	|		hbase.parcelle.sc AS "§sc:PRC",
+	|		hbase.parcelle.ly AS "§ly:PRC",
+	|		registrefoncier.fonds.pddpid AS "§pddpid:PRC",
+    |   	AsText(hbase.parcelle_geom_[Proj].the_geom) AS "Epad_ImportP:WKT"
+	|	FROM 	hbase.parcelle_geom_[Proj], hbase.parcelle, perimetres.poin_buff300_cc49, registrefoncier.fonds, registrefoncier.fonds_parcelle
+	|	WHERE	hbase.parcelle.parcelleid = hbase.parcelle_geom_[Proj].parcelleid
+	|	AND		registrefoncier.fonds_parcelle.codecommune = CAST(hbase.parcelle.ccocom AS INTEGER)
+	|	AND 	registrefoncier.fonds_parcelle.sectionref = hbase.parcelle.ccosec
+	|	AND 	registrefoncier.fonds_parcelle.numero = CAST(hbase.parcelle.dnupla AS INTEGER)
+	|	AND 	registrefoncier.fonds.fid = registrefoncier.fonds_parcelle.fid
+	|	AND		ST_Intersects(hbase.parcelle_geom_[Proj].the_geom,perimetres.poin_buff300_cc49.the_geom);
+
+	rout,Epad_ImportP
+	{
+		/*** Si le nombre de point est inférieur à 80000 ***/
+		if,"wkt_npnts<80000"
+		{			
+			/*** Si le type de l'entité un polygone ou un multipolygone ***/
+			if,"wkt_type==`POLYGON`"
+			{
+				wkcr,Cpar,PH=2 /*	radical : Cpar	*/
+				[mm->§epad_mat]
+				[§epad_mat]:ph=0
+				[§epad_mat]:ph=2,MD=11
+				ral,[§epad_mat]&T1:cad=[§cad]
+				ral,[§epad_mat]&T4:nom_com="[§nom_com]",nom_dep="HAUTS-DE-SEINE"
+				ral,[§epad_mat]&V0:cpt=[§cpt],pr=[§pr],co=[§co],lw=[§lw],sc=[§sc]
+/*				ral,[§epad_mat]&V0:cpt="******+[[§pddpid])05]",pr=[§pr],co=[§co],lw=[§lw],sc=[§sc]			*/
+				ral,[§epad_mat]&V1:ly="[§ly]",dep=92,com=[§ccocom],pre=[§ccopre],sec=[§ccosec],num=[§dnupla]
+			}
+			else
+			{
+				if,"wkt_type==`MULTIPOLYGON`"
+				{
+					Cpar:
+					[mm->§epad_mat]
+					wkru
+					{
+						wkcr,lot,ph=2
+						[mm->§epad_lot]
+						[§epad_lot]:ph=0
+						[§epad_lot]:ph=2,MD=z_lot
+						zoni,zone=[§epad_mat],selz=[§epad_lot]
+					}
+					[§epad_mat]:ph=2,MD=11
+					ral,[§epad_mat]&T1:cad=[§cad]
+					ral,[§epad_mat]&T4:nom_com="[§nom_com]",nom_dep="HAUTS-DE-SEINE"
+					ral,[§epad_mat]&V0:cpt=[§cpt],pr=[§pr],co=[§co],lw=[§lw],sc=[§sc]
+					ral,[§epad_mat]&V1:ly="[§ly]",dep=92,com=[§ccocom],pre=[§ccopre],sec=[§ccosec],num=[§dnupla]
+				}
+			}
+		}
+	}
+	marq,10,`Création des parcelles`
+}
+
+rout,FEDImport
+{
+	%CMP.J:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+	%CMP.L:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=	
+	%CMP.P:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+	%CMP.Z:RAD=,PH=2,PV=,TN=,CS=,CJ=,CK=,CL=,CA=,J=,MD=,SEL=
+
+	%CMP.J:RAD=J,PH=2,MD=P_POINT
+	%CMP.P:RAD=J,PH=2,MD=P_POINT
+	
+	var,§id,§epad_mat,§epad_lot,§nom,§nedd,§nab,§etat
+	
+	|	SELECT 	hbase.fed_geom_[Proj].fedid AS "§id:PRC",
+	|			hbase.fed.nom AS "§nom:PRC",
+	|			hbase.fed.nedd AS "§nedd:PRC",
+	|			hbase.fed.nab AS "§nab:PRC",
+	|			hbase.fed.etat AS "§etat:PRC",
+	|			AsText(hbase.fed_geom_[Proj].the_geom) AS "Epad_ImpFED:WKT"
+	|	FROM	hbase.fed_geom_[Proj], hbase.fed, perimetres.secteur_geom_cc49
+	|	WHERE	hbase.fed_geom_[Proj].fedid = hbase.fed.fedid;
+/*	|	AND		ST_Intersects(hbase.fed_geom_[Proj].the_geom,perimetres.secteur_geom_cc49.the_geom);	*/
+	
+	rout,Epad_ImpFED
+	{
+		if,"wkt_npnts<8000"
+		{
+			/*** Si le type de l'entité un polygone ou un multipolygone ***/
+			if,"wkt_type==`POLYGON`"
+			{
+				wkcr,FED,PH=2 /*	radical : FED	*/
+				[mm->§epad_mat]
+				[§epad_mat]:ph=0
+				[§epad_mat]:ph=2,MD=EP_ZON_EDDV
+				ral,[§epad_mat]&Q1:nom="[§nom]",nedd=[§nedd],nab="[§nab]"
+				ral,[§epad_mat]&Q4:etat="[§etat]"
+			}
+		}
+	}
+	marq,10,`Création des POIN`
+}
+
+rout,ImpCad
+/* Définit les paramètres de connexion ODBC et lance l'import */
+{
+	var,§proj
+	NomObdc=
+	odbc,data=
+	§proj=[%SPJ:nom]
+	if,"§proj==`Lambert I   (France Nord)`"
+	{
+		Proj=lbin
+		Srid=320002101
+	}
+	if,"§proj==`Lambert 93`"
+	{
+		Proj=lb93
+		Srid=310024140
+	}
+	if,"§proj==`Lambert CC49`"
+	{
+		Proj=cc49
+		Srid=310024149
+	}
+	dial,OBDC,l=160,h=28,lmin=160,hmin=28,lmax=160,hmax=28,tx="Source ODBC"
+	qc,tx,TX_NOMS,002,002,096,012,j=2,tx="¹Nom de la source ODBC : ¹"
+	qc,ed,ED_NOMS,100,002,058,012,tx="Cadastre"
+	
+	qc,bf,BF_BEOK,002,016,048,012,j=5,tx="¹OK¹",rout=BfBeok
+	qc,bf,BF_AIDE,110,016,048,012,j=5,tx="¹Aide¹",rout=BfAide
+}
+
+rout,BfBeok
+{
+	NomOdbc=[tx(ED_NOMS)]
+	odbc,data=[NomOdbc],auto=1
+	run,ChoixCmp
+}
+
+rout,BfAide
+{
+	aide,file={epUtil}\aide\epImCdif.txt
+}
+
+rout,ChoixCmp
+{
+	dial,CCMP,l=160,h=302,lmin=160,hmin=302,tx="Importer le cadastre"
+	
+	Sel=secteurs
+	var,§numsec,§nomsec,§y,§i,§secteur
+	var,§bat,§hyd,§vol,§top,§par,§sec,§fer
+	§y=4
+	qc,gr,TX_SECT,002,002,156,198,j=2,tx="¹Secteurs à importer :¹",FT=2
+	
+	|	SELECT 	secteurid AS "§numsec:PRC",
+	|			nom AS "§nomsec:PRC"
+	|	FROM	perimetres.secteur_geom_[Proj];
+	{
+		§y=[[§y]+10]
+		qc,oc,OC_SC[§numsec],006,[§y],150,012,j=2,tx="¹[§nomsec]¹"
+	}
+	qc,bf,CC_SELE,004,186,150,012,j=5,tx="¹Sélectionner une emprise rectangulaire¹",rout=CcSelecEmp
+	qc,gr,TX_COMP,002,202,156,084,j=2,tx="¹Composants à importer :¹",FT=2
+	qc,oc,OC_CMP1,006,212,150,012,j=2,tx="¹Bâti¹"
+	qc,oc,OC_CMP2,006,222,150,012,j=2,tx="¹Hydro¹"
+	qc,oc,OC_CMP3,006,232,150,012,j=2,tx="¹Volumétries¹"
+	qc,oc,OC_CMP4,006,242,150,012,j=2,tx="¹Détails topo¹"
+	qc,oc,OC_CMP5,006,252,150,012,j=2,tx="¹Parcellaire¹"
+	qc,oc,OC_CMP6,006,262,150,012,j=2,tx="¹Sections¹"
+	qc,oc,OC_CMP7,006,272,150,012,j=2,tx="¹Réseau ferré¹"
+	
+	qc,bf,CC_BEOK,002,288,048,012,j=5,tx="¹OK¹",rout=CcBeok
+	qc,bf,CC_AIDE,110,288,048,012,j=5,tx="¹Aide¹",rout=CcAide
+}
+
+rout,CcSelecEmp
+{
+	mef1,titr="Choix de l'emprise",ok=CcSeOk
+}
+
+rout,CcSeOk(§xm,§ym,§gi,§lp,§hp,§ec)
+{
+	var,§rect,§x0,§y0,§x1,§y1,§polyg,§numsec
+	Sel=rectangle
+	qmod,CC_SELE,tx="¹Annuler l'emprise rectangle¹",rout=ChoixCmp
+	|	SELECT 	secteurid AS "§numsec:PRC"
+	|	FROM	perimetres.secteur_geom_[Proj];
+	{
+		qmod,OC_SC[§numsec],et=0,iv=1
+	}
+	
+	cmpe,Temp
+	§rect=Temp.1
+	[§rect]:X=[§xm],Y=[§ym],Cx=[§lp],Cy=[§hp],G=[§gi],Md=JT_ENT_BL
+	tra,[§rect]
+}
+
+rout,CcAide
+{
+	aide,file={epUtil}\aide\epImCdifFen.txt
+}
+
+rout,CcBeok
+{
+	/*	Récupération du type d'emprise (rectangle ou secteurs)	*/
+	if,"Sel==`secteurs`"
+	{
+		/* 	Récupération des secteurs à importer	*/
+		var,§secteur,§i,§sectmp
+		§sectmp=
+		§secteur=
+		§i=1
+		whil,"§i<18"
+		{
+			if,"[et(OC_SC[§i])]=1"
+			{
+				if,"§i<10"
+				{
+					§secteur=[§secteur]|0[§i]
+				}
+				else
+				{
+					§secteur=[§secteur]|[§i]
+				}
+			}
+			§i=[[§i]+1]
+		}
+		
+		§sectmp=xtr(§secteur,1,2)
+		|	DROP TABLE IF EXISTS perimetres.temp_secteurs CASCADE;
+		|	CREATE TABLE perimetres.temp_secteurs AS 
+		|	SELECT * FROM perimetres.secteur_geom_[Proj]
+		|	WHERE secteurid = CAST('[[§sectmp]]' AS INTEGER);
+		§i=4
+		whil,"§i<len(§secteur)-1"
+		{
+			§sectmp=xtr(§secteur,§i,2)
+			|	INSERT INTO perimetres.temp_secteurs (secteurid, nom, the_geom)
+			|	SELECT secteurid, nom, the_geom FROM perimetres.secteur_geom_[Proj]
+			|	WHERE secteurid = CAST('[[§sectmp]]' AS INTEGER);
+			§i=[[§i]+3]
+		}
+		
+		|	DROP TABLE IF EXISTS perimetres.secteur_geom_cc49 CASCADE;
+		|	CREATE TABLE perimetres.secteur_geom_cc49 (id SERIAL);
+		|	SELECT AddGeometryColumn('perimetres','secteur_geom_cc49','the_geom',[Srid],'GEOMETRY',2);
+		|	INSERT INTO perimetres.secteur_geom_cc49 (the_geom)
+		|	SELECT ST_UNION(the_geom) AS the_geom FROM perimetres.temp_secteurs;
+	}
+	
+	if,"Sel==`rectangle`"
+	{
+		var,§xmin,§ymin,§xmax,§ymax,§xm,§ym,§lp,§hp,§polyg,§g,§xg,§yg,§xd,§yd
+		var,§x1,§y1,§x2,§y2,§x3,§y3,§x4,§y4
+		
+		/*	Récupération des dimensions du rectangle	*/
+		§xm=Temp.1:X
+		§ym=Temp.1:Y
+		§lp=Temp.1:Cx
+		§hp=Temp.1:Cy
+		§g=Temp.1:G
+		
+		§xmin=[[§xm]-[§lp]/2]
+		§ymin=[[§ym]-[§hp]/2] 
+		§xmax=[[§xm]+[§lp]/2] 
+		§ymax=[[§ym]+[§hp]/2]
+		
+	/*	§x1=[[§xm]-[[§lp]/2*cos(100-[§g],0)+[§hp]/2*sin(100-[§g],0)]]	*/
+	/*	§y1=[[§ym]-[-[§lp]/2*sin(100-[§g],0)+[§hp]/2*cos(100-[§g],0)]]	*/
+	
+		§xg=[[§xm]-[§lp]/2*sin([§g],1)]
+		§yg=[[§ym]-[§lp]/2*cos([§g],1)]
+		§xd=[[§xm]+[§lp]/2*sin([§g],1)]
+		§yd=[[§ym]+[§lp]/2*cos([§g],1)]
+		
+		if,"[[§g]<=100]#[[[§g]>=200]@[[§g]<=300]]"
+		{
+			§x1=[arn([[§xg]+[§hp]/2*sin(abs(100-[[§g]]),1)],6)]
+			§y1=[arn([[§yg]-[§hp]/2*cos(abs(100-[[§g]]),1)],6)]
+			§x2=[arn([[§xg]-[§hp]/2*sin(abs(100-[[§g]]),1)],6)]
+			§y2=[arn([[§yg]+[§hp]/2*cos(abs(100-[[§g]]),1)],6)]
+			§x3=[arn([[§xd]-[§hp]/2*sin(abs(100-[[§g]]),1)],6)]
+			§y3=[arn([[§yd]+[§hp]/2*cos(abs(100-[[§g]]),1)],6)]
+			§x4=[arn([[§xd]+[§hp]/2*sin(abs(100-[[§g]]),1)],6)]
+			§y4=[arn([[§yd]-[§hp]/2*cos(abs(100-[[§g]]),1)],6)]
+		}
+		else
+		{
+			§x2=[arn([[§xg]+[§hp]/2*sin(abs(100-[[§g]]),1)],6)]
+			§y2=[arn([[§yg]+[§hp]/2*cos(abs(100-[[§g]]),1)],6)]
+			§x1=[arn([[§xg]-[§hp]/2*sin(abs(100-[[§g]]),1)],6)]
+			§y1=[arn([[§yg]-[§hp]/2*cos(abs(100-[[§g]]),1)],6)]
+			§x3=[arn([[§xd]+[§hp]/2*sin(abs(100-[[§g]]),1)],6)]
+			§y3=[arn([[§yd]+[§hp]/2*cos(abs(100-[[§g]]),1)],6)]
+			§x4=[arn([[§xd]-[§hp]/2*sin(abs(100-[[§g]]),1)],6)]
+			§y4=[arn([[§yd]-[§hp]/2*cos(abs(100-[[§g]]),1)],6)]		
+		}
+		
+	/*	§polyg='POLYGON(([§x0] [§y0],[§x1] [§y0],[§x1] [§y1],[§x0] [§y1],[§x0] [§y0]))'	*/
+		§polyg='POLYGON(([§x1] [§y1],[§x2] [§y2],[§x3] [§y3],[§x4] [§y4],[§x1] [§y1]))'
+	
+		|	DROP TABLE IF EXISTS hbase.temp_emprise CASCADE;
+		|	CREATE TABLE hbase.temp_emprise (id SERIAL);
+		|	SELECT AddGeometryColumn('hbase','temp_emprise','the_geom',[Srid],'GEOMETRY',2);
+		|	INSERT INTO hbase.temp_emprise (the_geom)
+		|	VALUES (ST_GeomFromText([§polyg],[Srid]));
+		
+		|	DROP TABLE IF EXISTS perimetres.secteur_geom_cc49 CASCADE;
+		|	CREATE TABLE perimetres.secteur_geom_cc49 (id SERIAL);
+		|	SELECT AddGeometryColumn('perimetres','secteur_geom_cc49','the_geom',[Srid],'GEOMETRY',2);
+		|	INSERT INTO perimetres.secteur_geom_cc49 (the_geom)
+		|	SELECT the_geom FROM hbase.temp_emprise;
+		
+/*		|	CREATE VIEW perimetres.secteur_geom_cc49 AS		*/
+/*		|	SELECT the_geom FROM hbase.temp_emprise;	*/
+	}
+	
+	if,"et(OC_CMP1)=1"
+	{
+		run,CadastreImp(batid,BAc,1)
+	}
+	if,"et(OC_CMP2)=1"
+	{
+		run,CadastreImp(eau,YUc,12)
+	}
+	if,"et(OC_CMP3)=1"
+	{
+		run,CadastreImp(fed,FED,EP_ZON_EDDV)
+	}
+	if,"et(OC_CMP4)=1"
+	{
+		run,CadastreImp(osd,CDl,141)
+	}
+	if,"et(OC_CMP5)=1"
+	{
+		run,CadastreImp(parcelle,Cpar,11)
+	}
+	if,"et(OC_CMP6)=1"
+	{
+		run,CadastreImp(section,Cfeu,152)
+	}
+	if,"et(OC_CMP7)=1"
+	{
+		run,CadastreImp(resfer,ILc,33)
+	}
+}
+
+rout,ImpTout
+{
+    var,§proj
+	§proj=[%SPJ:nom]
+	if,"§proj==`Lambert I   (France Nord)`"
+	{
+		Proj=lbin
+		Srid=320002101
+	}
+	if,"§proj==`Lambert 93`"
+	{
+		Proj=lb93
+		Srid=310024140
+	}
+	if,"§proj==`Lambert CC49`"
+	{
+		Proj=cc49
+		Srid=310024149
+	}
+	run,CadastreImp(parcelle,Cpar,11)	
+	run,CadastreImp(section,Cfeu,152)
+	run,CadastreImp(fed,FED,EP_ZON_EDDV)
+	run,CadastreImp(poin,Poin,EP_ZON_POIN)
+	run,CadastreImp(batid,BAc,1)
+	run,CadastreImp(osd,CDl,141)
+	run,CadastreImp(resfer,ILc,33)
+	run,CadastreImp(eau,YUc,12)
+}

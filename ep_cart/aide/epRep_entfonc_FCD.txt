@@ -1,0 +1,27 @@
+
+
+VOLUMES
+
+On entends par volume l'ensemble des composants définissant une coupe de lot, c'est à dire une fraction de volume.
+
+La force de représentation de ces composants est indiquée sur le quatrième caractère de la procédure epRf.
+
+MODELE
+
+Liste des modèles utilisant cette représentation :
+
+    EP_ZON_VOLUME
+
+CHARTE GRAPHIQUE EPADESA
+
+Les limites des coupes de lot (volumes) sont représentées par un trait moyen, interrompu moyen court bleu.
+
+Les emprises de volumes sont représentées par une hachure : 
+
+    * en représentation forte par un aplat de couleur de la famille « pastel » et selon le champ chromatique utilisé dans la description du volume ;
+
+    * en représentation courante sous une raie de couleur de la famille « pastel » et selon le champ chromatique utilisé dans la description du volume ;
+	
+	* en représentation faible, il n’y a pas de hachure.
+	
+	

@@ -1,0 +1,18 @@
+
+CRÉER/REPRODUIRE/MODIFIER UN PLAN
+
+Cette fenêtre permet de créer un plan aux formats ISO A0, A1, A2, A3 ou A4, portrait ou paysage, et d'en choisir la position et le gisement.
+
+Le matricule du composant est affiché en en-tête de la fenêtre.
+
+Le modèle choisi doit être un modèle de carroyage. La touche Auto permet de choisir automatiquement le modèle de carroyage adapté au format.
+
+Le groupe de champs «Vue» permet de définir l'échelle, la position et le gisement du plan. Le changement le valeur d'un de ces champs entraine automatiquement l'actualisation de l'emprise du plan dans l'espace objet.
+Le gisement et les coordonnées X et Y peuvent être définies en cliquant dans l'espace objet.
+Le gisement peut être calqué sur le gisement de n'importe quel autre composant grace au bouton «Gisement».
+
+Le groupe de champs «Présentation» permet de choisir le format ainsi que l'orientation du plan, ou de définir son propre format différent des formats ISO. Si toutefois le format spécifié est très proche d'un format ISO, les dimensions du format ISO sont adoptées.
+
+Le bouton «Attributs» permet de définir les attributs du plan qui apparaitront dans le cartouche.
+
+Par défaut lors de la création d'un plan, un cartouche A4 est créé en bas à gauche.

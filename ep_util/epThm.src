@@ -1,0 +1,52 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         22 02 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+/*         VD Vianney Dugrain (vdugrain@epadesa.fr)                          */
+/*                                                                        */
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+/*  aucune boite à outils                                                 */
+
+
+/* Routines utiles pour réaliser des cartes thématiques                   */
+
+/* Liste des routines                                                     */
+/*  AplDuClq Ouvre une fenêtre de sélection de plusieurs composant pour   */
+/*      y appliquer la fonction DuClq                                     */
+/*		Dernière modification : 25/01/2013								  */
+
+proc,JtDebug=1
+
+/*------------------------------------------------------------------------*/
+/*                       PROCEDURES PERSONNALISABLES                      */
+/*------------------------------------------------------------------------*/
+
+proc,RdDZ=DZ   /* radical des composants de dessins (pochage)             */
+proc,MdlDZ=EP_ZON_THM_PROP  /* modèle de pochage par défaut               */
+
+/*------------------------------------------------------------------------*/
+/*                               ROUTINES                                 */
+/*------------------------------------------------------------------------*/
+
+rout,CreCmp(§prc_sel,§prc_mdl)
+/* Créé des composants DZ pour teinter les composants appartenant à la    */
+/*  sélection contenue dans la procédure dont le nom est passé dans       */
+/*  §prc_sel en appliquant le modèle contenu dans la procédure dont le    */
+/*  nom est passé dans §prc_mdl                                           */
+{
+ var,§maD,§maS,§mdl
+  
+ §mdl=[MdlDZ]
+ 
+ runs,[[§prc_sel]]
+ {
+   §maS=[mm]
+   §maD=[ml(RdDZ)]
+
+   [§maD]&Z0:[§maS]
+   [§maD]:Md=[§mdl]
+   [§maD]&D0:[%DOM:DOM]
+ }
+}
+

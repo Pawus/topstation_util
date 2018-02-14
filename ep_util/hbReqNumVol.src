@@ -1,0 +1,468 @@
+proc,JtDebug=1
+
+#include ".\hbOutils.inc"
+proc,EPAD=EPADESA
+
+rout,ChoiVol
+{
+  var,§fed,§t,§vol
+
+  §t=¹[EPAD] requête sur un volume d'EDDV¹
+  
+  !HbFLD=[hbcFLD]*!onc([hbcFED])
+  dial,HB_FLD,l=208,h=72,tx={§t}
+  qc,tx,TX_NUM	,002,002,044,012,j=8,tx="Numéro"
+  qc,OP,OP_NVOL ,048,002,158,200,j=2,rout=ChoiNvol,tmen=CMP,selc=!HbFLD,eval=`{{mm}&t2:nom)8}   |   {{{mm}&r0:e}&q1:nab}`,rdig=IdFcd
+  qc,tx,TX_EDDV ,002,016,044,012,j=8,tx="EDDV",iv=1
+  qc,af,AF_EDDV ,048,016,158,012,j=2,tx=""
+  qc,tx,TX_S    ,044,030,025,012,j=5,tx="Statut",iv=1
+  qc,af,AF_S	,077,030,100,012,j=5,tx=""
+
+  qc,bf,BF_PLAN ,050,044,128,012,j=5,rout=ChoiPlan,tx="¹Appliquer un plan du volume¹",iv=1
+  qc,bf,BF_OK   ,002,058,044,012,j=5,tx="¹OK¹",rout=BfOk,iv=1
+  qc,bf,BF_AIDE ,164,058,042,012,j=5,tx="¹Aide¹",rout=BfAide  
+  qset,foc=OP_NVOL
+  
+  	rout,IdFcd(§x,§y,§r)
+	{
+		runs,[hbcFCD]*!tra*!zonp([§x],[§y],0.01)
+		{
+			runs,[hbcFLD]*!nev([mm])
+			{
+				qmod,OP_NVOL,ma=[mm]
+                run,ChoiNvol
+				[fi2]
+			}
+		}
+	}
+    
+    rout,ChoiNvol
+    {
+        §vol=[ma(OP_NVOL)]
+        runs,[hbcFED]*!nev([§vol])
+        {
+            §fed=[mm]
+            qmod,TX_EDDV,iv=0
+            qmod,AF_EDDV,tx=[[§fed]&q1:nom]
+            qmod,TX_S,iv=0
+            run,StatutEddv([§fed]) 		 /* retourne le statut dans hbTemp	*/           
+            qmod,AF_S,tx=[hbTemp]
+        }
+        
+        !HbCoupes=[hbcFCD]*!onc([§vol])
+        !HbPlans=0
+        runs,jtPlan*!onc([§fed])
+        {
+            if,"[mm]&d0:<<`+`"
+            {
+                run,MessageFdia(Le plan [mm] de l'EDDV [§fed] comporte plus d'un domaine: corriger l'anomalie)
+            }
+            if,"nmbr(`!HbCoupes*!dom([[mm]&d0:])`)"
+            {
+                !HbPlans<[mm]
+            }
+        }
+        qmod,BF_PLAN,iv=0
+        qmod,BF_OK,iv=0
+        evnt,entr=BfOk,bdro=BfOk
+    }
+    
+    rout,ChoiPlan
+    {
+        chtx,titr=`Appliquer un plan du volume`,tri=1,ok=BfOkPlan
+        {
+            runs,!HbPlans
+            {
+                qao,ma=[mm],tx={&v0:nom}
+            }
+        }
+    }
+    
+    rout,BfOkPlan(§jtplan)
+    {
+        plna,[§jtplan]
+    }
+
+	rout,BfOk
+	{
+		run,ReqVol([§vol],[§fed])
+	}
+    
+}
+
+rout,BfAide
+{
+  aide,{epUtil}\aide\hbReqNumVol.txt
+}
+
+rout,ReqVol(§vol,§fed)
+{
+  var,§airvol,§altsup,§dl,§ind,§l,§nb,§partie,§plans,§t
+  
+  cvue,x=[[§fed]:x],y=[[§fed]:y]
+  !cmpe,hbTemp.[hbbIndMin]
+  zoni,hbTemp.[hbbIndMin],!HbCoupes
+  hbTemp.[hbbIndMin]:md=203
+  F=[base]\Listing.txt
+  list,imp=[%DFO:imp],file="{F}",raz=1
+
+  impr,=====================================================================================
+  impr,[[§fed]&q1:nom]   -  VOLUME [[§vol]&t2:nom]
+  impr,=====================================================================================
+  run,StatutEddv([§fed])		/* retourne le statut de l'EDDV dans hbTemp	*/  
+  impr,Statut de l'EDDV     : [hbTemp]
+  impr,Etat du volume       : [[§vol]&q4:etat]
+  impr,Matricule du volume  : [§vol]
+  §t=Aucune couleur
+  runp,hbU[[§vol]&v0:nco]
+  {
+    §t=[proc_desc]
+  }
+  impr,Teinte > nombre/nom  : [[§vol]&v0:co] / [§t]
+  run,DcodNabFld([[§vol]&t2:nab])
+  impr,Usage                : [hbTemp]
+	if,"[§vol]&q2:><``"
+	{
+        impr,Commentaire 1        : [[§vol]&q2:]
+	}
+	if,"[§vol]&q3:><``"
+	{
+        impr,Commentaire 2        : [[§vol]&q3:]
+	}	
+    impr
+    impr
+    if,"[§vol]&V0:CPT><``"
+    {
+      run,Cpt([[§vol]&V0:CPT])
+      impr
+      impr
+    }
+    if,"[§vol]&r0:T><``"
+    {  
+        MaFXV=[[§vol]&r0:T]
+    	impr,Désignation du volume [[§vol]&t2:nom]
+    	impr,=====================================================================================
+    	§dl=1
+    	§l={}
+    	§nb=0
+    	rumt,[MaFXV],prc=T
+    	{
+    	  if,"§dl=1"
+    	  {
+    	    §l=[T_Tx]
+    		§dl=0
+    	  }
+    	  else
+    	  {
+    		whil,"§nb>0"
+    		{
+    			§l=[§l]µ
+    			§nb=[§nb-1]
+    		}
+    		§l=[§l][T_Tx]	
+    	  }
+    	  §nb=[T_Nb]
+    	  if,"len(§l)>137"
+    	  {
+    	    §t=[xtr(§l,0,137)]
+    		§l=[xtr(§l,137,4000)]
+    		prct,§t,ancn=µ,nouv=" "
+    		impq,§t
+    	  }
+    	  if,"T_Rt=1"
+          {
+    		prct,§l,ancn=µ,nouv=" "
+    		impq,§l
+    		§l={}
+    		§dl=1
+          }
+    	}
+    	if,"§l><``"
+    	{
+    		prct,§l,ancn=µ,nouv=" "
+    		impq,§l
+    	}
+        impr
+        impr
+    }
+	hbTemp=0
+    if,"nmbr(`!HbCoupes`)"
+    {
+        impr,Coupes horizontales du volume [[§vol]&t2:nom]
+        impr,=====================================================================================
+        §airvol=0    
+    }
+    runs,!HbCoupes,tri=`{{mm}&v0:niv)5}{{mm}&v0:ind)3}{{mm}:z)7}`
+    {
+        §altsup= --.--
+        if,"[mm]&v1:altsup><``"
+        {
+            §altsup=[[mm]&v1:altsup%2]
+        }
+        §partie=-----
+        if,"[mm]&v0:niv><``"
+        {
+            §partie=[[mm]&v0:niv]
+        }      
+        §ind=---
+        if,"[mm]&v0:ind><``"
+        {
+            §ind=[[mm]&v0:ind]
+        }
+        runl,[mm]
+        {
+            §l=[lin_nc]
+        }          
+        impr,Altitudes: inf=[[mm]:z%2)7] sup=[§altsup)7] Aire=[[[mm]:a%0])6]m2 Partie [§partie)5] Indice [§ind)3] Chaines [§l] Mat [mm] 
+        §airvol=[[[mm]:a%0]+§airvol]
+        hbTemp=[hbTemp+1]
+    }
+    if,"hbTemp>1"
+    {                                                 
+      impr,                                  Somme=[§airvol)6]m2
+    }
+    impr
+    impr
+
+    if,"nmbr(`!HbPlans`)"
+    {
+        impr,Plans associés à l'EDDV décrivant des coupes du volume [[§vol]&t2:nom]
+        impr,=====================================================================================
+        runs,!HbPlans,tri={mm}:z)6
+        {
+            impr,[[mm]&v0:nom]  -   Référence [[mm]&t6:nordre] [[mm]&t6:indice]
+            runs,!HbCoupes*!dom([[mm]&d0:]),tri=`{{mm}&v0:niv)5}{{mm}&v0:ind)3}{{mm}:z)7}`
+            {
+                §altsup= --.--
+                if,"[mm]&v1:altsup><``"
+                {
+                    §altsup=[[mm]&v1:altsup%2]
+                }
+                §partie=-----
+                if,"[mm]&v0:niv><``"
+                {
+                    §partie=[[mm]&v0:niv]
+                }      
+                §ind=---
+                if,"[mm]&v0:ind><``"
+                {
+                    §ind=[[mm]&v0:ind]
+                }
+                impr,       Altitudes: inf=[[mm]:z%2)7] sup=[§altsup)7] Partie [§partie)5] Indice [§ind)3]
+            }
+        }
+    }
+    list
+    §t=[EPAD] - Requête sur un volume d'état descriptif de division en volumes
+    afli,imp=[%DFO:IMP],file="{F}",titr={§t},aide=[epUtil]\aide\hbReqNumVol.txt
+}
+
+
+rout,DcodNabFld(§nab)
+{
+  hbTemp=Non définie
+  runr,hbbFld.1,type=v
+  {
+    if,"[rr]:nab==§nab"
+    {
+      hbTemp=[[rr]:nat]
+    }
+  }
+}
+
+rout,ReqParInc(§par)
+{
+  var,§l
+  
+  §l=[[§par]&T4:NOM_COM] section [[§par]&V1:PRE] [[§par]&V1:SEC] n°[[§par]&V1:NUM)4]
+  if,"nmbr(`[§par]*!zon`)"
+  {
+    §l=[§l]   A = [[[mm]:a%0])6]m2
+  }
+  if,"[§par]&t1:cad><``"
+  {
+    run,Conv_m2_ha([[§par]&T1:CAD])
+    §l=[§l]   C = [hbTems)16]
+  }
+  if,"[§par]&t0:par><``"
+  {
+    §l=[§l]   S = [[§par]&t0:par]m2
+  }
+  impq,§l
+  if,"[§par]&V0:CPT><``"
+  {
+    run,Cpt([[§par]&V0:CPT])
+  }
+}
+
+rout,Cpt(§cpt)
+{
+  !Hb=[hbcDro]*!test(&v0:cpt==[§cpt])
+  impr,Compte interne/Désignation des propriétaires
+  impr,=====================================================================================
+  !HbCDros=0
+  !HbCDrop=0
+  runs,!Hb
+  {
+    ral,[mm]&q1:etapar=0
+    if,"[mm]&v0:typ==`+`"
+    {
+      run,CptSoc
+    }
+    else
+    {
+      run,CptPhy
+    }
+  }
+}
+
+rout,CptSoc
+{
+  var,§cdro
+  
+  runs,!Hb
+  {
+    §cdro=[mm]
+	CPT=[[§cdro]&v0:cpt]
+    PRO=[[mm]&r0:p]
+    !HbCPro<[PRO]
+    if,"[PRO]&v7:forme_juridique><``"
+    {
+      impr,[CPT(15][[PRO]&v7:forme_juridique] [[PRO]&v7:denomination]
+    }
+    else
+    {
+      impr,[CPT(15][[PRO]&v7:denomination]
+    }
+    impr,[` `)15]SIREN: [[PRO]&v8:siren]
+    DEM=domicile
+    run,Adresse
+    if,"[§cdro]&t0:desc><``"
+    {
+      impr,[` `)15][[§cdro]&t0:desc]
+    }
+    ral,[§cdro]&q1:etapar=1
+    impr
+  }
+}
+
+rout,CptPhy
+{
+  var,§cdro,§n,§n1
+  
+  runs,!Hb*!test(&v0:rng=1),tri=`{{{mm}&r0:p}&v1:nom}{{{mm}&r0:p}&v1:prnom}`
+  {
+    CPT=[[mm]&v0:cpt]
+    nmbr,!HbCDrop*!test(&v0:cpt==[CPT])*!test(&q1:etapar=0),§n
+    nmbr,!HbCDrop*!test(&v0:cpt==[CPT])*!test(&q1:etapar=0)*!test(&v0:typ==C),§n1
+    if,"[§n=2]@[§n1=2]"
+    {					/* compte de communauté	*/  
+      run,Communaute
+    }
+    else
+    {
+      runs,!Hb*!test(&v0:cpt==[CPT])*!test(&q1:etapar=0),tri={mm}&v0:rng)2
+      {
+        §cdro=[mm]
+        PRO=[[mm]&r0:p]
+
+        §n=[CPT(15][[PRO]&v1:id] [[PRO]&v1:nom] [[PRO]&v1:prnom] [[PRO]&v1:prnm2]
+        if,"[PRO]&v3:an><``"
+        {
+          §n=[§n] né(e) le [[PRO]&v3:jj]/[[PRO]&v3:mm]/[[PRO]&v3:an]
+        }
+        if,"[PRO]&v3:lna><``"
+        {
+          §n=[§n] à [[PRO]&v3:lna] [[PRO]&v3:dpt]
+        }
+        impq,§n
+        DEM=demeurant 
+        run,Adresse
+        §n=célibataire
+        if,"[PRO]&r0:c><``"
+        {
+          §n=époux			/* revoir les tests séparé divorcé veuf.....*/
+          if,"[PRO]&v0:sex==`F`"
+          {
+            §n=épouse
+          }
+          §n=[§n] [[[PRO]&r0:c]&v1:nom] [[[PRO]&r0:c]&v1:prnom] [[[PRO]&r0:c]&v1:prnm2]  
+        }
+        impr,[` `)15][§n]
+        ral,[§cdro]&q1:etapar=1
+      }
+    }
+  }
+}
+
+rout,Communaute
+{
+  var,§cdro,§cjt,§n
+
+  runs,!Hb*!test(&v0:cpt==[CPT])*!test(&q1:etapar=0)*!test(&v0:rng=1)
+  {
+    §cdro=[mm]
+    PRO=[[mm]&r0:p]
+    !HbCPro<[PRO]
+
+    §n=[CPT(15][[PRO]&v1:id] [[PRO]&v1:nom] [[PRO]&v1:prnom] [[PRO]&v1:prnm2]
+    if,"[PRO]&v3:an><``"
+    {
+      §n=[§n] né(e) le [[PRO]&v3:jj]/[[PRO]&v3:mm]/[[PRO]&v3:an]
+    }
+    if,"[PRO]&v3:lna><``"
+    {
+      §n=[§n] à [[PRO]&v3:lna] [[PRO]&v3:dpt]
+    }
+    impq,§n
+    DEM=demeurant 
+    if,"[PRO]&r0:c><``"
+    {
+      §cjt=[[PRO]&r0:c]
+      !HbCPro<[§cjt]
+      §n=[` `)15]et [[§cjt]&v1:id] [[§cjt]&v1:nom] [[§cjt]&v1:prnom] [[§cjt]&v1:prnm2] conjoint(e)
+      if,"[§cjt]&v3:an><``"
+      {
+        §n=[§n] né(e) le [[§cjt]&v3:jj]/[[§cjt]&v3:mm]/[[§cjt]&v3:an]
+      }
+      if,"[§cjt]&v3:lna><``"
+      {
+        §n=[§n] à [[§cjt]&v3:lna] [[§cjt]&v3:dpt]
+      }
+      impq,§n
+      DEM=demeurant ensemble
+    }
+    run,Adresse
+    ral,[§cdro]&q1:etapar=1
+    runs,[hbcDro]*!onc([§cjt])*!test(&v0:cpt==[CPT])
+    {
+      ral,[mm]&q1:etapar=1
+    }
+  }
+}
+
+
+rout,Adresse
+{
+  if,"[PRO]&v5:cdom><``"
+  {
+    impr,[` `)15][DEM] [[PRO]&v4:adr1]
+    if,"[PRO]&v4:adr2><``"
+    {
+      impr,[` `)15][[PRO]&v4:adr2]
+    }
+    if,"[PRO]&v5:burd><``"
+    {
+      impr,[` `)15][[PRO]&v5:cdom]
+      impr,[` `)15][[PRO]&v5:cpos]  [[PRO]&v5:burd]
+    }
+    else
+    {
+      impr,[` `)15][[PRO]&v5:cpos]  [[PRO]&v5:cdom]
+    }
+  }
+}
+
+
+
+ 

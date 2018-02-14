@@ -1,0 +1,15 @@
+/* version 1.0 du                                                           */
+/*  dernière modification :                                                 */
+/*         17 06 2015 (SD)                                                  */
+/*  auteur :                                                                */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                                */
+
+#include "..\ep_commun\epCmpOutils.inc"
+#include "..\ep_commun\epDateOutils.inc"
+#include "..\ep_commun\epGeomOutils.inc"
+#include "..\ep_commun\epNumOutils.inc"
+#include "..\ep_commun\epProjOutils.inc"
+#include "..\ep_commun\epRalOutils.inc"
+#include "..\ep_commun\epSridOutils.inc"
+#include "..\ep_commun\epTexteOutils.inc"
+#include "..\ep_commun\epTypeOutils.inc"

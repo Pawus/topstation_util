@@ -1,0 +1,28 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         22 02 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+/*  epRamses                                                              */
+/*  epRalOutils                                                           */
+#include "..\ep_commun\epRalOutils.inc"
+#include "..\ep_commun\epTexteOutils.inc"
+#include "..\ep_commun\epNumOutils.inc"
+#include ".\epRamses.inc"
+
+
+proc,JtDebug=1
+
+rout,Main
+{
+  var,§selV,§selE
+  
+  §selV=FLD*!test(&r0:e==FED.129)
+  §selE=FED.129
+  
+  odbc,data=Ramses,auto=1
+  run,ImpFid(§selV)
+  run,ImpDataFED(§selE)
+}

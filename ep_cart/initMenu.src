@@ -1,0 +1,104 @@
+
+rout,DefMenu
+{  
+  jtCartEp_nom=¹Palette graphique Epad¹
+  jtCartEp_grpA"¹Parcellaire¹"=2,2,0,5,0,11
+  jtCartEp_grpB"¹Habillage¹"=2,2,0,5,3,11
+  jtCartEp_grpC"¹Volumétrie¹"=2,2,3,5,0,11
+  jtCartEp_grpD"¹Cotations¹"=2,2,3,5,3,11
+  jtCartEp_grpE"¹Charge¹"=2,2,6,5,0,11
+  jtCartEp_grpJ"¹Tableaux¹"=2,2,6,5,3,11
+}
+
+rout,RempMenu
+{
+  jtCartEpA01Ic0"250"=71!©ÿÿï
+  jtCartEpA01Inf=Limite nouvelle
+  jtCartEpA01Rd=FCADPN.
+  jtCartEpA01Md=EP_LIN_CADASTRE_LN
+  jtCartEpA01Src=[jtCart]\lisa
+  jtCartEpB00Cl=254
+  jtCartEpB00Cl1=[:ly]
+  jtCartEpB00Cl2=[:ly]
+  jtCartEpB00Cl3=[:ly]
+  jtCartEpB00Clc=[:ly]
+  jtCartEpB00Clr=[:ly]
+  jtCartEpB00Co1=256
+  jtCartEpB00Co2=256
+  jtCartEpB00Co3=256
+  jtCartEpB00Coc=7
+  jtCartEpB00Cor=255
+  jtCartEpB00Fe1=0.75
+  jtCartEpB00Fe2=0.75
+  jtCartEpB00Fe3=0.75
+  jtCartEpB00Ht=0.2
+  jtCartEpB00Ht1=0.4
+  jtCartEpB00Ht2=0.5
+  jtCartEpB00Ht3=0.4
+  jtCartEpB00Ic0"250"=!I0#0ÿÿïK!&&öz#Pkah|CDkÐ$lÛ®®!KNÜã&Ój#XçafkÆDoñ$0®ÌöKMÓe&öb#Pkaf¢ÆC!$%ÿÿ®
+  jtCartEpB00Ic1"255"=4Jÿø%CÄ!éÓ®SÃïAÓm#Òd!©ÿßGcS%kÔ!áR®UÓqAÏG#ÿÿ!rCßHkÖ%CÝ!éÓ®UÂqBÿü
+  jtCartEpB00Inf=Cartouche situation ÉPADESA
+  jtCartEpB00Jt=5
+  jtCartEpB00Le=10
+  jtCartEpB00Lwc=-1
+  jtCartEpB00Src={jtCart}\tx3gpe_j
+  jtCartEpB00St=Arial Gras
+  jtCartEpB00St1=Arial Italique
+  jtCartEpB00St2=Arial Gras
+  jtCartEpB00St3=Arial Italique
+  jtCartEpB00Tx1=Département des Hauts-de-Seine
+  jtCartEpB00Tx2=Commune de ...
+  jtCartEpB00Tx3=Parcelles section ... n° ...
+  jtCartEpJ00Cf1=255
+  jtCartEpJ00Cf2=255
+  jtCartEpJ00Cf3=255
+  jtCartEpJ00Cl=0
+  jtCartEpJ00Cx1=0.50
+  jtCartEpJ00Cx2=0.30
+  jtCartEpJ00Cx3=0.30
+  jtCartEpJ00Cy1=0.50
+  jtCartEpJ00Cy2=0.30
+  jtCartEpJ00Cy3=0.30
+  jtCartEpJ00Ha1=1.00
+  jtCartEpJ00Ha2=0.70
+  jtCartEpJ00Ha3=0.70
+  jtCartEpJ00Ic0"250"=1CÐÉâuÐCÒâ&PSÀ&jL#Ei£1Jÿÿñ0&ÿÿÿKÀCfÔÙè&KÀnvÔÆb&MênuÀCbQÙêeKÀD&KÀ©ÿÿ®
+    jtCartEpJ00Ic1"8"=63!#ÿÿø
+    jtCartEpJ00Inf=¹Liste de points¹
+    jtCartEpJ00JcA=8
+    jtCartEpJ00JcB=8
+    jtCartEpJ00JcC=8
+    jtCartEpJ00JeA=5
+    jtCartEpJ00JeB=5
+    jtCartEpJ00JeC=5
+    jtCartEpJ00Ju=7
+    jtCartEpJ00LaA=2.00
+    jtCartEpJ00LaB=4.00
+    jtCartEpJ00LaC=4.00
+    jtCartEpJ00Nk=3
+    jtCartEpJ00Pr=4
+    jtCartEpJ00Rd=EPTAB
+    jtCartEpJ00Src={jtCart}\TabCmp
+    jtCartEpJ00St1=Franklin Roman
+    jtCartEpJ00St2=Franklin Roman
+    jtCartEpJ00St3=Franklin Roman
+    jtCartEpJ00TcA={mm0}
+    jtCartEpJ00TcB={{mm0}:X%2}
+  jtCartEpJ00TcC={{mm0}:Y%2}
+  jtCartEpJ00TeA=¹Point¹
+  jtCartEpJ00TeB=¹X¹
+  jtCartEpJ00TeC=¹Y¹
+  jtCartEpJ00Ti=¹Tableau¹
+  jtCartEpJ00Tr=0
+}
+
+rout,InitMenu
+{
+  !prce,jtcartEp%
+
+  run,DefMenu
+  run,RempMenu
+
+  pgu,jtCartEp%
+  edia,JT_CART_MENU_EXEC_EP
+}

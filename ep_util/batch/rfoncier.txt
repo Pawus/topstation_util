@@ -1,0 +1,46 @@
+
+! REG.EXE VERSION 3.0
+
+HKEY_CURRENT_USER\Software\ODBC\ODBC.INI\RegistreFoncierPG
+    Driver	REG_SZ	C:\Program Files\psqlODBC\0804\bin\psqlodbc30a.dll
+    CommLog	REG_SZ	0
+    Debug	REG_SZ	0
+    Fetch	REG_SZ	100
+    Optimizer	REG_SZ	0
+    Ksqo	REG_SZ	1
+    UniqueIndex	REG_SZ	1
+    UseDeclareFetch	REG_SZ	0
+    UnknownSizes	REG_SZ	0
+    TextAsLongVarchar	REG_SZ	1
+    UnknownsAsLongVarchar	REG_SZ	0
+    BoolsAsChar	REG_SZ	1
+    Parse	REG_SZ	0
+    CancelAsFreeStmt	REG_SZ	0
+    MaxVarcharSize	REG_SZ	255
+    MaxLongVarcharSize	REG_SZ	8190
+    ExtraSysTablePrefixes	REG_SZ	dd_;
+    Description	REG_SZ	Registre Foncier
+    Database	REG_SZ	ramses
+    Servername	REG_SZ	10.1.1.64
+    Port	REG_SZ	5432
+    Username	REG_SZ	geometre
+    UID	REG_SZ	geometre
+    Password	REG_SZ	ramses
+    ReadOnly	REG_SZ	0
+    ShowOidColumn	REG_SZ	0
+    FakeOidIndex	REG_SZ	0
+    RowVersioning	REG_SZ	0
+    ShowSystemTables	REG_SZ	0
+    Protocol	REG_SZ	7.4-1
+    ConnSettings	REG_SZ	
+    DisallowPremature	REG_SZ	0
+    UpdatableCursors	REG_SZ	1
+    LFConversion	REG_SZ	1
+    TrueIsMinus1	REG_SZ	0
+    BI	REG_SZ	0
+    AB	REG_SZ	0
+    ByteaAsLongVarBinary	REG_SZ	0
+    UseServerSidePrepare	REG_SZ	0
+    LowerCaseIdentifier	REG_SZ	0
+    SSLmode	REG_SZ	require
+    XaOpt	REG_SZ	1

@@ -1,0 +1,139 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         05 03 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+proc,JtDebug=1
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+/*  epPlanOutils                                                          */
+
+#include "..\ep_commun\epPlanOutils.inc"
+
+/* Utilisation de la boite à outils graphique EPADESA et autres           */
+/*   nécessaire à celles-ci                                               */
+#include "..\ep_commun\epTexteOutils.inc"
+#include "..\ep_commun\epNumOutils.inc"
+#include "..\ep_commun\epListeOutils.inc"
+#include "..\ep_commun\epGuiOutils.inc"
+#include "..\ep_commun\epRalOutils.inc"
+
+/* Procédures de l'environnement                                          */
+
+proc,Hc=[12+[udiay<1.8]]
+proc,Ht=[Hc+2+2*[udiay<1.8]]
+proc,Titre=¹Publication de plans¹
+proc,TitreR=¹Choix du répertoire de publication¹
+
+/* Liste des routines                                                     */
+/*  BfAide Affiche le texte de l'aide                                     */
+/*        Dernière modification : 04/03/2013                                  */
+
+rout,LancPubPlan
+{
+  !EpPubPlan=0
+  run,CreeFenetre
+}
+
+rout,CreeFenetre
+{
+  var,§h,§hf,§bl,§c,§lmax,§nmbr_item,§lgauche,§href,§cref,§lf,§ldroite,§lcentre
+  
+  §nmbr_item=6 /* nombre de ligne dans la fenêtre */
+ 
+  §lgauche=58     /* largeur de la colonne de gauche   (étiquette)       */
+  §lcentre=174     /* largeur de la colonne de centrale (zone de saisie)  */
+  §ldroite=2     /* largeur de la colonne de droite   (bouton poussoir) */
+  §href=2         /* interligne */
+  §cref=2         /* séparateur de colonne */
+  §lf=[§lgauche+§lcentre+§ldroite+4*§cref]  /* largeur de la fenêtre par défaut */
+  §hf=[[[§nmbr_item*Ht]+2*§href]%0]             /* hauteur de la fenêtre par défaut */
+
+  var,§t
+  §t=¹Publication de plans¹ 
+  
+  dial,EP_SYSR,l=[§lf],h=[§hf],lmin=[§lf],hmin=[§hf],lmax=[§lf],hmax=[§hf],tx={§t}
+  
+  §h=[2*§href] 
+  
+  /***   Sélectionner   ***********************************************************************/
+  §c=[§cref]
+  qc,bf,BF_REP,[§c],[§h],[§lgauche],[Hc],tx="¹Répertoire :¹",rout=BfRep
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_REP,[§c],[§h],[§lcentre+§ldroite],[Hc],j=2,tx="[tops]\sauv"
+  
+  §h=[§h+Ht]
+  §c=[§cref]
+  qc,bf,BF_SEL,[§c],[§h],[§lgauche],[Hc],tx="¹Plans :¹",rout=BfSel
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_SEL,[§c],[§h],[§lcentre+§ldroite],[Hc],j=2,tx=""
+ 
+   
+  /***   Type de publication     **********************************************************************/
+  §h=[§h+Ht]
+  §c=[§cref]
+  qc,GR,GR_NOM,[§c],[§h],[§lf-2*§cref],[2*Ht],tx="¹Dénomination des fichiers :¹",et=0
+  
+  §h=[§h+Ht]
+  §c=[2*§cref]
+  qc,CB,CB_NOM,[§c],[§h],[§lcentre+§ldroite+§lgauche],[4*Ht],tx="&V0:Nom"
+  {
+    qao,tx="&V0:Nom"
+    qao,tx="&T6:nordre"
+    qao,tx="&T1:titre"
+    qao,tx="mm"
+  }
+
+  
+  /***   OK     ******************************************************************************/
+  §h=[§h+2*Ht]
+  qc,bf,BF_BEOK,2,[§h],48,[Hc],j=5,tx="¹OK¹",rout=BfBeok
+  qc,bf,BF_ANUL,52,[§h],48,[Hc],j=5,tx="¹Annuler¹",rout=BfAnul
+  qc,bf,BF_AIDE,[§lf-50],[§h],48,[Hc],j=5,tx="¹Aide¹",rout=BfAide
+  
+  rout,BfAide
+  {
+    
+  }
+  
+  rout,BfAnul
+  {
+    anul,10
+    fdia
+  }
+  
+  rout,BfBeok
+  {
+    run,Enreg
+    anul,10
+    fdia
+  }
+  
+  rout,BfRep
+  {
+    chdi,titr={TitreR},ok=BfRepOk
+    rout,BfRepOk(§rep)
+    {
+      qmod,ED_REP,tx=[§rep]
+    }
+  }
+  
+  rout,BfSel
+  {
+    chsa,!EpPubPlan,selc=jtPlan,eval=&V:Nom,ok=BfSelOk
+    rout,BfSelOk
+    {
+      qmod,ED_SEL,tx=!EpPubPlan
+    }
+  }
+  
+  rout,Enreg
+  {
+    var,§repertoire,§formule_nom,§selec
+    §repertoire=[tx(ED_REP)]
+    §formule_nom=[tx(CB_NOM)]
+    §selec=!EpPubPlan
+    run,PubSel(§selec,§repertoire,[§formule_nom])
+  }
+}

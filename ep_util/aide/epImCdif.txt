@@ -1,0 +1,6 @@
+IMPORT DES DONNEES DU CDIF
+
+Cet outil importe les fonds de plans cadastraux de la dernière année entrée dans la base de données Ramses, selon la structuration HBase.
+
+Le nom de la source ODBC permet d'établir la liaison avec le serveur de données Ramses. 
+Il est à renseigner tel qu'il est configuré dans les paramètres de sources de données Windows. 

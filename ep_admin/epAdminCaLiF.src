@@ -1,0 +1,299 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         13 12 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+proc,JtDebug=1
+
+/* Liste des routines (en ordre alphabétique)                             */
+
+/*  NetFED(§mat) Modifie le descriptif dont le matricule est donné dans   */
+/*         §mat pour le faire correspondre au standard EPADESA            */
+/*         dernière modification : 05 03 2013 (SD)                        */
+/*  NetPlan(§mat) Modifie le plan dont le matricule est donné dans la     */
+/*         procédure §mat pour la faire correspondre au standard EPADESA  */
+/*         dernière modification : 05 03 2013 (SD)                        */
+/*  NetRalZ(§sel) Convertit pour les composants appartenant à la          */
+/*         sélection §sel ayant des rallonges Z, celles-ci par des        */
+/*         rallonges L                                                    */
+/*         dernière modification : 05 03 2013 (SD)                        */
+
+/* E=ral,[mm]&V2:Im="{epDimgDir}[xtr([mm]&V2:Im,6)]"[ex] */
+
+/* Procédures utiles                                                      */
+proc,EpficDbl=[base]\doublons.txt
+
+/* Utilisation de la boite à outils composants de l'EPADESA               */
+/*    et autres nécessaire à celles-ci                                    */
+#include "..\ep_commun\epCmpOutils.inc"
+#include "..\ep_commun\epGeomOutils.inc"
+#include "..\ep_commun\epTypeOutils.inc"
+#include ".\epPoints.inc"
+#include "..\ep_util\epEdvOutils.inc"
+
+/* ------------------------- DEBUT DES ROUTINES ------------------------- */
+
+rout,RatachJ
+{
+  var,§mat,§titr
+  §mat=[epcFB]+[epcFC]+[epcFG]+[epcFP]+[epcFS]+[epcKf]+[epcKfn]
+  §titr="Selection des sommets à traiter"
+  !EpRatachJ=
+  
+  chsl,nom=!EpRatachJ,selc=J,titr={§titr},ok=NetJOk
+  
+  rout,NetJOk
+  {
+    runs,!EpRatachJ
+    {
+      run,NetPoint([mm])
+    }
+    !sele,!EpRatachJ
+    marq,10,`¹Sommets traités¹`
+  }
+}
+
+rout,Pproche
+/* Cette routine permet de lister le sommet foncier le plus proche de     */
+/*   chacun des composants sélectionné parmis les sommets fonciers        */
+{
+  var,§mat,§titr,§pproche
+  
+  !EpSelP=[epcFB]+[epcFC]+[epcFG]+[epcFP]+[epcFS]+[epcKf]+[epcKfn]+J
+  §titr="Selection des sommets à traiter"
+  !EpDoublon=[epcKfn]
+  
+  chsl,nom=!EpDoublon,selc=!EpSelP,titr={§titr},ok=DoublOk,anul=DoublAnul
+  
+  list,file={EpficDbl},raz=1
+  rout,DoublOk
+  {
+    runs,!EpDoublon
+    {
+      §mat=[mm]
+      run,DetPlusProche(§mat,`!EpSelP`,§pproche)
+      impr,[§mat] -> [§pproche] ([dist(§mat,§pproche)])
+    }
+    !sele,!EpDoublon
+    !sele,!EpSelP
+    list
+    afli,file={EpficDbl}
+  }
+  rout,DoublAnul
+  {
+    !sele,!EpDoublon
+    !sele,!EpSelP
+    list
+  }
+}
+
+rout,DblKfn
+/* Cette routine permet de résoudre automatiquement les doublons stricts */
+{
+  var,§mat,§titr,§pproche
+  var,§deb,§fin
+  
+  !EpSelP=[epcFB]+[epcFC]+[epcFG]+[epcFP]+[epcFS]+[epcKf]
+  §titr="Selection des sommets à traiter"
+  !EpDoublon=[epcKfn]
+   
+  chsl,nom=!EpDoublon,selc=[epcKfn],titr={§titr},ok=Doubl2Ok,anul=Doubl2Anul
+  
+  list,file={EpficDbl},raz=1
+  rout,Doubl2Ok
+  {
+    !EpDblKfn=0
+    runs,!EpDoublon
+    /* première passe avec tout le monde sauf Kfn */ 
+    {
+      §mat=[mm]
+      run,DetPlusProche(§mat,`!EpSelP`,§pproche)
+      if,"dist(§mat,§pproche)=0"
+      {
+        rpla,[§mat],[§pproche]
+        !EpDblKfn<[§mat]
+        impr,[§mat] -> [§pproche] ; [§mat] supprimé
+      }
+    }
+    runs,!EpDoublon
+    /* deuxième passe avec tout les Kfn entre eux */ 
+    {
+      §mat=[mm]
+      run,DetPlusProche(§mat,epcKfn,§pproche)
+      if,"dist(§mat,§pproche)=0"
+      {
+        if,"[1-app_sel(§pproche,`!EpDblKfn`)]"
+        {
+          rpla,[§mat],[§pproche]
+          !EpDblKfn<[§mat]
+          impr,[§mat] -> [§pproche] ; [§mat] supprimé
+        }
+      }
+    }
+    !cmpe,!EpDblKfn
+    !sele,!EpDblKfn
+    !sele,!EpDoublon
+    !sele,!EpSelP
+    list
+    marq,10,`¹Réduction des points de support terminée¹`
+    afli,file={EpficDbl}
+  }
+  rout,Doubl2Anul
+  {
+    !sele,!EpDoublon
+    !sele,!EpSelP
+    list
+  }
+
+}
+
+rout,NetPt
+{
+  var,§mat,§titr
+  §mat=[epcFB]+[epcFC]+[epcFG]+[epcFP]+[epcFS]+[epcKf]+[epcKfn]
+  §titr="Selection des sommets à traiter"
+  !EpNetPt=[epcKfn]
+  
+  chsl,nom=!EpNetPt,selc={§mat},titr={§titr},ok=NetPtOk
+  
+  rout,NetPtOk
+  {
+    runs,!EpNetPt
+    {
+      run,NetPoint([mm])
+    }
+    run,RmatIr(!EpNetPt)
+    !sele,!EpNetPt
+    marq,10,`¹Sommets traités¹`
+  }
+}
+
+rout,NetRalZ(§sel)
+/* Convertit pour les composants appartenant à la sélection §sel ayant    */
+/*  des rallonges Z, ces rallonges par des rallonges L                    */
+{
+  /* il conviendrait de vérifier que §sel est une sélection valide */
+  runs,[§sel]
+  {
+    if,"[mm]&Z0:><``"
+    {
+      run,ZtoL([mm])
+    }
+  }
+}
+
+rout,NetPlan(§mat)
+/* Modifie le plan dont le matricule est donné dans la procédure §mat     */
+/*   pour la faire correspondre au standard EPADESA                       */
+{
+  var,§dom,§ok_dom,§nv_dom,§dom_suf
+  var,§num
+  var,§v0
+  var,§fin
+  var,§fedpro,§indice,§i,§suffixe
+  
+  /* Unicité du domaine */
+  §dom=[[§mat]&D0:]
+  
+  /* Dénomination du domaine du plan */
+  if,"§dom><`F#%`"
+  {
+    /* Recherche si suffixe */
+    §suffixe=
+    if,"nmbr(`Fedpro*!onc([[§mat]&R0:E])`)=1" /* on verifie la nécessité d'un suffixe */
+    {
+      runs,Fedpro*!onc([[§mat]&R0:E])
+      {
+        §fedpro=[mm]
+      }
+      §indice=
+      for,"1->§i","§i<=4","§i+1->§i"
+      {
+        if,"[§fedpro]&R0:[chr(64+§i)]==[§mat]&R0:E"
+        {
+          §indice=[chr(64+§i)]
+        }
+      }
+      if,"§indice><``"
+      {
+        §suffixe=_[[§fedpro]:i][§indice]
+      }
+    }
+    
+    for,"1->§num","§num<=100000","§num+1->§num"
+    {
+      if,"defdom(`F[§num]`)=0"
+      {
+        if,"nmbr(`!dom(F[§num]%)`)=0"
+        {
+          §nv_dom=F[§num][§suffixe]  /* 1er domaine disponible */
+          [fi]
+        }
+      }
+      
+    }
+
+    domi,[§nv_dom],!dom([§dom])
+    domo,[§dom],!dom([§nv_dom])
+    §dom=[§nv_dom]
+  }
+  
+  §v0=[[§mat]&V0:]
+  
+  !cmpe,[§mat],K
+  !cmpe,[§mat],T
+  !cmpe,[§mat],V
+  
+  [§mat]:MD=EP_CAR_BOREX
+  [§mat]&V0:[§v0]
+  [§mat]&K0:gom,!tout
+  [§mat]&K1:%DOM:DOM="[§dom]"
+  [§mat]&K2:tra,!dom([§dom])
+  
+}
+
+
+rout,NetFED(§mat)
+/* Modifie le descriptif dont le matricule est donné dans la procédure    */
+/*   §mat pour la faire correspondre au standard EPADESA                  */
+{
+  [§mat]:MD=[Fed_md]
+  runs,!onc([§mat])*jtPlan
+  {
+    run,NetPlan([mm])
+    domi,[[mm]&D0:],[§mat]
+  }
+  runs,!nev(!onc([§mat]))*([[ProcFB]]+[[ProcFC]]+[[ProcFG]]+[[ProcFP]]+[[ProcFS]]+[[ProcKf]]+[[ProcKfn]])
+  {
+    run,NetPoint([mm])
+  }
+  run,NetRalZ([§mat])
+}
+
+rout,TestDom
+{
+  var,§dom,§k,§etoile
+  list,file=[base]\TestDom,raz=1
+  runs,jtPlan*!onc(FED+FEd)
+  {
+    §dom=[&D0:]
+    §k=[xtr(&K1:,9)]
+    if,"§k>>§dom"
+    then
+    {
+      §etoile='  '
+    }
+    else
+    {
+      §etoile='**'
+    }
+    if,"§dom><`F%`"
+    then
+    {
+      §etoile='++'
+    }
+    impr,[§etoile] [mm] -> [§dom],[§k] ([&V0:nom])
+  }
+  list
+}

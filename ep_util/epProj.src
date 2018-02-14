@@ -1,0 +1,77 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         22 02 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+/*  aucune boite à outils                                                 */
+
+
+/* Liste des routines                                                     */
+/*  AplDuClq Ouvre une fenêtre de sélection de plusieurs composant pour   */
+/*      y appliquer la fonction DuClq                                     */
+/*		Dernière modification : 25/01/2013								  */
+
+
+proc,JtDebug=1
+
+proc,Tx=4.344634
+proc,Ty=-19.545168
+proc,Gamma=-0.002115 /* Gamma en grades */
+
+rout,RatpToEpad(§prc_sel)
+{
+  var,§ma,§xo,§yo
+  var,§xf,§yf
+  
+  runs,[[§prc_sel]]
+  {
+    §ma=[mm]
+	
+	§xf=[[§ma]:X]
+	§yf=[[§ma]:Y]
+	
+	if,"[§ma]&o57:srid==`EPAD::2`"
+	{
+	  §xo=[[§ma]&o57:xo]
+	  §yo=[[§ma]&o57:yo]
+	  §xf=[[§xo*cos(Gamma,1)+§yo*sin(Gamma,1)+Tx]%3]
+	  §yf=[[-§xo*sin(Gamma,1)+§yo*cos(Gamma,1)+Ty]%3]
+	}
+	if,"[§ma]&o57:srid==`EPAD::1`"
+	{
+	  §xf=[[§ma]&o57:xo]
+	  §yf=[[§ma]&o57:yo]
+	}
+	org,[§ma],X=[§xf],Y=[§yf]
+  }
+}
+
+rout,EpadToRatp(§prc_sel)
+{
+  var,§ma,§xo,§yo
+  var,§xf,§yf
+  
+  runs,[[§prc_sel]]
+  {
+    §ma=[mm]
+	
+	§xf=[[§ma]:X]
+	§yf=[[§ma]:Y]
+	
+	if,"[§ma]&o57:srid==`EPAD::1`"
+	{
+	  §xo=[[§ma]&o57:xo]
+	  §yo=[[§ma]&o57:yo]
+	  §xf=[[§xo*cos(-Gamma,1)+§yo*sin(-Gamma,1)-Tx]%3]
+	  §yf=[[-§xo*sin(-Gamma,1)+§yo*cos(-Gamma,1)-Ty]%3]
+	}
+	if,"[§ma]&o57:srid==`EPAD::2`"
+	{
+	  §xf=[[§ma]&o57:xo]
+	  §yf=[[§ma]&o57:yo]
+	}
+	org,[§ma],X=[§xf],Y=[§yf]
+  }
+}

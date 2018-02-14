@@ -1,0 +1,54 @@
+
+/* Met à jour les altinf et altsup de §sell de FCD en fonction d'abord des zomi et zoma du HF associé   */
+/* puis à défaut en fonction du Z du composant  */
+/* La sélection !HbFCDSansAlt comprend à la fin les coupes h. qui sont sans altitude inf ou sup   */
+rout,Maj(§sell)
+{
+    var,§dom,§fcd,§i
+    
+    !HbFCDSansAlt=0
+    runs,([§sell])*[hbcFCD]
+    {
+        §fcd=[mm]
+
+        run,RechDom
+        if,"§dom><``"
+        {
+            if,"[§fcd]&v1:altinf==``"
+            {  
+                ral,[§fcd]&v1:altinf=[HF.[§dom]&q1:zomi]
+                [§fcd]:z=[[§fcd]&v1:altinf],pv=2
+            }
+            if,"[§fcd]&v1:altsup==``"
+            {  
+                ral,[§fcd]&v1:altsup=[HF.[§dom]&q1:zoma]
+            }
+        }
+        else
+        {
+            if,"[[§fcd]&v1:altinf==``]@[[§fcd]:pv>0]"
+            {
+                ral,[§fcd]&v1:altinf=[[§fcd]:z]
+            }            
+        }        
+        if,"[[§fcd]&v1:altinf==``]#[[§fcd]&v1:altsup==``]#[[§fcd]:pv=0]"
+        {
+            !HbFCDSansAlt<[§fcd]
+        }
+    }
+    marq,10,`MAJ altinf altsup de [§sell]`
+    
+    rout,RechDom
+    {
+        §dom={}
+        for,1->§i,§i<1000,§i+1->§i
+        {
+            if,"nmbr(`[§fcd]*!dom(F[§i])`)"
+            {
+                §dom=[§i]
+                [fi]
+            }
+        }
+    }
+}
+

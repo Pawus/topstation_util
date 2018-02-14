@@ -1,0 +1,38 @@
+
+CARACTÉRISTIQUES DU SOMMET
+
+Attribut &V1:Idp - identifiant du point
+
+	Cet attribut enregistre l'identifiant du sommet sur les plans de la base « de travail ».
+	C'est la valeur qui se reprise par le modèle et affiché à proximité du point sur les plans.
+	 
+	Lors d'une création de sommet, il est automatiquement pré-rempli par le matricule du composant.
+	
+	Cet attribut est optionnel.
+	 
+Attribut &V57:ir - nature du point	 
+
+	Cet attribut enregistre la famille du sommet (clou, borne, etc.). Il est fixé par défaut selon
+	le radical du composant modifié ou reproduit. La valeur est à choisir parmi la liste fermée proposée.
+	
+	Il permet la réimmatriculation correctes des composants lors d'un import dans la base de
+	référence (CaLiF).
+	
+	Cet attribut est obligatoire.
+
+Attribut &T0:Nat - complément nature du point	 
+
+	Cet attribut permet de préciser la nature du sommet. Cet attribut est libre mais des valeurs sont
+	proposées par l'intermédiaire d'une liste déroulante.
+
+	Cet attribut est optionnel.
+	
+Attribut &V1:Prec - classe de précision du point	 
+
+	Cet attribut permet de préciser la calsse de précisiona absolue du sommet. La valeur est à choisir
+	parmi la liste fermée proposée.
+	
+	Par défaut, elle est fixée à la plus mauvaise classe de précision.
+
+	Cet attribut est obligatoire.
+	

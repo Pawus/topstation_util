@@ -1,0 +1,22 @@
+	
+REQUETE DE TOUS LES OBJETS FONCIERS OU CADASTRAUX EN UN POINT DETERMINE
+	
+	La requête sera lancée à l'emplacement où l'on aura cliqué dans le plan, et dans 
+	un rayon de N mètres autour de ce point. Ce rayon est de 0m par défaut. c'est à 
+	dire stricitement à la verticale du point. On peut introduire une autre valeur 
+	entière comprise entre 1 et 99.	
+	
+	Le résultat de la requête donne les zones foncières comprises dans le "cylindre 
+	sans fond" défini par le centre et le rayon indiqués, à savoir:	
+		les parcelles cadastrales	
+		les parcelles foncières	
+		les EDDV avec les coupes horizontales de volumes concernées et leurs altitudes	
+	
+	Un cercle de rayon N mètres est tracé provisoirement, représentant le "cylindre 
+	sans fond".	
+	
+
+	
+
+	
+

@@ -1,0 +1,1515 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         09 09 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+/*         VD Vianney Dugrain (vdugrain@epadesa.fr)                       */
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+/*  epPlanOutils                                                          */
+#include "..\ep_commun\epPlanOutils.inc"
+#include "..\ep_commun\epTexteOutils.inc"
+#include "..\ep_commun\epNumOutils.inc"
+#include "..\ep_commun\epListeOutils.inc"
+#include "..\ep_commun\epGuiOutils.inc"
+#include "..\ep_commun\epRalOutils.inc"
+#include "..\ep_commun\epTypeOutils.inc"
+
+/* Liste des routines                                                     */
+/*  CreePlan(§fed) Créer un plan nouveau lié à la volumétrie §fed         */
+/*		Dernière modification : 28/02/2013								  */
+
+proc,JtDebug=1
+
+/*--------------------------------------------------------------------------*/
+/*                       PROCEDURES PERSONNALISABLES                        */
+/*--------------------------------------------------------------------------*/
+
+proc,MdPlan=EP_CAR_A2_E /* modèle de plan par défaut                     */
+proc,MdCart=EP_CRT_A2   /* modèle de cartouche par défaut                */
+proc,BlkFen=$0.201      /* symbole pour visualiser le rectangle de base  */
+
+/*--------------------------------------------------------------------------*/
+/*                     PROCEDURES  NON PERSONNALISABLES                     */
+/*--------------------------------------------------------------------------*/
+
+proc,Hc=[12+[udiay<1.8]]
+proc,Ht=[Hc+2+2*[udiay<1.8]]
+proc,Hc2=[6+[udiay<1.8]]
+proc,Ht2=[Hc2+1+1*[udiay<1.8]]
+
+proc,TitreCre=¹Création d'un plan¹
+proc,TitreMod=¹Modification d'un plan¹
+proc,TitreRep=¹Reproduction d'un plan¹
+
+Rep=null
+
+/*--------------------------------------------------------------------------*/
+/*                        ROUTINES PERSONNALISABLES                         */
+/*                         par ordre alphabétique                           */
+/*--------------------------------------------------------------------------*/
+
+rout,BfAideAtt
+{
+  aide,file=[juCartEP]\aide\ent_plan_att.txt
+}
+
+rout,BfBeokAtt
+{
+  var,§dtc,§id,§nati,§in,§ir,§comid,§x,§y
+  §comid=0
+  
+  §dtc=[tx(DT_DTCC)]
+  §id=[tx(DT_DTCI)]
+  
+  run,RpqtAttr
+  
+  /* Mise à jour de l'attribut nature */
+  §nati=[et(OP_NATI)]
+  if,"§nati=0"
+  {
+        §in="calculé"
+  }
+  if,"§nati=1"
+  {
+        §in="digitalisé"
+  }
+  if,"§nati=2"
+  {
+        §in="importé"
+  }
+  if,"§nati=3"
+  {
+        §in="saisi"
+  }
+  [Ma]&Q0:dtc=[§dtc],id=[§id],in=[§in]
+  
+/*  [Ma]&R0:E=[tx(AF_EDDV)]	*/
+  
+  /* Récupération de la valeur des communes cochées */
+  if,"et(OC_C026)=1"
+  {
+        §comid=[[§comid]+1]
+  }
+  if,"et(OC_C035)=1"
+  {
+        §comid=[[§comid]+2]
+  }
+  if,"et(OC_C050)=1"
+  {
+        §comid=[[§comid]+4]
+  }  
+  if,"et(OC_C062)=1"
+  {
+        §comid=[[§comid]+8]
+  }
+  var,§zone,§projet,§operation
+  §zone=[tx(OP_ZONE)]
+  run,QtoV(§zone,§zone,zone)
+  §projet=[tx(OP_PROJ)]
+  §operation=[tx(OP_OPEA)]
+  run,EcritRal(§comid,[Ma],T0,commune,entier)
+  run,EcritRal(§zone,[Ma],T0,zone,entier)
+  run,EcritRal(§projet,[Ma],T0,projet,txt)
+  run,EcritRal(§operation,[Ma],T0,operation,txt)
+  [Ma]&T1:texte1="[tx(ED_TXT1)]"
+  [Ma]&T2:titre="[tx(ED_TITR)]"
+  [Ma]&T3:soustitre="[tx(ED_STIT)]"
+  [Ma]&T4:texte2="[tx(ED_TXT2)]"
+  [Ma]&T5:date=[tx(DT_DTCP)]
+  [Ma]&T6:indice="[tx(ED_INDP)]",nordre="[tx(ED_NUMO)]",ref="[tx(ED_NUMG)]"
+  [Ma]&T7:alti=[et(OP_ALTI)],etude=[et(OP_ETUD)],prov=[et(OP_PROV)]
+  [Ma]&T8:point=[et(OP_LOCA)],x=[[Ma]:X],y=[[Ma]:Y]
+  [Ma]&T9:texte3=[tx(ED_TXT3)]
+  [Ma]&T10:dossier=[tx(ED_DOSS)],nopiece=[tx(ED_NOPC)]
+  
+  tra,[Ma]
+  marq,10,`Enregistrement des attributs`
+  run,CreeFenetre
+}
+
+rout,ChoixMdl
+{
+  /* Cette routine permet de choisir le modèle qui habillera le plan        */
+  ChoixMdEPADESA=EP_CAR_%
+  chmd,"EP_CAR_A2_E",ChoixMdEPADESA,0,¹Choix du modèle¹,ValidMdl1
+}
+
+rout,DefAttr
+/* Définition des variables qui porteront les valeurs des attributs */
+{
+  Dtcc=[[Ma]&Q0:dtc]
+  Dtci=[[Ma]&Q0:id]
+  
+  /* Récupération de l'index de nature de l'information (0=calculé, 1=digitalisé, etc...) */
+  var,§nati
+  §nati=[[Ma]&Q0:in]
+  if,"lwc(§nati)==`c%`"
+  {
+        Nati=0
+  }
+  else
+  {
+        if,"lwc(§nati)==`d%`"
+        {
+          Nati=1
+        }
+        else
+        {
+          if,"lwc(§nati)==`i%`"
+          {
+                Nati=2
+          }
+          else
+          {
+                Nati=3
+          }
+        }
+  }
+  Eddv=[[Ma]&R0:E]
+  
+  /* Récupération de l'index de commune et désignation des communes par un string de la forme xxyy... avec :    */
+  /*                            - xx = 2 derniers caractères de l'identifiant INSEE de la commune x             */
+  /*                            - yy = 2 derniers caractères de l'identifiant INSEE de la commune y, etc...     */
+  var,§com
+  §com=[[Ma]&T0:commune]
+  Comm=
+  if,"§com><``"
+  {
+    if,"§com=1"
+    {
+          Comm=26
+    }
+    if,"§com=2"
+    {
+          Comm=35
+    }
+    if,"§com=3"
+    {
+          Comm=2635
+    }
+    if,"§com=4"
+    {
+          Comm=50
+    }
+    if,"§com=5"
+    {
+          Comm=2650
+    }  
+    if,"§com=6"
+    {
+          Comm=3550
+    }
+    if,"§com=7"
+    {
+          Comm=263550
+    }
+    if,"§com=8"
+    {
+          Comm=62
+    }
+    if,"§com==`9`"
+    {
+          Comm=2662
+    }
+    if,"§com=10"
+    {
+          Comm=3562
+    }
+    if,"§com=11"
+    {
+          Comm=263562
+    }
+    if,"§com=12"
+    {
+          Comm=5062
+    }
+    if,"§com=13"
+    {
+          Comm=265062
+    }
+    if,"§com=14"
+    {
+          Comm=355062
+    }
+    if,"§com=15"
+    {
+          Comm=26355062
+    }
+  }
+  /*------------------------------------------------------ */
+  
+  /* Récupération de l'index de zone (0=quartier d'affaires, etc...) */
+  var,§zone
+  §zone=[[Ma]&T0:zone]
+  Zone=[§zone]
+  
+  Txt1=[[Ma]&T1:texte1]
+  Titr=[[Ma]&T2:titre]
+  Stit=[[Ma]&T3:soustitre]
+  Txt2=[[Ma]&T4:texte2]
+  Txt3=[[Ma]&T9:texte3]
+  Doss=[[Ma]&T10:dossier]
+  NoPc=[[Ma]&T10:nopiece]
+  Dtcp=[[Ma]&T5:date]
+  Indp=[[Ma]&T6:indice]
+  Numo=[[Ma]&T6:nordre]
+  Numg=[[Ma]&t6:ref]
+  Alti=[[Ma]&T7:alti]
+  Etud=[[Ma]&T7:etude]
+  Prov=[[Ma]&T7:prov]
+  Loca=[[Ma]&T8:point]
+}
+
+rout,DetFormat(§mod,§prc_L,§prc_H,§prc_ec,§prc_md,§prc_format)
+/* Cette routine permet de d'instancier la procédure Form avec le numéro du   */
+/*   format ISO A le plus proche des dimensions données par les procédures    */
+/*   Lplan & Hplan ou Cx & Cy avec une tolérance définie                      */
+/* Dans le cas ou aucun format ne correspond, la procédure Form est fixée à 6 */
+/*   et la procédure FormIV à 0. Dans le cas contraire, Form IV ets fixée à 2 */
+/* La variable §mod peut prendre deux valeurs :                               */
+/*   1) LH pour utiliser les procédures Lplan & Hplan (dimensions papier du   */
+/*     plan)                                                                  */
+/*   2) CxCy pour utiliser les procédures Cx & Cy (dimensions "terrain" du    */
+/*     plan)                                                                  */
+/* L'échelle du plan est donnée par la procédure Ec                           */
+{
+  var,§delta
+  §delta=5 /* tolérance de 5mm */
+  
+  var,§i,§portrait,§format
+  
+  var,§mag,§mad,§mah,§mab
+  var,§hplan,§lplan
+  
+  run,CalculeMarge([§prc_md],§mag,§mad,§mah,§mab)
+  
+  if,"§mod><`LH`"
+  then
+  {
+    §hplan=[[[§prc_H]/[§prc_ec]]*1000+[§mah]+[§mab]]
+    §lplan=[[[§prc_L]/[§prc_ec]]*1000+[§mag]+[§mad]]
+  }
+  else
+  {
+    §hplan=[[§prc_H]]
+    §lplan=[[§prc_L]]
+  }
+  
+  if,"§hplan>§lplan"
+  then
+  {
+    §portrait=1
+  }
+  else
+  {
+    §portrait=0
+  }
+  if,"[§portrait]"
+  {
+    §lplan=[§lplan+§hplan]
+    §hplan=[§lplan-§hplan]
+    §lplan=[§lplan-§hplan]
+  }
+
+  §format=6
+  /* test format ISO 216 */
+  for,"0->§i","§i<5","§i+1->§i"
+  {
+    if,"[[[§lplan]<[LA[§i]+§delta]]@[[§lplan]>[LA[§i]-§delta]]]"
+    {
+      if,"[[[§hplan]<[HA[§i]+§delta]]@[[§hplan]>[HA[§i]-§delta]]]"
+          {
+            §format=[§i]
+            §lplan=[LA[§i]]
+            §hplan=[HA[§i]]
+          }
+    }
+  }
+  if,"[§portrait]"
+  {
+    §lplan=[§lplan+§hplan]
+    §hplan=[§lplan-§hplan]
+    §lplan=[§lplan-§hplan]
+  }
+  
+  [§prc_format]=[§format]
+  if,"§mod==`LH`"
+  then
+  {
+    [§prc_L]=[§lplan]
+    [§prc_H]=[§hplan]
+  }
+}
+
+rout,MajCom
+/* Cochage des cases de communes à partir de la valeur de la procédure Comm */
+{
+  var,§i,§com,§a
+  §i=0
+  §a={Comm}
+  §com=[xtr(`[§a]`,`[§i]`,2)]
+  whil,"§com><``"
+  {
+        qmod,id=OC_C0[§com],et=1
+        §i=[[§i+2]]
+        §com=[xtr(`[§a]`,`[§i]`,2)]
+  }
+}
+
+rout,MajListe
+{
+  if,"defprc(`ListeOk`)<>1"
+  {
+    run,MajCsvToEpl([juCartEP]\epLst_plan.csv,1)
+	ListeOk=1
+	marq,11
+  }
+}
+
+rout,ModAttr
+{
+
+  var,§h,§hf,§bl,§c,§lmax,§nmbr_item,§lgauche,§href,§hlign,§cref,§lf,§ldroite,§lcentre
+  
+  §nmbr_item=28 /* nombre de ligne dans la fenêtre */
+ 
+  §lgauche=116 /* largeur de la colonne de gauche   (étiquette)       */
+  §lcentre=116 /* largeur de la colonne de centrale (zone de saisie)  */
+  §ldroite=12 /* largeur de la colonne de droite   (bouton poussoir) */
+  §href=2     /* interligne */
+  §hlign=12   /* hauteur de ligne */
+  §cref=2     /* séparateur de colonne */
+  §lf=[§lgauche+§lcentre+§ldroite+8*§cref]    /* largeur de la fenêtre par défaut */
+  §hf=[§nmbr_item*Ht+2*§href] /* hauteur de la fenêtre par défaut */
+
+  Rep=Attr
+
+  if,"Cas==`Mod`",DefAttr
+  if,"Cas==`Cre`",InitAttr
+
+  var,§t
+  §t=¹Attributs du plan¹ [Ma]
+  
+  dial,P_ATT,l=[§lf],h=[§hf],lmin=[§lf],hmin=[§hf],lmax=[§lf],hmax=[§lf],tx={§t}
+  
+  §h=[§href] 
+  §c=[§cref]
+  
+  /***   Localisation   **********************************************************************/
+  qc,gr,GR_LOCA,[§c],[§h],[§lf-4],[§hlign+§href+5*§hlign+5*§href],tx="¹Localisation¹",ft=2
+  
+  §h=[§h+§hlign]  /* nouvelle ligne : Commune */
+  §c=[§cref+4]
+  qc,tx,TX_COMM,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Commune(s) :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,oc,OC_C026,[§c],[§h],[§lcentre/2],[Hc],j=2,tx="¹Courbevoie¹"
+  §c=[§c+§lcentre/2+§cref]
+  qc,oc,OC_C035,[§c],[§h],[§lcentre/2],[Hc],j=2,tx="¹La Garenne C.¹"
+  §h=[§h+§hlign+§href]
+  §c=[§cref*2+4+§lgauche]
+  qc,oc,OC_C050,[§c],[§h],[§lcentre/2],[Hc],j=2,tx="¹Nanterre¹"
+  §c=[§c+§lcentre/2+§cref]
+  qc,oc,OC_C062,[§c],[§h],[§lcentre/2],[Hc],j=2,tx="¹Puteaux¹"
+  run,MajCom  
+  §c=[§cref*3+§lgauche+§lcentre+4]
+  qc,bp,BP_COMM,[§c],[§h-§href-§hlign],[§ldroite],[2*Hc],opt=1
+  
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_ZONE,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Zone :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_ZONE,[§c],[§h],[§lcentre],048,j=2
+  {
+        run,QAOlstCMP(zone)
+  }
+  run,QMODlstET(OP_ZONE,zone,Zon)
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_ZONE,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_PROJ,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Projet :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_PROJ,[§c],[§h],[§lcentre],096,j=2,tmen=CMP,selc=[epcZP],eval=&T0:nom,tx=[Proj],rout=ValidProj,tri=&T0:nom
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_PROJ,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]
+  §c=[§cref+4]
+  qc,tx,TX_OPEA,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Opération :¹"
+  §c=[§c+§lgauche+§cref]
+  !EpTmp=[epcZO]*!test(&r0:P==[ma(OP_PROJ)])
+  qc,CB,OP_OPEA,[§c],[§h],[§lcentre],096,j=2,tmen=CMP,selc=!EpTmp,eval=&T0:nom,tx=[Operation],rout=ValidOp,tri=&T0:nom
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_OPEA,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+2*§hlign+§href]  /* nouvelle ligne : titre de sous-partie */
+  §c=[§cref]
+  /***   Données affichées   *****************************************************************/
+  qc,gr,GR_DONA,[§c],[§h],[§lf-4],[§hlign+§href+18*§hlign+18*§href],tx="¹Données affichées¹",ft=2
+
+  
+  §h=[§h+§hlign]  /* nouvelle ligne : Titre du plan */
+  §c=[§cref+4]
+  qc,tx,TX_TITR,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Titre du plan :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_TITR,[§c],[§h],[§lcentre],[Hc],j=2,tx={Titr}
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_TITR,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : Sous-titre */
+  §c=[§cref+4]
+  qc,tx,TX_STIT,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Sous-titre :¹"
+  §c=[§c+§lgauche+§cref] 
+  qc,ed,ED_STIT,[§c],[§h],[§lcentre],[Hc],j=2,tx={Stit}
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_STIT,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+2*§hlign+2*§href]  /* nouvelle ligne : Texte 1 */
+  §c=[§cref+4]
+  qc,tx,TX_TXT1,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Texte 1 :¹" 
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_TXT1,[§c],[§h],[§lcentre],[Hc],j=2,tx={Txt1}
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_TXT1,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : Texte 2 */
+  §c=[§cref+4]
+  qc,tx,TX_TXT2,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Texte 2 :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_TXT2,[§c],[§h],[§lcentre],[Hc],j=2,tx={Txt2}
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_TXT2,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : Texte 3 */
+  §c=[§cref+4]
+  qc,tx,TX_TXT3,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Texte 3 :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_TXT3,[§c],[§h],[§lcentre],[Hc],j=2,tx={Txt3}
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_TXT3,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+2*§hlign+2*§href]  /* nouvelle ligne : Dossier */
+  §c=[§cref+4]
+  qc,tx,TX_DOSS,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Dossier :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_DOSS,[§c],[§h],[§lcentre],[Hc],j=2,tx={Doss}
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_DOSS,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : N° pièce */
+  §c=[§cref+4]
+  qc,tx,TX_NOPC,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Numéro de pièce :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_NOPC,[§c],[§h],[§lcentre],[Hc],j=2,tx={NoPc}
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_NOPC,[§c],[§h],[§ldroite],[Hc],opt=1
+    
+  §h=[§h+2*§hlign+2*§href]  /* nouvelle ligne : Date création plan */
+  §c=[§cref+4]
+  qc,tx,TX_DTCP,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Date de création du plan :¹" 
+  §c=[§c+§lgauche+§cref]
+  qc,dt,DT_DTCP,[§c],[§h],[§lcentre],[Hc],j=2,tx={Dtcp}
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_DTCP,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : N° ordre */
+  §c=[§cref+4]
+  qc,tx,TX_NUMO,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹N° d'ordre :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_NUMO,[§c],[§h],30,[Hc],j=2,tx={Numo}
+  §c=[§c+§cref+30]
+  qc,ed,ED_INDP,[§c],[§h],15,[Hc],j=2,tx={Indp}
+  §c=[§c+§lcentre-30]
+  qc,bp,BP_INDP,[§c],[§h],[§ldroite],[Hc],opt=1
+
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : Syst Alti */
+  §c=[§cref+4]
+  qc,tx,TX_ALTI,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Indication du système altimétrique :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_ALTI,[§c],[§h],[§lcentre],[Hc],j=2,et=[Alti]
+  {
+    qao,0,"¹Non¹"
+    qao,1,"¹Oui¹"
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_ALTI,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : Doc etude */
+  §c=[§cref+4]
+  qc,tx,TX_ETUD,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Document d'étude :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_ETUD,[§c],[§h],[§lcentre],[Hc],j=2,et=[Etud]
+  {
+    qao,0,"¹Non¹"
+    qao,1,"¹Oui¹"
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_ETUD,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : Doc provisoire */
+  §c=[§cref+4]
+  qc,tx,TX_PROV,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Document provisoire :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_PROV,[§c],[§h],[§lcentre],[Hc],j=2,et=[Prov]
+  {
+    qao,0,"¹Non¹"
+    qao,1,"¹Oui¹"
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_PROV,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : Localisation */
+  §c=[§cref+4]
+  qc,tx,TX_LOCA,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Localisation sur le plan de situation :¹"
+  §c=[§c+§lgauche+§cref]  
+  qc,OP,OP_LOCA,[§c],[§h],[§lcentre],[Hc],j=2,et=[Loca]
+  {
+		qao,0,"¹Non¹"
+        qao,1,"¹Oui¹"
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_LOCA,[§c],[§h],[§ldroite],[Hc],opt=1
+
+  
+  §h=[§h+2*§hlign+2*§href]  /* nouvelle ligne : N° ordre presta */
+  §c=[§cref+4]
+  qc,tx,TX_NUMG,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Référence dossier prestataire :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,ed,ED_NUMG,[§c],[§h],[§lgauche],[Hc],j=2,tx={Numg}
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_BP_LOCA,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+2*§hlign+§href]  /* nouvelle ligne : titre de sous-partie */
+  §c=[§cref]
+  /***   Métadonnées   ***********************************************************************/
+  qc,gr,GR_INFO,[§c],[§h],[§lf-4],[§hlign+§href+4*§hlign+4*§href],tx="¹Métadonnées¹",ft=2
+  
+  §h=[§h+§hlign]  /* nouvelle ligne : Date de creation cmp */
+  §c=[§cref+4]
+  qc,tx,TX_DTCC,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Date de création du composant :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,dt,DT_DTCC,[§c],[§h],[§lcentre],[Hc],j=2,tx="{Dtcc}"
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_DTCC,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : Date de creation info */
+  §c=[§cref+4]
+  qc,tx,TX_DTCI,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Date de création de l'information :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,dt,DT_DTCI,[§c],[§h],[§lcentre],[Hc],j=2,tx="{Dtci}"
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_DTCI,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : Nature info */
+  §c=[§cref+4]
+  qc,tx,TX_NATI,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Nature de l'information :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,OP,OP_NATI,[§c],[§h],[§lcentre],048,j=2,et=[Nati]
+  {
+        qao,0,"¹Calculée¹"
+        qao,1,"¹Digitalisée¹"
+        qao,2,"¹Importée¹"
+        qao,3,"¹Saisie¹"
+  }
+  §c=[§c+§lcentre+§cref]
+  qc,bp,BP_NATI,[§c],[§h],[§ldroite],[Hc],opt=1
+  
+  §h=[§h+§hlign+§href]  /* nouvelle ligne : Organisme */
+  §c=[§cref+4]
+  qc,tx,TX_ORGC,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Organisme ayant créé le composant :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,af,AF_ORGC,[§c],[§h],[§lcentre],[Hc],j=2,tx="EPADESA - DFJ"
+  
+  §h=[§h+2*§hlign+2*§href] /* ---------------------- */
+  §c=[§cref+4]
+  qc,bf,BF_OKAT,[§c],[§h],048,[Hc],j=5,tx="¹OK¹",rout=BfBeokAtt
+  §c=[§c+50]
+  qc,bf,BF_RINI,[§c],[§h],048,[Hc],j=5,tx="¹Réinitialiser¹",rout=ModAttr
+  §c=[§c+50]
+  qc,bf,BF_RPCT,[§c],[§h],048,[Hc],j=5,tx="¹Répercuter¹",rout=SelReperc
+  §c=[§lf-52]
+  qc,bf,BF_AIDA,[§c],[§h],048,[Hc],j=5,tx="¹Aide¹",rout=BfAideAtt
+  
+  evnt,entr=BfBeok,bdro=BfBeok,ferm=BfFerm
+}
+
+/*--------------------------------------------------------------------------*/
+/*                      ROUTINES NON PERSONNALISABLES                       */
+/*                        par ordre alphabétique                            */
+/*--------------------------------------------------------------------------*/
+
+rout,AfficheRbase
+{
+  /* Cette routine permet de visualiser le rectangle de base définie par le */
+  /*   composant enregistré dans la pocédure MaR, en affichant le symbole   */
+  /*   déterminé par la procédure BlkFen                                    */
+  
+  [MaR]:X=[X],Y=[Y],G=[G],PH=7,MD=JT_ENT_BL
+  ral,[MaR]&v0:Pr=7,Co=6,Lw=-1
+  ral,[MaR]&v1:Ly="0"
+  ral,[MaR]&v5:Ex=[Cx],Ey=[Cy],Es=1,Sl=1
+  ral,[MaR]&v6:Bl="[BlkFen]"
+  tra,[MaR]
+}
+
+rout,BfAide
+{
+  !prce,JtAide_@
+  JtAide_a"¹Créer/Reproduire/Modifier un point de support foncier¹"=[juCartEP]\aide\ent_plan.txt
+  JtAide_b"¹Répercuter sur d'autres composants¹"=[jtCart]\aide\Repercuter.txt
+  JtAide_c"¹Définir/Modifier les attributs du plan¹"=[juCartEP]\aide\ent_plan_att.txt
+  aide,JtAide_@
+}
+
+rout,BfBeok
+{
+  run,Enreg
+  !Jrpqt=0
+  if,"Cas==`Mod`"
+  {
+    fdia
+    lanc,Modifier,[jtCart]\Modifier
+    qmod,ED_COMP,tx="[Ma]"
+  }
+  else
+  {
+    if,"Cas==`Rep`"
+    {
+      run,DupComp([Ma])
+    }
+    else
+    {
+      fdia
+    }
+  }
+}
+
+rout,BfFerm
+{
+  if,"[modif#[Cas==`Cre`]]"
+  {
+    note
+    qpop,"¹Enregistrer les données modifiées ?¹",j=5
+    {
+      qap,"¹Oui¹",dfo=1
+      {
+	    if,"Rep==`Attr`"
+		{
+		  run,BfBeokAtt
+		}
+        run,Enreg
+      }
+      qap,"¹Non¹"
+	  {
+	    !cmpe,[MaR]
+	  }
+    }
+  }
+  !Jrpqt=0
+}
+
+rout,BfRpqt
+{
+  Rep=Plan
+  var,§t
+  §t=¹Choix des plans sur lesquels répercuter ?¹
+  chsa,nom=!Jrpqt,selc=jtPlan*~[Ma],titr={§t},tri={mm}&V0:Nom,eval={mm}&V0:Nom,ok=Valid
+}
+
+rout,CreComp(§r)
+/* Crée un plan portant le radical §r et crée le cartouche correspondant (format A4 en position BD) */
+{
+  var,§dom
+  
+  Cas=Cre
+  run,MajListe
+  Ma=[ml(§r)]
+  Cart=[ml(`jtCart`)]
+
+  
+  /* on détermine les dimensions du plan */
+  /* aujourd'hui par défaut A0 au 1/500  */
+  Lplan={LA0}
+  Hplan={HA0}
+  Md=[MdPlan]
+  Ec=500
+  
+  run,CalculeMarge(Md,MaG,MaD,MaH,MaB)
+  Cy=[[[Hplan-[MaH]-[MaB]]*Ec]/1000]
+  Cx=[[[Lplan-[MaG]-[MaD]]*Ec]/1000]
+  
+  /* on créé le plan */
+  [Ma]:X=[xmvue],Y=[ymvue],G=100,Cx=[Cx],Cy=[Cy],MD=[Md]
+  [Ma]&V0:Nom="[Ma]",Ec=[Ec]
+  [Ma]&T0:commune=0
+  
+  /* on créé le cartouche */
+  [Cart]:Cx=110.000,Cy=153.500,MD=[MdCart],J=0
+  [Cart]&V0:Nom="[Ma]:Cartouche principal",J=7,Dx=2.50,Dy=-2.50,Cx=22.00,Cy=30.70
+  [Cart]&R0:P=[Ma] 
+    
+  /* on définie le domaine du plan */
+  §dom=[upcn(§r)][[Ma]:i]
+  [Ma]&D0:[§dom]
+  [Cart]&D0:[§dom]
+  
+  /* on ajoute les instructions qui seront exécutées à l'affichage du plan */
+  [Ma]&K0:gom,!tout
+  [Ma]&K1:%DOM:DOM="[§dom]"
+  [Ma]&K2:tra,!dom([§dom])
+  
+  /* on ajoute tous les composants tracés dans le domaine du plan */
+  domi,[§dom],!visb*~(jtCart+jtPlan)
+  
+  marq,11
+  
+  /* on ouvre la fenêtre de saisie */
+  run,InitRpqt
+  run,LecArgs
+  run,CreeFenetre
+}
+
+rout,CreeFenetre
+{
+  var,§h,§hf,§bl
+  
+  §hf=[12*Ht+4]
+  dial,EP_ENT_PLAN,l=306,h=[§hf],lmin=306,hmin=[§hf],lmax=512,hmax=[§hf],tx={Titre[Cas]},ferm=1,croi=1
+  §h=2
+  
+  qc,gr,GR_COMPO,1,[§h],304,[2*Ht+Ht2+2],tx=¹[Ma]¹,FT=2
+  qdim,GR_COMPO,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht2]
+  
+  qc,tx,TX_NOM,2,[§h],60,[Hc],j=8,tx=¹Nom : ¹
+  qc,ed,ED_NOM,64,[§h],238,[Hc],tx=[Nom],cint=vv,rout=ValidNom
+  qdim,TX_NOM,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_NOM,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht]
+    
+  qc,bf,BF_MDL,14,[§h],48,[Hc],j=8,tx=¹Md : ¹,rout=ChoixMdl
+  qc,ed,ED_MDL,64,[§h],176,[Hc],tx=[Md],vrif=MDL
+  qc,bf,BF_AUTO,242,[§h],48,[Hc],j=5,tx=¹Auto¹
+  qc,bp,BP_MDL,292,[§h],10,[Hc],et=[MdQ],opt=1
+  qdim,BP_MDL,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_MDL,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_MDL,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  qdim,BF_AUTO,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]
+  
+  §h=[§h+Ht2]
+  qc,gr,GR_VUE,1,[§h],304,[3*Ht+Ht2+2],tx=¹Vue¹
+  qdim,GR_VUE,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht2]
+  
+  qc,tx,TX_ECH,2,[§h],60,[Hc],j=8,tx=¹Échelle : 1/¹
+  qc,cb,CB_ECH,64,[§h],82,164,tx=[Ec],vrif=int,rout=ValidEc
+  {
+    qao,1,"250"
+    qao,2,"500"
+    qao,3,"750"
+    qao,4,"1000"
+    qao,5,"2000"
+    qao,6,"2500"
+  }
+  qc,bp,BP_ECH,148,[§h],10,[Hc],et=[EcQ],opt=1
+  qdim,BP_ECH,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qc,tx,TX_POSX,160,[§h],26,[Hc],j=8,tx=¹X :¹
+  qc,ed,ED_POSX,188,[§h],102,[Hc],tx=[X],vrif=val,racc=TraiteSouris,rout=ValidXY
+  qdim,ED_POSX,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  qc,bp,BP_POSX,292,[§h],10,[Hc],et=[XQ],opt=1
+  qdim,BP_POSX,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,TX_POSX,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qdim,TX_ECH,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,CB_ECH,dx=0.00,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  
+  qc,bf,BF_G,14,[§h],48,[Hc],j=8,tx=¹Gisement : ¹,rout=GisComp
+  qc,ed,ED_G,64,[§h],82,[Hc],tx=[G],cint=vv,vrif=val,racc=TraiteGis,rout=ValidG
+  qc,tx,TX_POSY,160,[§h],26,[Hc],j=8,tx=¹Y :¹
+  qc,bp,BP_G,148,[§h],10,[Hc],et=[GQ],opt=1
+  qc,ed,ED_POSY,188,[§h],102,[Hc],tx=[Y],vrif=val,racc=TraiteSouris,rout=ValidXY
+  qdim,ED_POSY,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  qc,bp,BP_POSY,292,[§h],10,[Hc],et=[YQ],opt=1
+  qdim,BP_POSY,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BP_G,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qdim,TX_POSY,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_G,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_G,dx=0.00,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  
+  qc,tx,TX_POSZ,160,[§h],26,[Hc],j=8,tx=¹Z :¹
+  qdim,TX_POSZ,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qc,ed,ED_POSZ,188,[§h],102,[Hc],tx=[Z],vrif=val,rout=ValidZ
+  qdim,ED_POSZ,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  
+  §h=[§h+Ht2]
+  qc,gr,GR_PAPIER,1,[§h],304,[2*Ht+Ht2],tx=¹Présentation¹
+  qdim,GR_PAPIER,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht2]
+  
+  qc,tx,TX_FORM,2,[§h],60,[Hc],j=8,tx=¹Format : ¹
+  qc,op,OP_FORM,64,[§h],82,164,et=[Form+1],rout=ValidCxCy
+  {
+    qao,1," A0"
+    qao,2," A1"
+    qao,3," A2"
+    qao,4," A3"
+    qao,5," A4"
+    qao,6," Personnel"
+  }
+  qdim,TX_FORM,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_FORM,dx=0.00,dy=0.00,dl=0.50,dh=0.00
+  qc,tx,TX_ORIENT,160,[§h],26,[Hc],j=8,tx=¹Orient. : ¹
+  qc,op,OP_ORIENT,188,[§h],102,164,et=[si(Cx>Cy,2,1)],rout=ValidCxCy
+  {
+    qao,1," Portrait"
+    qao,2," Paysage"
+  }
+  qdim,TX_ORIENT,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_ORIENT,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  qc,bp,BP_CXCY,292,[§h],10,[2*Hc+4],et=[CxCyQ],opt=1
+  qdim,BP_CXCY,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]
+  
+  qc,tx,TX_L0,2,[§h],144,[Hc],j=8,tx=¹Dimension papier (longueur x hauteur) : ¹
+  qdim,TX_L0,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qc,ed,ED_L,148,[§h],49,[Hc],j=8,tx=[Lplan],IV=[FormIV],vrif=int,rout=ValidLH
+  qdim,ED_L,dx=0.00,dy=0.00,dl=0.50,dh=0.50
+  qc,tx,TX_L,148,[§h],49,[Hc],j=8,tx=[Lplan],IV=[2-FormIV]
+  qdim,TX_L,dx=0.00,dy=0.00,dl=0.50,dh=0.50
+  qc,tx,TX_M,199,[§h],20,[Hc],j=5,tx=" * "
+  qdim,TX_M,dx=0.50,dy=0.00,dl=0.00,dh=0.00
+  qc,ed,ED_H,221,[§h],49,[Hc],j=2,tx=[Hplan],IV=[FormIV],vrif=int,rout=ValidLH
+  qdim,ED_H,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  qc,tx,TX_H,221,[§h],49,[Hc],j=2,tx=[Hplan],IV=[2-FormIV]
+  qdim,TX_H,dx=0.50,dy=0.00,dl=0.50,dh=0.00
+  qc,tx,TX_H0,272,[§h],18,j=5,tx="mm"
+  qdim,TX_H0,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  §h=[§h+Ht]
+    
+  §h=[§h+Ht2]
+  qc,bf,BF_CART,2,[§h],70,[Hc],j=5,tx="¹Cartouche¹"
+  qdim,BF_CART,dx=0.00,dy=0.00,dl=0.50,dh=0.00
+  qc,bf,BF_ATTR,234,[§h],70,[Hc],j=5,tx="¹Attributs¹",rout=ModAttr
+  qdim,BF_ATTR,dx=1.00,dy=0.00,dl=0.50,dh=0.00
+  §h=[§h+Ht]
+  qc,bf,BF_BEOK,2,[§h],20,[Hc],j=5,tx="¹OK¹",rout=BfBeok
+  qc,bf,BF_RPQT,24,[§h],48,[Hc],j=5,tx="¹Répercuter¹",rout=BfRpqt
+  qc,bf,BF_AIDE,272,[§h],32,[Hc],j=5,tx="¹Aide¹",rout=BfAide
+  qdim,BF_BEOK,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_RPQT,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_AIDE,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  
+  evnt,entr=BfBeok,bdro=BfBeok,ferm=BfFerm
+  qset,foc=TX_NOM,mod=0
+}
+
+rout,CrePlan
+/* Appelle la routine de création de composant CreComp avec l'argument jtPlan */
+{
+  run,CreComp(jtPlan)
+}
+
+rout,DupComp(§ma)
+{
+  run,MajListe
+  fdia
+  dupl,[§ma],[[§ma]:R].
+  [mm]:Ph=0
+  marq,11
+  Cas=Rep
+  Ma=[mm]
+  run,InitRpqt
+  run,LecArgs
+  run,CreeFenetre
+}
+
+rout,Enreg
+{
+  !cmpe,[MaR]
+  !cmpe,epBase
+  
+  if,"[Cas==`Mod`]"
+  {
+    marq,10,`¹Modification du plan [[Ma]&V0:Nom] ([Ma])¹`
+  }
+    if,"[Cas==`Cre`]"
+  {
+    marq,10,`¹Création du plan [[Ma]&V0:Nom] ([Ma])¹`
+  }
+  !Jrpqt>[Ma]
+  if,"nmbr(`!Jrpqt`)"
+  {
+    list,[base]\Listing,raz=1
+    run,Repercut
+    list
+    exec,[base]\Listing
+    marq,10,`¹Répercussion des attributs¹`
+  }
+}
+
+rout,GisComp
+{
+  chma,titr="Sélectionner un composant",ok=MajGisComp
+}
+
+rout,InitAttr
+/* Instancie toutes les procédures qui seront appelées dans la suite du programme, pour la définition des attributs */
+{
+  Dtcc=
+  Dtci=
+  
+  Nati=0
+  Eddv=
+  Comm=
+  Zone=
+  Txt1=
+  Titr=
+  Stit=
+  Txt2=
+  Dtcp=
+  Indp=--
+  Numo=
+  Numg=
+  Alti=0
+  Etud=1
+  Prov=1
+}
+
+rout,InitRpqt
+/* Déclare et instancie toutes les procédures de valeurs qui seront récupérées en cas de répercussion */
+{
+  /* --- Paramètres de format et position du plan ---------------------------- */
+  !Jrpqt=0
+	
+  MdQ=0
+  EcQ=0
+  GQ=0
+  XQ=0
+  YQ=0
+  CxCyQ=0
+  CxQ=0
+  CyQ=0
+  
+  ZQ=0
+  PrQ=0
+  CoQ=0
+  LyQ=0
+  
+  /* --- Paramètres d'attributs figurant au cartouche -----------------------  */
+  !Jrpqtat=0
+  DtccQ=0
+  DtciQ=0
+  NiQ=0
+  IrQ=0
+  ComQ=0
+  ZonQ=0
+  Txt1Q=0
+  Txt2Q=0
+  TitreQ=0
+  StitreQ=0
+  DateplanQ=0
+  IndQ=0
+  AltiQ=0
+  EtudeQ=0
+  ProvQ=0
+  LocaQ=0
+  Txt3Q=0
+  DossQ=0
+  NoPcQ=0
+}
+
+rout,LecArgs
+/* Affecte aux procédures les valeurs du formulaire de positionnement du plan */
+{
+  X=[[Ma]:X]
+  Y=[[Ma]:Y]
+  Z=[[Ma]:Z]
+  G=[[Ma]:G]
+  Cx=[[Ma]:Cx]
+  Cy=[[Ma]:Cy]
+  Md=[[Ma]:MD]
+  if,"[Z==``]"
+  {
+    Z=0
+  }
+  Nom=[[Ma]&V:Nom]
+  if,"[Nom==``]"
+  {
+    Nom="[Ma]"
+  }
+  
+  Ec=[[Ma]&V:Ec]
+  if,"[Ec==``]"
+  {
+    Ec=250
+  }
+  
+  Nordre=[[Ma]&T:nordre]
+  Ind=[[Ma]&T:indice]
+  Com=[[Ma]&T:commune]
+  Proj=[[Ma]&T:projet]
+  Operation=[[Ma]&T:operation]
+  Titre=[[Ma]&T:titre]
+  Stitre=[[Ma]&T:soustitre]
+  Txt1=[[Ma]&T:texte1]
+  Txt2=[[Ma]&T:texte2]
+  Txt3=[[Ma]&T:texte3]
+  Loca=[[Ma]&T:point]
+  Doss=[[Ma]&T:dossier]
+  NoPc=[[Ma]&T:nopiece]
+  Dateplan=[[Ma]&T:date]
+  Zon=[[Ma]&T:zone]
+  Prov=[[Ma]&T:prov]
+  Etude=[[Ma]&T:etude]
+  Alti=[[Ma]&T:alti]
+  
+  run,DetFormat(CxCy,Cx,Cy,Ec,Md,Form)
+  run,DetFormIV
+  if,"FormIV=2"
+  {
+	if,"Cy>Cx"
+    then
+    {
+      Lplan=[HA[Form]]
+      Hplan=[LA[Form]]
+    }
+	else
+	{
+	  Lplan=[LA[Form]]
+      Hplan=[HA[Form]]
+	}
+  }
+  else
+  {
+    Hplan=[[Cy/Ec]*1000]
+	Lplan=[[Cx/Ec]*1000]
+  }
+  
+  MaR=[ml(`epBase`)]
+  run,AfficheRbase
+
+}
+
+rout,MajGisComp(§g)
+{
+  qmod,ED_G,tx="[[§g]:G]"
+  run,ValidG
+}
+
+rout,ModComp(§ma)
+{
+  run,MajListe
+  fdia
+  Cas=Mod
+  Ma=[§ma]
+  run,InitRpqt
+  run,LecArgs
+  run,CreeFenetre
+}
+
+rout,TraiteGis(§x,§y,§r,§n,§f)
+{
+  var,§gist
+  .:x=[§x],y=[§y],ph=1
+  dipp,pnt1=[Ma],pnt2=[mm],prcg=§gist
+  qmod,ED_G,tx="[§gist]"
+  run,ValidG
+}
+
+rout,TraiteSouris(§x,§y,§r,§n,§f)
+{
+  qmod,ED_POSX,tx=[§x]
+  qmod,ED_POSY,tx=[§y]
+  run,ValidXY
+}
+
+rout,ValidCxCy
+{
+  Form=[et(OP_FORM)-1]
+  
+  if,"[[Form]<5]"
+  then
+  {
+    Hplan=[HA[Form]]
+    Lplan=[LA[Form]]
+    FormIV=2
+  }
+  else
+  {
+    Hplan=[tx(ED_H)]
+    Lplan=[tx(ED_L)]
+    FormIV=0
+  }
+  
+  Cy=[[Hplan*Ec]/1000]
+  Cx=[[Lplan*Ec]/1000]
+  
+  if,"[[et(OP_ORIENT)]-1]"
+  then /* Paysage */
+  {
+    if,"Cy>Cx"
+        {
+          Cx=[Cx+Cy]
+          Cy=[Cx-Cy]
+          Cx=[Cx-Cy]
+          Lplan=[Lplan+Hplan]
+          Hplan=[Lplan-Hplan]
+          Lplan=[Lplan-Hplan]
+        }
+  }
+  else /* Portrait */
+  {
+    if,"Cx>Cy"
+        {
+          Cx=[Cx+Cy]
+          Cy=[Cx-Cy]
+          Cx=[Cx-Cy]
+          Lplan=[Lplan+Hplan]
+          Hplan=[Lplan-Hplan]
+          Lplan=[Lplan-Hplan]
+        }
+  }
+  
+  run,CalculeMarge(Md,MaG,MaD,MaH,MaB)
+  Cy=[Cy-[[MaH+MaB]*[Ec]/1000]]
+  Cx=[Cx-[[MaG+MaD]*[Ec]/1000]]
+  
+  if,"Cy<0"
+  then
+  {
+    Cy=0
+  }
+  if,"Cx<0"
+  then
+  {
+    Cx=0
+  }
+  
+  qmod,ED_H,tx=[Hplan],IV=[FormIV]
+  qmod,ED_L,tx=[Lplan],IV=[FormIV]
+  qmod,TX_H,tx=[Hplan],IV=[2-FormIV]
+  qmod,TX_L,tx=[Lplan],IV=[2-FormIV]
+  
+  Rep=Plan
+  run,Valid
+}
+
+rout,ValidEc
+{
+  Ec=[tx(CB_ECH)]
+  run,ValidCxCy
+}
+
+rout,ValidG
+{
+  G=[tx(ED_G)]
+  Rep=Plan
+  run,Valid
+}
+
+rout,ValidLH
+{
+  Lplan=[tx(ED_L)]
+  Hplan=[tx(ED_H)]
+  run,DetFormat(LH,Lplan,Hplan,Ec,Md,Form)
+  run,DetFormIV
+  qmod,OP_FORM,et=[Form]
+  run,ValidCxCy
+}
+
+rout,DetFormIV
+{
+  if,"Form<6"
+  {
+    FormIV=2
+  }
+  else
+  {
+    FormIV=0
+  }
+}
+
+rout,ValidMdl
+{
+  Md=[tx(ED_MDL)]
+  run,ValidCxCy
+}
+
+rout,ValidMdl1(§modl)
+{
+  qmod,ED_MDL,tx=[§modl]
+  run,ValidMdl
+}
+
+rout,ValidNom
+{
+  Nom=[tx(ED_NOM)]
+  Rep=Plan
+  run,Valid
+}
+
+rout,ValidOp
+{
+  Operation=[tx(OP_OPEA)]
+  !EpTmp=[epcZO]*!test(&r0:P==[ma(OP_PROJ)])
+}
+
+rout,ValidProj
+{
+  Proj=[tx(OP_PROJ)]
+  !EpTmp=[epcZO]*!test(&r0:P==[ma(OP_PROJ)])
+  qmod,OP_OPEA,tmen=CMP,selc=!EpTmp,eval=&T0:nom,tx=[Operation],tri=&T0:nom
+}
+
+rout,ValidXQ
+{
+  ZQ=[et(BP_POSX)]
+  Rep=Plan
+  run,Valid
+}
+
+rout,ValidXY
+{
+  X=[tx(ED_POSX)]
+  Y=[tx(ED_POSY)]
+  Rep=Plan
+  run,Valid
+}
+
+rout,ValidZ
+{
+  Z=[tx(ED_POSZ)]
+  Rep=Plan
+  run,Valid
+}
+
+rout,Valid
+{
+  anul,11,saut=0
+  list,[base]\Listing,raz=1
+  impr,!cmpe,[Ma],V0-V999
+  impr,[Ma]:X=[X],Y=[Y],Z=[Z],G=[G],Cx=[Cx],Cy=[Cy],MD=[Md]
+  impr,[Ma]&V0:Nom="[Nom]",Ec=[Ec]
+  impr,ral,[Ma]&T8:x=[X],y=[Y]
+  !Jrpqt>[Ma]
+  if,"Rep><`null`"
+  {
+    run,Rpqt[Rep] /* On appelle la fonction RpqtAttr ou RpqtPlan, selon la fenêtre en cours */
+  }
+  run,Repercut
+  list
+  exec,[base]\Listing
+  qset,mod=1
+  run,AfficheRbase
+}
+
+rout,RpqtPlan
+{
+	if,"[et(BP_MDL)]=1"
+	{
+	  MdQ=[tx(ED_MDL)]
+	}
+	if,"[et(BP_ECH)]=1"
+	{
+	  EcQ=[tx(CB_ECH)]
+	}
+	if,"[et(BP_POSX)]=1"
+	{
+	  XQ=[tx(ED_POSX)]
+	}
+	if,"[et(BP_G)]=1"
+	{
+	  GQ=[tx(ED_G)]
+	}
+	if,"[et(BP_POSY)]=1"
+	{
+	  YQ=[tx(ED_POSY)]
+	}
+	if,"[et(BP_CXCY)]=1"
+	{
+	  CxQ=[Cx]
+	  CyQ=[Cy]
+	}
+}
+
+rout,RpqtAttr
+{
+  var,§nati,§comid
+    §comid=0
+    if,"[et(BP_DTCC)]=1"
+    {
+      DtccQ=[tx(DT_DTCC)]
+    }
+    
+    if,"[et(BP_DTCI)]=1"
+    {
+      DtciQ=[tx(DT_DTCI)]
+    }
+    
+    if,"[et(BP_NATI)]=1"
+    {
+      §nati=[et(OP_NATI)]
+      if,"§nati=0"
+      {
+            NiQ="calculé"
+      }
+      if,"§nati=1"
+      {
+            NiQ="digitalisé"
+      }
+      if,"§nati=2"
+      {
+            NiQ="importé"
+      }
+      if,"§nati=3"
+      {
+            NiQ="saisi"
+      }
+    }
+    
+    if,"[et(BP_COMM)]=1"
+    {
+      /* Récupération de la valeur des communes cochées */
+      if,"et(OC_C026)=1"
+      {
+            §comid=[[§comid]+1]
+      }
+      if,"et(OC_C035)=1"
+      {
+            §comid=[[§comid]+2]
+      }
+      if,"et(OC_C050)=1"
+      {
+            §comid=[[§comid]+4]
+      }  
+      if,"et(OC_C062)=1"
+      {
+            §comid=[[§comid]+8]
+      }
+      ComQ=[§comid]
+    }
+    
+    if,"[et(BP_ZONE)]=1"
+    {
+      var,§zone
+      §zone=[tx(OP_ZONE)]
+	  run,QtoV(§zone,ZonQ,zone)
+    }
+    
+    if,"[et(BP_TXT1)]=1"
+    {
+      Txt1Q="[tx(ED_TXT1)]"
+    }
+    
+    if,"[et(BP_TITR)]=1"
+    {
+      TitreQ="[tx(ED_TITR)]"
+    }
+    
+    if,"[et(BP_STIT)]=1"
+    {
+      StitreQ="[tx(ED_STIT)]"
+    }
+    
+    if,"[et(BP_TXT2)]=1"
+    {
+      Txt2Q="[tx(ED_TXT2)]"
+    }
+	
+	if,"[et(BP_TXT3)]=1"
+	{
+	  Txt3Q="[tx(ED_TXT3)]"
+	}
+	
+	if,"[et(BP_DOSS)]=1"
+	{
+	  DossQ="[tx(ED_DOSS)]"
+	}
+	
+	if,"[et(BP_NOPC)]=1"
+	{
+	  NoPcQ="[tx(ED_NOPC)]"
+	}
+    
+    if,"[et(BP_DTCP)]=1"
+    {
+      DateplanQ=[tx(DT_DTCP)]
+    }
+    
+    if,"[et(BP_INDP)]=1"
+    {
+      IndQ=[tx(ED_INDP)]
+    }
+    
+    if,"[et(BP_ALTI)]=1"
+    {
+      AltiQ=[et(OP_ALTI)]
+    }
+    
+    if,"[et(BP_ETUD)]=1"
+    {
+      EtudeQ=[et(OP_ETUD)]
+    }
+    
+    if,"[et(BP_PROV)]=1"
+    {
+      ProvQ=[et(OP_PROV)]
+    }
+	
+	if,"[et(BP_LOCA)]=1"
+	{
+	  LocaQ=[et(OP_LOCA)]
+	}
+}
+
+rout,Repercut
+{
+  var,§nordre,§x,§y
+  
+  list,[base]\Listing,raz=0
+  runs,!Jrpqt
+  {
+    impr,!cmpe,[mm],V0-V999
+    impr,[mm]:Z=[si(ZQ,Z,:Z)]
+    impr,[mm]:Md=[si(MdQ,Md,:Md)]
+    impr,[mm]:X=[si(XQ,XQ,:X)]
+    impr,[mm]:Y=[si(YQ,YQ,:Y)]
+    impr,[mm]:G=[si(GQ,GQ,:G)]
+    impr,[mm]:Cx=[si(CxQ,CxQ,:Cx)]
+    impr,[mm]:Cy=[si(CyQ,CyQ,:Cy)]
+    impr,[mm]&V0:Nom="[&V:Nom]",Ec=[si(EcQ,Ec,&V:Ec)]
+    impr,[mm]&V1:Ly="[si(LyQ,Ly,&V:Ly)]"
+  }
+  runs,!Jrpqtat
+  {
+	impr,[mm]&Q0:dtc=[si(DtccQ><`0`,DtccQ,&Q0:dtc)],id=[si(DtciQ><`0`,DtciQ,&Q0:id)],in=[si(NiQ><`0`,NiQ,&Q0:in)],ir=[si(IrQ><`0`,IrQ,&Q0:ir)]
+	impr,[mm]&T0:commune=[si(ComQ,ComQ,&T0:commune)],zone=[si(ZonQ,ZonQ,&T0:zone)]
+	impr,[mm]&T1:texte1=[si(Txt1Q><`0`,Txt1Q,&T1:texte1)]
+	impr,[mm]&T2:titre=[si(TitreQ><`0`,TitreQ,&T2:titre)]
+	impr,[mm]&T3:soustitre=[si(StitreQ><`0`,StitreQ,&T3:soustitre)]
+	impr,[mm]&T4:texte2=[si(Txt2Q><`0`,Txt2Q,&T4:texte2)]
+	impr,[mm]&T5:date=[si(DateplanQ><`0`,DateplanQ,&T5:date)]
+	impr,[mm]&T6:indice=[si(IndQ><`0`,IndQ,&T6:indice)]
+	impr,[mm]&T7:alti=[si(AltiQ,AltiQ,&T7:alti)],etude=[si(EtudeQ,EtudeQ,&T7:etude)],prov=[si(ProvQ,ProvQ,&T7:prov)]
+	impr,[mm]&T8:point=[si(LocaQ,LocaQ,&T8:point)]
+	impr,[mm]&T9:texte3=[si(Txt3Q><`0`,Txt3Q,&T9:texte3)]
+	impr,[mm]&T10:dossier=[si(DossQ><`0`,DossQ,&T10:dossier)],nopiece=[si(NoPcQ><`0`,NoPcQ,&T10:nopiece)]
+	
+	/* Paramètres du plan ne devant pas être modifiés */
+	impr,[mm]&T6:nordre=[&T6:nordre]
+	impr,[mm]&T8:x=[&T8:x],y=[&T8:y]
+  }
+}
+
+rout,SelReperc
+/* Sélectionne les plans à répercuter */
+{
+  Rep=Attr
+  chsa,nom=!Jrpqtat,selc=jtPlan*~[Ma],tri={mm}&Vo:Nom,eval={mm}&Vo:Nom,ok=Valid
+}

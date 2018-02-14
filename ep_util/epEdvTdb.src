@@ -1,0 +1,163 @@
+/* version 0.1 du                                                           */
+/*  dernière modification :                                                 */
+/*         03 06 2015 (SD)                                                  */
+/*  auteur :                                                                */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                                */
+
+proc,JtDebug=1
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :     */
+#include "..\ep_commun\epCmpOutils.inc"
+#include "..\ep_commun\epPlanOutils.inc"
+#include ".\epEdvOutils.inc"
+#include "..\ep_commun\epRalOutils.inc"/*(pour epCmpOutils)*/
+#include "..\ep_commun\epTexteOutils.inc"/*(pour epRalOutils et epEdvOutils)*/
+#include "..\ep_commun\epTypeOutils.inc"/*(pour epRalOutils et epEdvOutils)*/
+#include "..\ep_commun\epNumOutils.inc"  /*(pour epRalOutils et epEdvOutils)*/
+
+
+/* Procédures de l'environnement                                            */
+proc,Hc=[12+[udiay<1.8]]
+proc,Ht=[Hc+2+2*[udiay<1.8]]
+proc,Titre=¹Tableaux de bord volumétrie¹
+EpEdvTdbFED=[EpTypeVide] /* initialisé à "vide"                             */
+
+/* Liste des routines                                                       */
+/*  CreerFenetre crée une fenêtre de dialogue de type "tableau de bord"     */
+/*           affichant divers paramètres utile lorsque l'on travaille dans  */
+/*           une volumétrie                                                 */
+/*  LancTdb permet de lancer la fenêtre de dialogue créée par CreerFenetre  */
+/*           de manière à ce qu'elle soit réafficher automatiquement        */
+/*  Rafraichir permet de mettre à jour les informations affichées dans la   */
+/*           fenêtre de dialogue créée par CreerFenetre                     */
+/*  Rafraichir permet de mettre à jour les informations affichées dans la   */
+/*           fenêtre de dialogue créée par CreerFenetre                     */
+
+/*--------------------------------------------------------------------------*/
+/*                                ROUTINES                                  */
+/*                         par ordre alphabétique                           */
+/*--------------------------------------------------------------------------*/
+
+rout,AfichPlan(§type)
+{
+  if,"et(OC_FIXER)"  
+  {
+    run,TraPlan([§type])
+  }
+  else
+  {
+    run,AplPlan([§type])
+  }
+  run,Rafraichir
+}
+
+rout,CreerFenetre
+{
+  var,§h,§hf,§bl,§c,§lmax,§nmbr_lin,§nmbr_col,§lcase,§href,§cref,§lf,§nbr_grp
+  
+  §nmbr_lin=2 /* nombre de ligne dans la fenêtre */
+  §nmbr_col=15 /* nombre de colonne dans la fenêtre (au moins 10) */
+  
+  §lcase=[Ht] /* largeur d'une case */
+  §href=2    /* interligne */
+  §cref=2   /* largeur du liseré */
+  §nbr_grp=2 /* nombre de groupe de case */
+  §lf=[§nmbr_col*§lcase+2*§cref]    /* largeur de la fenêtre */
+  §hf=[[§nmbr_lin]*§lcase+[§nbr_grp+1]*§href] /* hauteur de la fenêtre */
+  
+  dial,EP_EDV_TDB,l=[§lf],h=[§hf],lmin=[§lf],hmin=[§hf],lmax=[§lf],hmax=[§hf],tx={Titre},ferm=1
+  
+  /* 1er partie : Nom de l'eddv et niveau */
+    §h=[§href]                                                   
+    §c=[§cref]
+    qc,bf,BF_NIVM,[§c],[§h],[§lcase],[§lcase],j=5,tx="¹-¹",rout=Bf_nivm
+    §c=[§cref+§lcase]
+    qc,af,id=AF_NIV,x=[§c],y=[§h],l=[[§nmbr_col-2]*§lcase],h=[§lcase],j=4,tx=""
+    §c=[§cref+[§nmbr_col-1]*§lcase]
+    qc,bf,BF_NIVP,[§c],[§h],[§lcase],[§lcase],j=5,tx="¹+¹",rout=Bf_nivp
+    
+  /* Dernière partie : bouton fermer et fixer la vue */
+    §h=[§h+§href+§lcase]                                                   
+    §c=[§cref]
+    qc,bf,BF_FERMER,[§c],[§h],[2*§lcase],[§lcase],j=5,tx="¹Fermer¹",rout=Bf_fermer
+    §c=[§cref+[§nmbr_col-3]*§lcase]
+    qc,oc,OC_FIXER,[§c],[§h],[3*§lcase],[§lcase],j=5,tx="¹Fixer la vue¹",et=1,rout=Oc_fixer
+
+  rout,Bf_nivm
+  {
+    run,AfichPlan(Inf)
+  }
+  
+    rout,Bf_nivp
+  {
+    run,AfichPlan(Sup)
+  }
+  
+  rout,Bf_fermer
+  {
+    !pare,%TMR.0
+    !prce,EpOcFixer
+    Fdia
+  }
+  
+  rout,Oc_fixer
+  {
+    EpOcFixer=[et(OC_FIXER)]
+  }
+  
+  run,Rafraichir
+}
+
+rout,LancTdb
+{
+  %TMR.0:PROC="`lanc,CreerFenetre,[epUtil]\epEdvTdb.src{ex}`",DATE=0:00,REPT=1
+}
+
+rout,Rafraichir
+{
+  var,§mat
+  
+  /* Nom du plan */
+  if,"defprc(`jtMatPlan`)"
+  {
+    qmod,id=AF_NIV,tx=[[jtMatPlan]&V0:nom]
+  }
+  else
+  {
+    qmod,id=AF_NIV,tx=¹Pas de plan appliqué¹
+  }
+  
+  /* Plan du dessous */
+  if,"defprc(`jtMatPlan`)"
+  {
+    run,DetPlanEdd(Inf,§mat)
+    if,"§mat><EpTypeVide"
+    {
+      qmod,id=BF_NIVM,iv=0
+    }
+    else
+    {
+      qmod,id=BF_NIVM,iv=1
+    }
+    run,DetPlanEdd(Sup,§mat)
+    if,"§mat><EpTypeVide"
+    {
+      qmod,id=BF_NIVP,iv=0
+    }
+    else
+    {
+      qmod,id=BF_NIVP,iv=1
+    }
+  }
+  else
+  {
+    qmod,id=BF_NIVM,iv=1
+    qmod,id=BF_NIVP,iv=1
+  }
+  
+  /* fixer la vue */
+  if,"defprc(`EpOcFixer`)"
+  {
+    qmod,id=OC_FIXER,et=[EpOcFixer]
+  }
+}

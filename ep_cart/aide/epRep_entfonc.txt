@@ -1,0 +1,20 @@
+
+
+REPRESENTATION DES COMPOSANTS FONCIERS
+
+		
+On distingue trois niveaux de représentation des objets :
+	
+        1. la représentation « forte » ;
+		
+        2. la représentation « courante » ;
+		
+        3. la représentation « faible ».
+
+Pour chaque famille de composants, une jauge permet de fixer la force de représentation.
+
+La force de représentation de ces familles de composants est indiquée par un entier compris entre 0 et 2, enregistrée sur les caractères de la procédure epRf.
+
+La procédure "epRf" est modifiée de manière dynamique en conséquence, et le tracé mis à jour.
+En cas d'annulation elle est restorée à sa valeur initiale.
+

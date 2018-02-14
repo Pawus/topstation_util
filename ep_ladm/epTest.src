@@ -1,0 +1,32 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         13 12 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+proc,JtDebug=1
+
+/* Liste des routines (en ordre alphabétique)                             */
+
+/*  NetFED(§mat) Modifie le descriptif dont le matricule est donné dans   */
+/*         §mat pour le faire correspondre au standard EPADESA            */
+/*         dernière modification : 05 03 2013 (SD)                        */
+
+
+/* E=ral,[mm]&V2:Im="{epDimgDir}[xtr([mm]&V2:Im,6)]"[ex] */
+
+/* Procédures utiles                                                      */
+
+/* Utilisation de la boite à outils composants de l'EPADESA               */
+/*    et autres nécessaire à celles-ci                                    */
+#include "\\serveurtop\topstation$\util\ep_commun\epXmlOutils.inc"
+
+/* ------------------------- DEBUT DES ROUTINES ------------------------- */
+
+rout,Test(§prc_sel)
+{
+  marq,1,`Test`
+  exec,[base]\Test.txt
+  run,EcriXml([§prc_sel],epLadm.1,`[base]\test.gml`,0)
+  anul,1
+}

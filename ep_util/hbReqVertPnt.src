@@ -1,0 +1,117 @@
+proc,JtDebug=1
+
+#include ".\hbOutils.inc"
+proc,EPAD=EPADESA
+
+rout,Fenetre
+{
+    dial,HB_VERT,l=230,h=16,tx="¹[EPAD] Requête à la verticale d'un point¹"
+    qc,tx,TX_RAYO   ,002,002,104,12,j=8,tx="¹Rechercher dans un rayon de¹"
+    qc,ed,ED_RAYO   ,112,002,018,12,j=8,tx="0",rdig=DigPnt,vrif=INT,vmin=0,vmax=99
+    qc,tx,TX_METR   ,132,002,058,12,j=2,tx="¹mètre(s) à l'entour¹"    
+    qc,bf,BF_AIDE   ,194,002,034,12,j=5,tx="¹Aide¹",rout=FenAide
+    qset,foc=ED_RAYO,mod=0
+
+  
+  	rout,DigPnt(§x,§y)
+	{
+		run,ReqVertPnt([§x],[§y],[tx(ED_RAYO)])
+	}
+}
+
+rout,FenAide
+{
+  aide,{epUtil}\aide\hbReqVertPnt.txt
+}
+
+rout,ReqVertPnt(§x,§y,§rayo)
+{
+    var,§fed,§t
+    
+    hbTemp.[hbbIndMin]:[§x],[§y],ph=2,c=11.235,md=jsc_sj_cen,cx=[§rayo]
+    hbTemp.[hbbIndMin+1]:[§x],[§y],ph=2
+    hbTemp.[hbbIndMin]&j0:A=hbTemp.[hbbIndMin+1]
+    tra,hbTemp.[hbbIndMin]
+    !bri=hbTemp.[hbbIndMin]
+    !Hb1=[hbcPar]*!zonp(hbTemp.[hbbIndMin],[§rayo])
+    !Hb2=[hbcPaf]*!zonp(hbTemp.[hbbIndMin],[§rayo])
+    !Hb3=[hbcFED]*!zonp(hbTemp.[hbbIndMin],[§rayo])
+    
+    if,"nmbr(`!Hb1+!Hb2+!Hb3`)=0"
+    {
+      run,Message(Pas d'objet foncier ou cadastral dans ce rayon de recherche)
+    }
+    else
+    {
+        list,imp=[%DFO:imp],file="[base]\Listing.txt",raz=1
+        impr,------------------------------------------------------------
+        impr, RECHERCHE GEOGRAPHIQUE A LA VERTICALE D'UN POINT
+        impr, Centre X=[hbTemp.[hbbIndMin]:X%2] Y=[hbTemp.[hbbIndMin]:Y%2]
+        impr, Rayon  R=[§rayo%0] mètres
+        impr,------------------------------------------------------------
+        if,"nmbr(`!Hb1`)"
+        {
+            impr
+            impr,PARCELLES CADASTRALES
+            impr,=====================
+            runs,!Hb1,tri=`{{mm}&t4:nom_com}{{mm}&v1:pre}{{mm}&v1:sec}{{mm}&v1:num)4}`
+            {
+                run,ImpPar([mm])
+            }
+        }
+        if,"nmbr(`!Hb2`)"
+        {
+            impr
+            impr,PARCELLES FONCIERES
+            impr,===================
+            runs,!Hb2,tri=`{{mm}&t4:nom_com}{{mm}&v1:pre}{{mm}&v1:sec}{{mm}&v1:num)4}`
+            {
+                run,ImpPar([mm])
+            }
+        }
+        if,"nmbr(`!Hb3`)"
+        {
+            impr
+            impr,ETATS DESCRIPTIFS DE DIVISIONS EN VOLUMES
+            impr,=========================================
+            runs,!Hb3,tri={mm}&q1:nom
+            {
+                §fed=[mm]
+                impr
+                impr,[[§fed]&q1:nom]
+                impr
+                §t={{mm}:z+11000}%2)8
+                runs,[hbcFCD]*!onc([§fed])*!zonp(hbTemp.[hbbIndMin],[§rayo]),tri={§t}
+                {
+                    impr,Volume [[[mm]&r0:l]&t2:nom] partie [[mm]&v0:niv] [[mm]&v0:ind]-- [[[mm]&r0:l]&q2:] -- [[[mm]&r0:l]&q3:]
+                    impr,   [[mm]&v1:altinf] =====> [[mm]&v1:altsup]
+                    impr
+                }
+            }
+        }
+        list
+        §t=¹[EPAD] Requête à la verticale d'un point¹
+        afli,imp=[%DFO:IMP],file="[base]\Listing.txt",titr={§t},aide={epUtil}\aide\hbReqVertPnt.txt
+    }
+}
+
+rout,ImpPar(§par)
+{
+  var,§l
+  
+  §l=[[§par]&T4:NOM_COM] section [[§par]&V1:PRE] [[§par]&V1:SEC] n°[[§par]&V1:NUM)4]
+  if,"nmbr(`[§par]*!zon`)"
+  {
+    §l=[§l]   A = [[[mm]:a%0])6]m2
+  }
+  if,"[§par]&t1:cad><``"
+  {
+    run,Conv_m2_ha([[§par]&T1:CAD])
+    §l=[§l]   C = [hbTems)16]
+  }
+  if,"[§par]&t0:par><``"
+  {
+    §l=[§l]   S = [[§par]&t0:par]m2
+  }
+  impq,§l
+}

@@ -1,0 +1,36 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         22 02 2013 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+/*  aucune boite à outils                                                 */
+
+proc,JtDebug=1
+
+rout,Exporte(§mat_emprise,§prc_file)
+{
+  var,§tol,§fichier
+  §tol=0.05
+  
+  §fichier={tops}\sauv\test.txt
+  
+  !EpSlctTmp=0
+  
+  !EpSlctTmp<([hbcPaf])*!lini([§mat_emprise],[§tol]) /* Ajout des parcelles */
+  !EpSlctTmp<([hbcF])*!lini([§mat_emprise],[§tol]) /* Ajout des parcelles projetée */
+  !EpSlctTmp<([hbcFED])*!lini([§mat_emprise],[§tol]) /* Ajout des volumétrie */
+  
+  /* Completion des volumétrie par l'ensembles des élements liés */
+  !EpSlctTmp<([hbcFLD]+[hbcFCD]+[hbcFCL]+jtPlan)*!onc(!EpSlctTmp)
+  
+  /* Écriture du fichier */
+  list,file={§fichier}
+  cmpl,!EpSlctTmp+!nev(!EpSlctTmp)
+  
+  /* Nettoyage */
+  list
+  !sele,!EpSlctTmp
+
+}

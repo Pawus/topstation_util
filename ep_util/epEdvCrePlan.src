@@ -1,0 +1,231 @@
+/* version 0.1 du                                                         */
+/*  dernière modification :                                               */
+/*         07 10 2015 (SD)                                                */
+/*  auteur :                                                              */
+/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
+
+proc,JtDebug=1
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :   */
+/*  epPlanOutils                                                          */
+/*  epEdvOutils                                                           */
+
+#include "..\ep_commun\epPlanOutils.inc"
+#include ".\epEdvCrePlan.inc"
+#include ".\epEdvOutils.inc"
+
+/* Utilisation de la boite à outils graphique EPADESA et autres           */
+/*   nécessaire à celles-ci                                               */
+#include "..\ep_commun\epTexteOutils.inc"
+#include "..\ep_commun\epNumOutils.inc"
+#include "..\ep_commun\epListeOutils.inc"
+#include "..\ep_commun\epGuiOutils.inc"
+#include "..\ep_commun\epRalOutils.inc"
+#include "..\ep_commun\epTypeOutils.inc"
+
+/* Procédures de l'environnement                                          */
+
+proc,Hc=[12+[udiay<1.8]]
+proc,Ht=[Hc+2+2*[udiay<1.8]]
+proc,Titre=¹Ajout d'un plan de référence à un descriptif¹
+proc,TxtBf0=¹Verouiller¹
+proc,TxtBf1=¹Déverouiller¹
+proc,TxtMep=¹Utiliser la mise en page¹
+
+/* Liste des routines                                                     */
+/*  BfAide Affiche le texte de l'aide                                     */
+/*		Dernière modification : 04/03/2013								  */
+/*  BfAnul permet de sortir de la fenêtre d'interface en annulant tout    */
+/*		Dernière modification : 04/03/2013								  */
+/*  BfBeok Lance la fonction de création du plan                          */
+/*		Dernière modification : 05/03/2013								  */
+/*  BfFedValid Modifie le verouillage du choix du descriptif              */
+/*		Dernière modification : 04/03/2013								  */
+/*  CbNivValid Fixe l'altitude du plan pour certain niveau nommé          */
+/*		Dernière modification : 04/03/2013								  */
+/*  CreeFenetre Créer la fenêtre d'interface à la fonction d'ajout d'un   */
+/*      plan à une volumétrie                                             */
+/*		Dernière modification : 04/03/2013								  */
+/*  Init d'initialisation des procédures nécessaires à la fenêtre         */
+/*      d'interface à la fonction d'ajout d'un plan à une volumétrie      */
+/*		Dernière modification : 04/03/2013								  */
+/*  LancCrePlan Fonction d'appel de la fenêtre d'interface à la fonction  */
+/*      d'ajout d'un plan à une volumétrie                                */
+/*		Dernière modification : 04/03/2013								  */
+
+rout,LancCrePlan
+{
+  run,Init
+  run,CreeFenetre
+}
+
+rout,Init
+{
+  if,"defprc(`jtMatPlan`)"
+  {
+	X=[[jtMatPlan]:X]
+	Y=[[jtMatPlan]:Y]
+	Cx=[[jtMatPlan]:Cx]
+	Cy=[[jtMatPlan]:Cy]
+	G=[[jtMatPlan]:G]
+	E=[[jtMatPlan]&V0:Ec]
+	Fed=[[jtMatPlan]&R0:E]
+	Md=[[jtMatPlan]:MD]
+    Br_mep_0_et=1
+	Br_mep_0_iv=0
+	if,"Fed==``"
+	{
+	  Op_fed_iv=0
+	}
+	else
+	{
+	  Op_fed_iv=1
+	}
+  }
+  else
+  {
+    Fed=
+	Op_fed_iv=0
+	Br_mep_0_et=0
+	Br_mep_0_iv=1
+	Md=
+  }
+  run,MajCsvToEpl([epUtil]\epLst_edv.csv,1)
+  marq,11
+}
+
+rout,CreeFenetre
+{
+  var,§h,§hf,§bl,§c,§lmax,§nmbr_item,§lgauche,§href,§cref,§lf,§ldroite,§lcentre
+  
+  §nmbr_item=7 /* nombre de ligne dans la fenêtre */
+ 
+  §lgauche=60 /* largeur de la colonne de gauche                     */
+  §lcentre=100 /* largeur de la colonne de centrale                   */
+  §ldroite=50 /* largeur de la colonne de droite                     */
+  §href=2     /* interligne */
+  §cref=2     /* séparateur de colonne */
+  §lf=[§lgauche+§lcentre+§ldroite+4*§cref]    /* largeur de la fenêtre par défaut */
+  §hf=[[§nmbr_item-1]*Ht+Hc+3*§href] /* hauteur de la fenêtre par défaut */
+  
+  dial,EP_EDV_CREPLAN,l=[§lf],h=[§hf],lmin=[§lf],hmin=[§hf],lmax=400,hmax=[§hf],tx={Titre},ferm=1
+  §h=[§href]                                                   
+  §c=[§cref]
+  qc,tx,TX_FED,[§c],[§h],[§lgauche],[Hc],j=2,tx="¹Descriptif : ¹"
+  qdim,TX_FED,dx=[§cref/§lf],dy=0.00,dl=[§lgauche/§lf],dh=0.00
+  §c=[§c+§lgauche+§cref]
+  qc,op,OP_FED,[§c],[§h],[§lcentre+§cref+§ldroite],[6*Hc],iv=[Op_fed_iv],ma=[Fed],selc={hbcFED},eval=&Q1:nab,tmen=CMP
+  qdim,OP_FED,dx=[[§lgauche+2*§cref]/§lf],dy=0.00,dl=[[§lcentre+§ldroite+§cref]/§lf],dh=0.00
+  §h=[§h+Ht]                                    /* nouvelle ligne */
+  §c=[§cref+§lcentre+§cref+§lgauche]
+  qc,bf,BF_FED,[§c],[§h],[§ldroite],[Hc],tx={TxtBf[Op_fed_iv]},rout=BfFedValid
+  qdim,BF_FED,dx=[[3*§cref+§lcentre+§ldroite]/§lf],dy=0.00,dl=[§ldroite/§lf],dh=0.00
+  §h=[§h+Ht+§href]                                    /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_NIV,[§c],[§h],[§lcentre+§cref+§lgauche],[Hc],j=2,tx="¹Niveau : ¹"
+  qdim,TX_NIV,dx=[§cref/§lf],dy=0.00,dl=[§lgauche/§lf],dh=0.00
+  §c=[§c+§lcentre+§cref+§lgauche]
+  qc,tx,TX_Z,[§c],[§h],[§ldroite],[Hc],j=2,tx="¹Altitude : ¹"
+  qdim,TX_Z,dx=[[3*§cref+§lcentre+§ldroite]/§lf],dy=0.00,dl=[§ldroite/§lf],dh=0.00
+  §h=[§h+Ht]                                    /* nouvelle ligne */
+  §c=[§cref]
+  qc,cb,CB_NIV,[§c],[§h],[§lcentre+§cref+§lgauche],[Hc],j=2,rout=CbNivValid
+  {
+	run,QAOlstCMP(niveau) /* remplissage de la case à option avec la liste "niveau" */
+  }
+  qmod,CB_NIV,tx=
+  qdim,CB_NIV,dx=[§cref/§lf],dy=0.00,dl=[[§lcentre+§cref+§lgauche]/§lf],dh=0.00
+  §c=[§c+§lcentre+§cref+§lgauche+§cref]
+  qc,ed,ED_Z,[§c],[§h],[§ldroite],[Hc],j=8
+  qdim,ED_Z,dx=[[3*§cref+§lcentre+§ldroite]/§lf],dy=0.00,dl=[§ldroite/§lf],dh=0.00
+  §h=[§h+Ht+§href]                                    /* nouvelle ligne */
+  §c=[§cref]
+  qc,br,BR_MEP_0,[§c],[§h],[§ldroite+§cref+§lcentre+§cref+§lgauche],[Hc],j=2,opt=1,et=[Br_mep_0_et],tx=¹[TxtMep] du plan courant¹
+  qmod,BR_MEP_0,iv=[Br_mep_0_iv]
+  qdim,BR_MEP_0,dx=[§cref/§lf],dy=0.00,dl=[§lgauche/§lf],dh=0.00
+  §h=[§h+Hc]                                    /* nouvelle ligne */
+  §c=[§cref]
+  qc,br,BR_MEP_1,[§c],[§h],[§ldroite+§cref+§lcentre+§cref+§lgauche],[Hc],j=2,opt=0,et=[1-Br_mep_0_et],tx=¹[TxtMep] automatique¹
+  qdim,BR_MEP_1,dx=[§cref/§lf],dy=0.00,dl=[§lgauche/§lf],dh=0.00
+  §h=[§h+Ht+§href]                                                     /* nouvelle ligne : boutons */
+  §c=[§cref]
+  qc,bf,BF_BEOK,[§c],[§h],20,[Hc],j=5,tx="¹OK¹",rout=BfBeok
+  qc,bf,BF_ANUL,24,[§h],48,[Hc],j=5,tx="¹Annuler¹",rout=BfAnul
+  qc,bf,BF_AIDE,[§lf-§cref-32],[§h],32,[Hc],j=5,tx="¹Aide¹",rout=BfAide
+  qdim,BF_BEOK,dx=[§cref/§lf],dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_ANUL,dx=[§cref/§lf],dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_AIDE,dx=[[§lf-§cref]/§lf],dy=0.00,dl=0.00,dh=0.00
+}
+
+rout,BfFedValid
+{
+  if,Op_fed_iv
+  {
+    Op_fed_iv=0
+  }
+  else
+  {
+    Op_fed_iv=1
+  }
+  qmod,BF_FED,tx={TxtBf[Op_fed_iv]}
+  qmod,OP_FED,iv=[Op_fed_iv]
+}
+
+rout,BfBeok
+{
+  var,§cmp,§z
+  
+  anul,11,saut=0
+  
+  Fed=[ma(OP_FED)]
+  
+  §z=[tx(ED_Z)]
+  if,valnum(§z)
+  {
+  }
+  else
+  {
+    §z=0
+  }
+  
+  if,et(BR_MEP_1)
+  {
+    run,AutoMeP(X,Y,G,E,Cx,Cy,Md,[Fed])
+  }
+  
+  run,CreePlanFed([Fed],[§z],[tx(CB_NIV)],[Cx],[Cy],[X],[Y],[G],[E],[Md],§cmp)
+  marq,10,`¹Plan du niveau « [tx(CB_NIV)] ([§z]m) » ([§cmp]) ajouté au descriptif « [[Fed]&Q1:nab] » ([Fed])¹`
+  
+  /* on lance la fenêtre de modification */
+  lanc,proc=ModComp([§cmp]),file=[juCartEP]\ent_plan
+}
+
+rout,BfAnul
+{
+  anul,11,saut=0
+  fdia
+}
+
+rout,BfAide
+{
+  !prce,JtAide_@
+  JtAide_a"[Titre]"=[epUtil]\aide\epEdvCrePlan.txt
+  aide,JtAide_@
+}
+
+rout,CbNivValid
+{
+  var,§txt
+  §txt=[tx(CB_NIV)]
+  
+  run,QtoV(§txt,Z,niveau)
+  
+  if,"Z><`vide`"
+  {
+    qmod,ED_Z,iv=1,tx=[Z]
+  }
+  else
+  {
+    qmod,ED_Z,iv=0
+  }
+}

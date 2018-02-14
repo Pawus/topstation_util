@@ -1,0 +1,19 @@
+
+
+TENEMENT
+
+On entends par volume l'ensemble des composants définissant un immeuble d’un seul tenant appartenant à un même propriétaire.
+
+La force de représentation de ces composants est indiquée sur le cinquième caractère de la procédure epRf.
+
+MODELE
+
+Liste des modèles utilisant cette représentation :
+
+    
+
+CHARTE GRAPHIQUE EPADESA
+
+
+	
+	

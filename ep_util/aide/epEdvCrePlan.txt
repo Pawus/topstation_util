@@ -1,0 +1,19 @@
+
+AJOUTER UN PLAN DE RÉFÉRENCE À UN DESCRIPTIF 	
+	
+	Cette fonction permet d'ajouter un plan de référence à un état descriptif de
+	division en volumes.
+
+	Par défaut, le descriptif du plan appliqué est sélectionné. Il est possible d'en
+	choisir un autre en déverouillant la liste déroulante.
+	
+	L'utilisateur doit ensuite spécifier l'altitude du plan de coupe et le nom du niveau.
+	Un menu déroulant permet de chosir la dénomination de certain niveau courant.
+	
+	Il est possible soit d'appliquer la mise ne page du plan affiché, soit d'utiliser
+	la fonction de mise en page automatique.
+	
+	Une fois le plan créé, l'applicatif de mise en page et de modification des plans est
+	lancé pour premettre d'éventuelle modification.
+	
+	

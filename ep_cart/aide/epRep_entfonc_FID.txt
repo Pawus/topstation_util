@@ -1,0 +1,19 @@
+
+
+DOMAINE
+		
+On entends par domaine l'ensemble des composants définissant un ensemble contigue de bien appartenant à une personne publique et :
+
+    * soit est affecté à l'usage direct du public,
+
+    * soit est affecté à un service public, et ayant fait l'objet d'un « aménagement indispensable à l'exécution des missions de ce service public ».
+
+La force de représentation de ces composants est indiquée sur le sixième caractère de la procédure epRf.
+	
+MODELE
+
+Liste des modèles utilisant cette représentation :
+
+    
+
+CHARTE GRAPHIQUE EPADESA

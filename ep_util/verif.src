@@ -1,0 +1,108 @@
+/* version 1.0 du 07 09 2010                                    */
+proc,JtDebug=1
+
+
+rout,ForceVerif
+{
+  qpop,¹Voulez-vous forcer la configuration de l'Epad ?¹,j=0,temp=60
+  {
+    qap,¹Oui¹
+    {
+      !prce,epVerifOk
+      run,Verif
+    }
+    qap,¹Non¹,dfo=1
+  }
+}
+
+rout,Verif
+{ 
+  if,"defprc(`epVerifOk`)=0"
+  {
+    exec,[tops]\init\epad_commun\ep_locales.txt
+	run,VerifMdl
+    run,VerifProc
+    run,VerifText
+    run,VerifLin
+    run,VerifMenu
+	run,VerifCalque
+    epVerifOk=1
+	marq,10,`¹Mise à jour configuration EPAD¹`
+  }
+}
+
+rout,VerifMdl
+{
+  var,§a,§file,§nom,§ral,§cnt,§ok,§il,§nl
+  §file=[epInitDir]\epad.mdl
+
+  if,"[nlfic(`[§file]`)=>§nl]>0"
+  {
+    dial,EP_VERIF_MDL,l=256,h=16,tx=¹Vérification des modèles Epad¹
+    qc,pg,PG_FILE,1,1,254,14,vmin=0,vmax=[§nl]
+    §il=-1
+    runf,file={§file},form=`§a:§cnt`
+    {
+      qmod,PG_FILE,et=[§il+1=>§il]
+      dcod,text=§a,form=`§nom&§ral`
+      if,"defmdlr(§nom)=0"
+      {
+        mdlr,nom=[§nom],file={§file}
+      }
+      else
+      {
+        if,"§ral==`V1`"
+        {
+          if,"defmdlr(§nom,`V1`)=0"
+          {
+            [§nom]&[§ral]:[tq(§cnt)]
+          }
+        }
+      }
+    }
+    marq,10,`¹Mise à jour des modèles Epad¹`
+    fdia
+  }
+}
+
+rout,VerifProc
+{
+  exec,[epInitDir]\ep_var.txt
+}
+
+rout,VerifCalque
+{
+  exec,[epInitDir]\ep_calques.txt
+}
+
+rout,VerifText
+{
+  if,"[stx_def(`Franklin Roman`)]=0"
+  {
+    stx,"Franklin Roman","Franklin Gothic Book"
+  }
+  if,"[stx_def(`Franklin Italique`)]=0"
+  {
+    stx,"Franklin Italique","Franklin Gothic Book",ital=1
+  }
+  if,"[stx_def(`Franklin Gras`)]=0"
+  {
+    stx,"Franklin Gras","Franklin Gothic Book",gras=1
+  }
+  if,"[stx_def(`Prosper Roman`)]=0"
+  {
+    stx,"Prosper Roman","Franklin Gothic Book"
+  }
+  if,"[stx_def(`Prosper Gras`)]=0"
+  {
+    stx,"Prosper Gras","Franklin Gothic Heavy"
+  }
+}
+
+rout,VerifLin
+{
+}
+
+rout,VerifMenu
+{
+}

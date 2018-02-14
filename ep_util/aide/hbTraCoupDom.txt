@@ -1,0 +1,47 @@
+	
+TRACE DES COUPES HORIZONTALES DE VOLUMES DE MEME DOMAINE Dn
+	
+	L'EPADESA a établi un document de synthèse de l'ensemble des EDDV du quartier de la 
+	Défense en 2000. Afin de pouvoir représenter les volumes dans différents plans par 
+	ensembles logiques, il a été décidé d'affecter des domaines allant de D1 à D25 aux 
+	coupes horizontales des volumes. En voici la liste exhaustive:	
+	Ensemble	Domaine	
+	 09		D25	
+	 08		D24	
+	 07		D23	
+	 06		D22	
+	 05		D21	
+	 04		D20	
+	 03		D19	
+	 02		D18	
+	 01		D17	
+	 00 Dalle	D3	
+	-01		D2	
+	-02		D4	
+	-03		D5	
+	-04		D6	
+	-05		D7	
+	-06		D8	
+	-07 V.D.I.	D1	
+	-08		D9	
+	-09		D10	
+	-10		D11		
+	-11		D12		
+	-12		D13	
+	-13		D14	
+	-14		D15		
+	-15		D16	
+
+	
+	Cliquer à l'intérieur d'une coupe horizontale du volume dans le plan ou introduire son 
+	matricule.	
+		
+	Si la coupe h. choisie comporte un domaine D[i] avec i compris entre 1 et 16, alors le
+	programme tracera toutes les coupes h. de volumes ayant le même domaine D[i].	
+	
+	Attention:	
+	Si la coupe de lot possede plusieurs domaines D, le programme ne tracera que les 
+	composants avec le domaine D le moins élevé.	
+	(Ex: FCD440&D0:D3+D4+D8+F440 ne tracera que les composants avec un domaine D3)	
+	
+

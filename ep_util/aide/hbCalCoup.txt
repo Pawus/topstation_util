@@ -1,0 +1,28 @@
+CALCUL D'UNE COUPE VERTICALE D'EDDV
+		
+	La fonction va permettre de calculer une coupe passant par une ligne de 
+	coupe créée auparavant. Cette ligne pourra comporter plusieurs chaines 
+	disjointes; chaque chaine devra être une ligne brisée.	
+	
+	La fenêtre de dialogue permet de choisir:	
+      *	la ligne de coupe	
+      *	le X et le Y du coin bas gauche de la coupe	
+	
+
+	Une fois la ligne sélectionnée, le programme calcule son intersection avec:	
+      *	les coupes de volumes d'EDDV	
+      *	les périmètres des EDDV	
+      *	les bâtiments ayant une altitude de base valide	
+	Si la ligne est définie entièrement en 3D, le programme calcule également son 
+	profil en long. A la fin du calcul, la coupe est représentée dans le plan en 
+	vigueur à l'endroit choisi.	
+	La coupe est aujourd'hui limitée à une altitude minimale de 10m et une 	
+	altitude maximale de 150m.		
+	
+	Les lignes et zones créées ont le radical contenu dans la procédure [hbcQQL]. 
+	Les textes créés ont le radical contenu dans la procédure [hbcQX].	
+	
+	Attention, la fonction de calcul ne supporte pas l'intersection de la ligne de 
+	coupe avec une zone en un point unique.	
+	
+
