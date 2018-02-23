@@ -92,7 +92,7 @@ rout,ChoiVol
 
 rout,BfAide
 {
-  aide,{epUtil}\aide\hbReqNumVol.txt
+  aide,{epUtilDir}\aide\hbReqNumVol.txt
 }
 
 rout,ReqVol(§vol,§fed)
@@ -254,7 +254,7 @@ rout,ReqVol(§vol,§fed)
     }
     list
     §t=[EPAD] - Requête sur un volume d'état descriptif de division en volumes
-    afli,imp=[%DFO:IMP],file="{F}",titr={§t},aide=[epUtil]\aide\hbReqNumVol.txt
+    afli,imp=[%DFO:IMP],file="{F}",titr={§t},aide=[epUtilDir]\aide\hbReqNumVol.txt
 }
 
 

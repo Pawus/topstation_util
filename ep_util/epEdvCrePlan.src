@@ -90,7 +90,7 @@ rout,Init
 	Br_mep_0_iv=1
 	Md=
   }
-  run,MajCsvToEpl([epUtil]\epLst_edv.csv,1)
+  run,MajCsvToEpl([epUtilDir]\epLst_edv.csv,1)
   marq,11
 }
 
@@ -209,7 +209,7 @@ rout,BfAnul
 rout,BfAide
 {
   !prce,JtAide_@
-  JtAide_a"[Titre]"=[epUtil]\aide\epEdvCrePlan.txt
+  JtAide_a"[Titre]"=[epUtilDir]\aide\epEdvCrePlan.txt
   aide,JtAide_@
 }
 

@@ -53,5 +53,5 @@ rout,Fenetre
 
 rout,BfAide
 {
-	aide,{epUtil}\aide\hbTraFCLPzinf.txt
+	aide,{epUtilDir}\aide\hbTraFCLPzinf.txt
 }
