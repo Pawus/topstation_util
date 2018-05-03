@@ -17,6 +17,9 @@
 /*  EcritRal(§prc_cont,§cmp,§rali,§attr,§type) Enregistre une valeur        */
 /*      autre que du texte dans une rallonge                                */
 /*      Dernière modification : 01/10/2013                                  */
+/*  rout,EcritContRal(§prc_cont,§cmp,§rali,§attr) Enregistre dans un        */
+/*      attribut d'une rallonge un texte de manière à ce que la rallonge ne */
+/*      dépasse pas 160 caractères                                          */
 
 /*--------------------------------------------------------------------------*/
 /*                                ROUTINES                                  */
