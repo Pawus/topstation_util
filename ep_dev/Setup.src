@@ -1,0 +1,29 @@
+/* version 0.1 du 23 02 2018 (NL/SD) */
+
+proc,JtDebug=1
+
+rout,Setup(§ext,§dir)
+{
+	var,§l
+	§l=a
+
+	if,"defprc(`epUtil`)=0"
+	then
+	{
+		epUtil={util}
+		pgu,epUtil
+	}
+
+	!prce,epDev%
+	epDevDir={epUtil}\ep_dev
+	pgu,epDev%
+
+	!prce,jtIcon[§ext]%
+	!prce,jtMenu[§ext]%
+	jtIcon[§ext]"¹Dev.¹"=
+	jtMenu[§ext]"¹Dev.¹"=
+	jtMenu[§ext][§l]"¹Config. proc. env.¹"=lanc,LancChEnv,{epDevDir}\epChEnv{ex}
+	§l=[chr(asc(§l)+1)]
+
+	mnu
+}

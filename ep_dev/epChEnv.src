@@ -1,0 +1,551 @@
+/* version 0.1 du                                                           */
+/*  dernière modification :                                                 */
+/*         02 05 2018 (NL)                                                  */
+/*  auteur :                                                                */
+/*         NL Nicolas Lidon (nlidon@parisladefense.com)                     */
+
+/* Pour fonctionner il faut inclure préalablement les boites à outils :     */
+
+
+/* Procédures de l'environnement                                            */
+
+
+/* Liste des routines                                                       */
+
+/* AnnulChEnv ferme la fenêtre principale et supprime le fichier temporaire */
+/*		créé lors de son ouverture                                          */
+/* AnnulChangeMode ferme la fenêtre de modification de variable sans en     */
+/* 		sauvegarder le contenu												*/
+/* AnnulCreVal(§type) ferme la fenêtre de création d'une nouvelle variable  */
+/*		sans en sauvegarder le contenu										*/
+/* AppliChEnv applique la modification des valeurs et relance la fenêtre 	*/
+/*		principale															*/
+/* CreeFenetre lance la fenêtre principale contenant le checkbox permettant */
+/*		le choix entre le mode de production et de developpement ainsi que  */
+/*		l'affichage des variables gérées et de leur valeur actuelle			*/
+/* CreValFenetre(§type) lance la fenêtre permettant l'édition des variables */
+/* 		concernées par le module en fonction. Elle modifiera les valeurs de */
+/*		production ou de developpement en fonction de §type					*/
+/* InitVal attribue automatiquement par défaut les zones de textes de 		*/
+/* 		production et de developpement lors du choix d'un nom de variable   */
+/* 		sur le formulaire de création en attribuant sa valeur actuelle 		*/
+/* LancChEnv initie le module en créant le fichier csv contenant les 		*/
+/*		données des valeurs et en copiant ce même fichier dans un fichier	*/
+/*		temporaire															*/
+/* ModifFenetre(§type) ouvre la fenêtre permettant l'édition ou l'accès à	*/
+/*      la création de valeurs. Elle concernera les valeurs de production   */
+/* 		ou de développement en fonction de §type							*/
+/* SupprimVal(§val,§type) supprime la ligne concernée par §val et relance   */
+/* 		la fenêtre de modification de valeurs (ModifFenetre) en fonction de */
+/* 		§type																*/
+/* ValidCreVal(§nom,§dev,§prod) permet d'écrire une nouvelle valeur dans le */
+/* 		fichier temporaire. 												*/
+/* ValidFenetre applique pour l'ensemble des variables enregistrées dans le */
+/*		csv sa valeur associé dans le fichier temporaire, puis remplace le 	*/
+/*		fichier csv contenant les procédures par ce même fichier temporaire */
+/* ValidVal(§type) valide les changements apportés lors de l'édition des 	*/
+/* 		valeurs des procédeurs dans la fenêtre d'édition					*/
+
+
+/*--------------------------------------------------------------------------*/
+/*                     PROCEDURES PERSONNALISABLES                          */
+/*--------------------------------------------------------------------------*/
+
+proc,FAide={epDevDir}\aide\epChEnv.txt
+proc,FDirProc={epDevDir}\epProc.csv
+proc,FDirIgnore={epDevDir}\epIgnore.txt
+proc,FDirTemp=C:\temp\epProcTemp.csv
+proc,Entete=¹nomproc;devVal;prodVal¹
+
+
+
+/*--------------------------------------------------------------------------*/
+/*                     PROCEDURES  NON PERSONNALISABLES                     */
+/*--------------------------------------------------------------------------*/
+
+proc,Hc=[12+[udiay<1.8]]
+proc,Ht=[Hc+2+2*[udiay<1.8]]
+proc,Hc2=[6+[udiay<1.8]]
+proc,Ht2=[Hc2+1+1*[udiay<1.8]]
+epModDev=1
+
+
+/*--------------------------------------------------------------------------*/
+/*                                ROUTINES                                  */
+/*                         par ordre alphabétique                           */
+/*--------------------------------------------------------------------------*/
+
+
+rout,AnnulChEnv
+{
+	var,§fichierTemp
+	§fichierTemp=[FDirTemp]
+	
+	fdia
+	CORB,FILE=[§fichierTemp]
+}
+
+rout,AnnulChangeMode
+{
+	fdia
+	run,CreeFenetre
+}
+
+rout,AnnulCreVal(§type)
+{
+	fdia
+	run,ModifFenetre([§type])
+}
+
+rout,AppliChEnv
+{
+	run,ValidFenetre
+	run,CreeFenetre
+}
+
+
+rout,CreeFenetre
+{
+	/* Lis le fichier comprenant les procédures pour determiner la taille de la fenetre. */
+	/* Permet également une gestion des erreurs */
+
+	var,§nligne,§fichier
+	§fichier=[FDirTemp]
+	
+	if,"[nlfic(`[§fichier]`)-1=>§nligne]>0" 
+	{ 
+		runf,file=[FDirTemp],form=`N;D;P`,ldeb=2,lfin=[§nligne+1]
+		{
+			if,"[N]=="
+			{
+				§nligne=[§nligne-1]
+			}
+			else
+		}
+	} 
+	
+	var,§h,§hdial,§hgroupe
+	var,§l_fenetre,§l_groupe,§l_affichage
+	§h=0
+	§l_fenetre=400
+	§l_groupe=[§l_fenetre-4]
+	§l_affichage=[§l_fenetre-4]
+
+	§hgroupe=[2*Hc+2*Ht2]
+	§hdial=[2*§nligne*Ht2+60+§hgroupe]
+
+	dial,EP_DEV_CONF,l=[§l_fenetre],h=[§hdial],lmin=[§l_fenetre],ferm=1,croi=1,tx=¹Configurer le repertoire de développement¹
+	§h=[§h+Ht2]
+
+	qc,gr,id=GR_COMPO,x=2,y=[§h],l=[§l_groupe],h=[§hgroupe],tx=¹Configuration¹,FT=2
+	qdim,id=GR_COMPO,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+	§h=[§h+Ht2]
+
+
+	
+	var,§text_br_dev,§text_br_prod,§text_qc_modif,§text_qc_appli,§text_qc_annul,§text_qc_aide
+	var,§taille_br_modif,§taille_br_appli,§taille_br_annul,§taille_br_aide
+	§text_br_dev=¹Mode développement¹
+	§text_br_prod=¹Mode production¹
+	§text_qc_modif=¹Modifier¹
+	§text_qc_appli=¹Appliquer¹
+	§text_qc_annul=¹Annuler¹
+	§text_qc_aide=¹Aide¹
+	§taille_br_modif=50
+	§taille_br_appli=50
+	§taille_br_annul=50
+	§taille_br_aide=50
+
+	/* Bloc mode developpement */
+	qc,br,id=BR_DEV,x=4,y=[§h],l=[100],h=[Hc],j=0,tx=[§text_br_dev],et=[si(epModDev==0,1,0)]
+	qc,BF,id=BF_MODIF_DEV,x=[§l_groupe-§taille_br_modif-4],y=[§h],l=[§taille_br_modif],h=[Hc],j=0,tx=[§text_qc_modif],rout=ModifFenetre(0,ValidDev)
+	§h=[§h+2*Ht2]
+
+	/* Bloc mode production */
+	qc,br,id=BR_PROD,x=4,y=[§h],l=[80],h=[Hc],j=0,tx=[§text_br_prod],et=[si(epModDev==0,0,1)]
+	qc,BF,id=BF_MODIF_PROD,x=[§l_groupe-§taille_br_modif-4],y=[§h],l=[§taille_br_modif],h=[Hc],j=0,tx=[§text_qc_modif],rout=ModifFenetre(1,ValidProd)
+	§h=[§h+3*Ht2]
+
+	/* Bloc affichage des info sur le mode actuel*/
+	var,§compt
+	§compt=0
+	if,"[§nligne]>0" 
+	{ 
+		QC,TX,Tx_MODE_ACT,x=2,y=[§h],l=[§l_affichage],h=10,j=3,ft=2,tx=¹Valeurs actuelles : ¹
+		§h=[§h+2*Ht2]
+		runf,file=[FDirTemp],form=`N;D;P`,ldeb=2,lfin=[§nligne+1]
+		{
+			if,"[N]><"
+			{
+				qc,af,ID=AF_MODE_ACT_[N],x=2,y=[§h],l=[§l_affichage],h=11,j=3,tx="[N] = [tq([N])]"
+				§compt=[§compt+1]
+				§h=[§h+2*Ht2]
+			}
+			else
+		}
+	} 
+	else 
+	{ 
+		QC,TX,Tx_MODE_ACT,x=2,y=[§h],l=[§l_affichage],h=10,j=3,ft=2,tx=¹Aucune valeur n'est personnalisée ¹
+		§h=[§h+2*Ht2]
+	} 
+	
+	qc,BF,id=BF_APPLI,x=4,y=[§h],l=[§taille_br_annul],h=[Hc],j=0,tx=[§text_qc_annul],rout=AnnulChEnv 
+	
+	qc,BF,id=BF_AIDE,x=[§l_groupe-§taille_br_appli-§taille_br_aide-8],y=[§h],l=[§taille_br_aide],h=[Hc],j=0,tx=[§text_qc_aide],rout=LancAide
+	
+	qc,BF,id=BF_ANNUL,x=[§l_groupe-§taille_br_appli-4],y=[§h],l=[§taille_br_appli],h=[Hc],j=0,tx=[§text_qc_appli],rout=AppliChEnv
+
+	evnt,ferm=AnnulChEnv
+	qset,mod=0 
+}
+
+/* Lance une fenêtre permettant de créer une nouvelle valeur*/
+rout,CreValFenetre(§type)
+{
+	fdia
+	var,§h,§hf
+	var,§l_fenetre,§l_affichage
+	var,§tx_fenetre
+	§h=0
+	§l_fenetre=300
+	§l_affichage=[§l_fenetre-4]
+	§tx_fenetre=¹Création d'une nouvelle variable¹
+
+	§hf=[5*Ht]
+	dial,EP_DEV_CONF,l=[§l_fenetre],h=[§hf],lmin=[§l_fenetre],hmin=[§hf],lmax=[§l_fenetre],hmax=[§hf],ferm=1,croi=1,tx=[§tx_fenetre]
+	§h=[§h+Ht2]
+
+	var,§tx_taille
+	§tx_taille=105
+
+	var,§taille_br_valid_ajout,§text_qc_valid_ajout
+	var,§taille_br_annul_ajout,§text_qc_annul_ajout
+	var,§var_trouve
+	var,§nligne,§fichierTemp,§fichierIgnore
+
+	§taille_br_valid_ajout=40
+	§taille_br_annul_ajout=40
+	§text_qc_annul_ajout=¹Annuler¹
+	§text_qc_valid_ajout=¹Valider¹
+	§fichierTemp=[FDirTemp]
+	§fichierIgnore=[FDirIgnore]
+
+	QC,TX,Tx_VAL_NOM,x=2,y=[§h],l=[§tx_taille],h=10,j=3,ft=2,tx=¹Nom de la valeur : ¹
+	qc,CB,id=CB_VAL_NOM,x=[§tx_taille+4],y=[§h],l=[105],h=[5*Hc],j=0,rout=InitVal
+	{
+		runp,nom=ep%
+		{
+			§var_trouve=0
+			/* vérifie s'il est à ignorer dans epIgnore.txt */
+			if,"[nlfic(`[§fichierIgnore]`)=>§nligne]>0" 
+			{ 
+				runf,file=[FDirIgnore],form=`N`
+				{
+					if,"[proc_nom==N]"
+					{
+						§var_trouve=1
+					}
+				}
+			} 
+			/* vérifie s'il n'est pas déja présent dans le epProcTemp.csv */
+			if,"[nlfic(`[§fichierTemp]`)=>§nligne]>0" 
+			{ 
+				runf,file=[FDirTemp],form=`N;D;P`,ldeb=2,lfin=[§nligne+1]
+				{
+					if,"[proc_nom==N]" 
+					{
+						§var_trouve=1
+					}
+				}
+			}           
+			if,"[§var_trouve]==0" 
+			{ 
+				QAO,et=0,tx=[proc_nom]
+			}
+		}
+	}
+	§h=[§h+2*Ht2]
+
+	QC,TX,Tx_VAL_DEV,x=2,y=[§h],l=[§tx_taille],h=10,j=3,ft=2,tx=¹Valeur en developpement : ¹
+	qc,ED,id=ED_VAL_DEV,x=[§tx_taille+4],y=[§h],l=[§l_affichage-§tx_taille-4],h=[Hc],j=0
+	§h=[§h+2*Ht2]
+
+	QC,TX,Tx_VAL_PROD,x=2,y=[§h],l=[§tx_taille],h=10,j=3,ft=2,tx=¹Valeur en production : ¹
+	qc,ED,id=ED_VAL_PROD,x=[§tx_taille+4],y=[§h],l=[§l_affichage-§tx_taille-4],h=[Hc],j=0
+	§h=[§h+2*Ht2]
+
+	qc,BF,id=BF_ANNUL_AJOUT,x=[§l_affichage-§taille_br_valid_ajout-§taille_br_annul_ajout-14],y=[§h],l=[§taille_br_annul_ajout],h=[Hc],j=0,tx=[§text_qc_annul_ajout],rout=AnnulCreVal([§type])
+
+	var,§nom,§dev,§prod
+	§nom={tx(CB_VAL_NOM)}
+	§dev={tx(ED_VAL_DEV)}
+	§prod={tx(ED_VAL_PROD)}
+	qc,BF,id=BF_VALID_AJOUT,x=[§l_affichage-§taille_br_valid_ajout-4],y=[§h],l=[§taille_br_valid_ajout],h=[Hc],j=0,tx=[§text_qc_valid_ajout],rout=ValidCreVal({§nom},{§dev},{§prod})
+
+	evnt,ferm=AnnulCreVal([§type])
+	qset,mod=0 
+}
+
+/* Permet la mise à jour automatique des variables  */
+rout,InitVal
+{
+	var,§prc
+	§prc=[tx(CB_VAL_NOM)]
+	
+	if,"[defprc(§prc)]"
+	{
+		qmod,id=ED_VAL_DEV,tx=[tq([§prc])]
+		qmod,id=ED_VAL_PROD,tx=[tq([§prc])]
+	}
+}
+
+rout,LancAide
+{
+	AIDE,file=[FAide]
+}
+
+rout,LancChEnv
+{
+	var,§fichierTemp,§fichierBase,§fichierIgnore,§nligne
+	§fichierTemp=[FDirTemp]
+	§fichierBase=[FDirProc]
+	§fichierIgnore=[FDirIgnore]
+	
+	if,"[nlfic(`[§fichierBase]`)=>§nligne]<1" 
+	{
+		[ep]FRAJ,FILE=[§fichierBase],proc=Entete
+	}
+	
+	if,"[nlfic(`[FDirIgnore]`)=>§nligne]<1" 
+	{
+		FRAJ,FILE=[§fichierIgnore]
+	}
+	
+	!FCPY,FILE=[§fichierBase],DEST=[§fichierTemp],REMP=1
+	run,CreeFenetre
+}
+
+/* Lance la fenêtre de modification de variable */
+/* §type=0 => Développement */
+/* §type=1 => Production */
+rout,ModifFenetre(§type)
+{
+	var,§h,§hf
+	var,§l_fenetre,§l_affichage
+	§h=0
+	§l_fenetre=350
+	§l_affichage=[§l_fenetre-4]
+
+	var,§nligne,§fichierTemp
+	§fichierTemp=[FDirTemp]
+	
+	
+	/* Note : TopStation laisse obligatoirement à la fin d'un fichier une ligne vide, faussant le nombre total de ligne */
+	
+	§nligne=[nlfic(`[§fichierTemp]`)-1]
+	
+	if,"[§nligne]==-1"
+	{
+			§nligne=0 /* Si le fichier ne contient même pas l'entête */
+	}
+	
+	var,§tx_fenetre,§tx_fenetre1,§tx_fenetre2
+	§tx_fenetre1=¹Modification des variables de développement¹
+	§tx_fenetre2=¹Modification des variables de production¹
+	§tx_fenetre=[si([§type]==0,§tx_fenetre1,§tx_fenetre2)]
+			
+	§hf=[2*§nligne*Ht2+50]
+	dial,EP_DEV_CONF,l=[§l_fenetre],h=[§hf],lmin=[§l_fenetre],hmin=[§hf],lmax=[§l_fenetre],hmax=[§hf],ferm=1,croi=1,tx=[§tx_fenetre]
+	§h=[§h+Ht2]
+	
+	var,§text_txMode,§text_txMode1,§text_txMode2
+	§text_txMode1=¹Aucune valeur n'est encore personnalisée¹
+	§text_txMode2=¹Valeurs : ¹
+	§text_txMode=[si([§nligne]<=0,§text_txMode1,§text_txMode2)]
+
+	QC,TX,Tx_MODE,x=4,y=[§h],l=[§l_affichage],h=10,j=3,ft=2,tx=[§text_txMode]
+
+	§h=[§h+2*Ht2]
+
+	var,§listVar,§taille_tx_var,§taille_ed,§taille_bf_supp_valeur
+	var,§compt,§tx_ed_var,§tx_bf_supp_valeur
+	§listVar=
+	§compt=0
+	§taille_tx_var=50
+	§taille_bf_supp_valeur=40
+	§taille_ed=[§l_affichage-§taille_tx_var-15-§taille_bf_supp_valeur]
+
+	§tx_bf_supp_valeur=¹Supprimer¹
+	if,"[nlfic(`[§fichierTemp]`)=>§nligne]>1" 
+	{ 
+		runf,file=[FDirTemp],form=`N;D;P`,ldeb=2,lfin=[§nligne+1]
+		{
+			QC,TX,Tx_VAR_[N],x=5,y=[§h],l=[§taille_tx_var],h=10,j=3,tx="[N]"
+			
+			§tx_ed_var={si(§type==0,tq(D),tq(P))}
+			
+			QC,ED,ED_VAR_[N],x=[§taille_tx_var+5],y=[§h],l=[§taille_ed],h=10,tx={§tx_ed_var}
+			QC,BF,id=BF_SUPPRIM_[N],x=[§taille_tx_var+10+§taille_ed],y=[§h],l=[§taille_bf_supp_valeur],h=[Hc],j=0,tx=[§tx_bf_supp_valeur],rout=SupprimVal([N], {§type})
+			§compt=[§compt+1]
+			§h=[§h+2*Ht2]
+		}
+	}       
+	var,§taille_br_valid_modif,§text_qc_valid_modif
+	var,§taille_br_annul_modif,§text_qc_annul_modif
+	var,§taille_br_ajout_valeur,§text_qc_ajout_valeur
+	§taille_br_valid_modif=40
+	§taille_br_annul_modif=40
+	§taille_br_ajout_valeur=100
+	§text_qc_annul_modif=¹Retour¹
+	§text_qc_valid_modif=¹Valider¹
+	§text_qc_ajout_valeur=¹Ajouter une nouvelle valeur¹
+
+	qc,BF,id=BF_AJOUT_VALEUR,x=4,y=[§h],l=[§taille_br_ajout_valeur],h=[Hc],j=0,tx=[§text_qc_ajout_valeur],rout=CreValFenetre([§type])
+
+	qc,BF,id=BF_ANNUL_MODIF,x=[§l_affichage-§taille_br_valid_modif-§taille_br_annul_modif-14],y=[§h],l=[§taille_br_annul_modif],h=[Hc],j=0,tx=[§text_qc_annul_modif],rout=AnnulChangeMode
+
+	qc,BF,id=BF_VALID_MODIF,x=[§l_affichage-§taille_br_valid_modif-4],y=[§h],l=[§taille_br_valid_modif],h=[Hc],j=0,tx=[§text_qc_valid_modif],rout=ValidVal([§type])
+	evnt,entr=ValidVal([§type]),ferm=AnnulChangeMode
+	qset,mod=0 
+}
+
+
+/* Supprime la ligne dont le nom est égal à §val dans le fichier */
+/* §val -> nom de la variable */
+/* §type -> type de version */
+/* §type=0 => Développement */
+/* §type=1 => Production */
+rout,SupprimVal(§val,§type)
+{
+	var,§nligne,§fichier,§cpt,§trouve
+	§fichier=[FDirTemp]
+	§cpt=1
+	§trouve=0       
+	if,"[nlfic(`[§fichier]`)=>§nligne]>1" 
+	{ 
+		whil,"[`{§cpt<§nligne}@{§trouve==0}`]"
+		{
+			§cpt=[§cpt+1]
+			runf,file=[FDirTemp],form=`N;D;P`,ldeb=[§cpt],lfin=[§cpt]
+			{
+				if,"[§val==N]"
+				{
+					§trouve=1
+				}
+			}
+				
+		}
+	}
+	if,"[§trouve==1]"
+	{
+		FSUP,FILE=[§fichier],LIND=[§cpt],LINF=[§cpt]
+		fdia
+		run,ModifFenetre(§type)
+	}
+
+        
+}
+
+/* Valide la création d'une nouvelle variable dans le fichier. Celle-ci est alors écrite dans le fichier */
+/* §nom -> nom de la variable */
+/* §dev -> valeur de cette variable en version de développement */
+/* §prod -> valeur de cette variable en version de production */
+rout,ValidCreVal(§nom,§dev,§prod)
+{
+	var,§nligne,§fichierTemp,§valeurs
+	var,§present
+	§fichierTemp=[FDirTemp]
+	§present=0
+	§valeurs={§nom};{tq(§dev)};{tq(§prod)}
+	/* Si le fichier est vide */
+	
+	if,"[nlfic(`[§fichierTemp]`)=>§nligne]<=1" 
+	{
+		if,"[§nligne]==0" /* Si le fichier ne contient pas l'entête*/
+		{
+			FINS,FILE=[§fichierTemp],LINE=1,proc=Entete
+		}
+		FINS,FILE=[§fichierTemp],LINE=2,proc=§valeurs
+	}
+	else
+	{       
+		/* Vérifie si la variable n'est pas déja présente dans le fichier */
+		runf,file=[FDirTemp],form=`N;D;P`,ldeb=2,lfin=[§nligne+1]
+		{
+			if,"[§nom==N]" 
+			{
+				§present=1
+			}
+		}
+
+		if,"§present==1"
+		{
+			/* TODO : faire une fenêtre d'erreur indiquant que la variable est déja présente */
+			§present==[ERROR] /* Façon de faire planter le code pour le moment */
+		}
+		else
+		{
+			var,§tx_avant,§tx_apres
+			var,§cpt_avant,§cpt_apres
+			§cpt_avant=1
+			FRAJ,FILE=[§fichierTemp],proc=§valeurs
+			/* TODO : Integrer les variables dans l'ordre alphabétique */
+
+		}
+			
+	}
+
+  fdia
+  run,ModifFenetre
+}
+
+/* Modifie les valeurs des variables selon le mode choisi */ 
+rout,ValidFenetre
+{
+	/* Dev=0, prod=1 */
+	epModDev=[[et(BR_PROD)]==1]
+	
+	var,§fichierTemp,§fichierBase,§nligne
+	§fichierTemp=[FDirTemp]
+	§fichierBase=[FDirProc]
+	
+	
+	if,"[nlfic(`[§fichierTemp]`)=>§nligne]>1" 
+	{ 
+		runf,file=[FDirTemp],form=`N;D;P`,ldeb=2,lfin=[§nligne+1]
+		{
+			[N]=[si([epModDev]==0,tq(D),tq(P))]
+		}
+	}
+	!FCPY,FILE=[§fichierTemp],DEST=[§fichierBase],REMP=1
+	fdia
+}
+
+/* Valide les modifications apportées sur un des modes */
+rout,ValidVal(§type)
+{
+	var,§nligne,§fichier,§cpt,§nom,§dev,§prod,§insert,§valeurs
+	§fichier=[FDirTemp]
+	§cpt=2
+	
+	if,"[nlfic(`[§fichier]`)=>§nligne]>1" 
+	{
+		whil,"§cpt<§nligne+1"
+		{
+			runf,file=[FDirTemp],form=`N;D;P`,ldeb=[§cpt],lfin=[§cpt]
+			{
+				§dev={tx(Tx_VAR_[N])};{tx(ED_VAR_[N])};{tq(P)}
+				§prod={tx(Tx_VAR_[N])};{tq(D)};{tx(ED_VAR_[N])}
+				§valeurs=[si([§type]==0,tq(§dev),tq(§prod))]
+			}
+		FMOD,FILE=[§fichier],LINE=[§cpt],proc=§valeurs
+		§cpt=[§cpt+1]
+		}
+	}
+	
+	
+	
+	fdia
+	run,CreeFenetre
+}
