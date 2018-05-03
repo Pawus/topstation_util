@@ -68,7 +68,7 @@ rout,Test
 rout,CreeDataSrc2(§nom,§pilote,§serveur,§port,§base,§user,§pwd,§ssl,§description)
 {
   /* Execution Batch */
-  dos,`{epUtil}\batch\creepsql.bat {§nom} {§pilote}`
+  dos,`{epUtilDir}\batch\creepsql.bat {§nom} {§pilote}`
   /* {§serveur} {§port} {§base} {§user} {§pwd} {§ssl} {§description} */
 }
 
@@ -77,6 +77,6 @@ rout,CreeDataSrc3
   var,§commande
 
   /* Execution Batch */
-  §commande={epUtil}\batch\ex_cree.bat
+  §commande={epUtilDir}\batch\ex_cree.bat
   [ep]syst,§commande
 }

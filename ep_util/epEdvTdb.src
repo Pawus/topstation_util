@@ -110,7 +110,7 @@ rout,CreerFenetre
 
 rout,LancTdb
 {
-  %TMR.0:PROC="`lanc,CreerFenetre,[epUtil]\epEdvTdb.src{ex}`",DATE=0:00,REPT=1
+  %TMR.0:PROC="`lanc,CreerFenetre,[epUtilDir]\epEdvTdb.src{ex}`",DATE=0:00,REPT=1
 }
 
 rout,Rafraichir

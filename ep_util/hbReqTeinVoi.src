@@ -65,7 +65,7 @@ rout,ChoiVol
 
 rout,BfAide
 {
-  aide,{epUtil}\aide\hbReqTeinVoi.txt
+  aide,{epUtilDir}\aide\hbReqTeinVoi.txt
 }
 
 rout,ReqTeinVoi(§vol,§fed,§dist)
@@ -107,7 +107,7 @@ rout,ReqTeinVoi(§vol,§fed,§dist)
     run,CoupSansAlt
     list
     §t=[EPAD] - Teintes des volumes voisins
-    afli,imp=[%DFO:IMP],file="[base]\Listing.txt",titr={§t},aide=[epUtil]\aide\hbReqTeinVoi.txt
+    afli,imp=[%DFO:IMP],file="[base]\Listing.txt",titr={§t},aide=[epUtilDir]\aide\hbReqTeinVoi.txt
 }
 
 rout,TeinVoi(§fed,§vol,§dist)
