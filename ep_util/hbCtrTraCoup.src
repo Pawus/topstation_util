@@ -28,13 +28,13 @@ rout,Fenetre
         }
         list
         §t=¹Contrôle du tracé des coupes h. de volumes¹
-        afli,imp=[%DFO:IMP],file="[base]\Listing.txt",titr={§t},aide={epUtil}\Aide\hbCtrTraCoup.txt
+        afli,imp=[%DFO:IMP],file="[base]\Listing.txt",titr={§t},aide={epUtilDir}\Aide\hbCtrTraCoup.txt
 	}
 }
 
 rout,BfAide
 {
-	aide,{epUtil}\aide\hbCtrTraCoup.txt
+	aide,{epUtilDir}\aide\hbCtrTraCoup.txt
 }
 
 rout,CtrEddv(§fed)

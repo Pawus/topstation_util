@@ -1,0 +1,8 @@
+
+GESTION DES PROCEDURES DE PRODUCTION ET DE DEVELOPPEMENT
+
+	Cette fenêtre permet la gestion du contenu des procédures pour permettre de le différencier selon que l'on souhaite se placer dans un environnement de production ou de développement.
+	
+	Les procédures gérées, ainsi que leurs valeurs sont enregistrées dans le fichier epProc.csv
+	
+	Les procédures que l'utilisateur souhaite explicitement ignorée sont enregistrées dans le fichier epIgnore.txt

@@ -7,28 +7,36 @@ rout,Setup(§ext,§dir)
   var,§i
   
   var,§l
-  §l=a
+  §l=a  /* Compteur pour hierarchiser les niveaux des menus */
 
-  !prce,epUtil%
+  !prce,epUtilDir%
   !prce,epFic%
   !prce,epCart%
-  epUtil={util}\ep_util
+  
+  if,"defprc(`epUtil`)=0"
+  then
+  {
+    epUtil={util}
+    pgu,epUtil
+  }
+  
+  epUtilDir={epUtil}\ep_util
   epFicCoul={epInitDir}\ep_couleurs.txt
-  juCartEP={util}\ep_cart
-  pgu,epUtil%
+  juCartEP={epUtil}\ep_cart
+  pgu,epUtilDir%
   pgu,epFic%
   pgu,juCartEP
 
   !prce,jtIcon[§ext]%
   !prce,jtMenu[§ext]%
-  jtIcon[§ext]"¹Epad¹"=
-  jtMenu[§ext]"¹Epad¹"=
-  jtIcon[§ext][§l]"¹Palette Epad¹"={epUtil}\icon\menu.bmp
-  jtMenu[§ext][§l]"¹Palette Epad¹"=lanc,MenuExec(Ep),{jtCart}\Menus{ex}
+  jtIcon[§ext]"¹Epa¹"=
+  jtMenu[§ext]"¹Epa¹"=
+  jtIcon[§ext][§l]"¹Palette Epa¹"={epUtilDir}\icon\menu.bmp
+  jtMenu[§ext][§l]"¹Palette Epa¹"=lanc,MenuExec(Ep),{jtCart}\Menus{ex}
   §l=[chr(asc(§l)+1)]
   
-  jtIcon[§ext][§l]"¹Contrôle de la config. Epad¹"={epUtil}\icon\verif.bmp
-  jtMenu[§ext][§l]"¹Contrôle de la config. Epad¹"=lanc,ForceVerif,{epUtil}\verif{ex}
+  jtIcon[§ext][§l]"¹Contrôle de la config. Epa¹"={epUtilDir}\icon\verif.bmp
+  jtMenu[§ext][§l]"¹Contrôle de la config. Epa¹"=lanc,ForceVerif,{epUtilDir}\verif{ex}
   §l=[chr(asc(§l)+1)]
   
   jtIcon[§ext][§l]""=
@@ -36,7 +44,7 @@ rout,Setup(§ext,§dir)
   §l=[chr(asc(§l)+1)]
   
   jtIcon[§ext][§l]"¹Système de référence¹"=
-  jtMenu[§ext][§l]"¹Système de référence¹"=lanc,LancSysR,{epUtil}\epSysR.src{ex}
+  jtMenu[§ext][§l]"¹Système de référence¹"=lanc,LancSysR,{epUtilDir}\epSysR.src{ex}
   §l=[chr(asc(§l)+1)]
   
   jtIcon[§ext][§l]""=
@@ -49,19 +57,19 @@ rout,Setup(§ext,§dir)
   jtMenu[§ext][§l]1"¹Point de support foncier¹"=lanc,CreComp([epcKfn]),{juCartEP}\ent_pofonc.src{ex}
   jtIcon[§ext][§l]2"¹Plan¹"={juCartEP}\icon\epCrePlan.bmp
   jtMenu[§ext][§l]2"¹Plan¹"=lanc,CrePlan,{juCartEP}\ent_plan.src{ex}
-  jtIcon[§ext][§l]3"¹Plan d'un descriptif¹"={epUtil}\icon\epEdvCrePlan.bmp
-  jtMenu[§ext][§l]3"¹Plan d'un descriptif¹"=lanc,LancCrePlan,{epUtil}\epEdvCrePlan.src{ex}
+  jtIcon[§ext][§l]3"¹Plan d'un descriptif¹"={epUtilDir}\icon\epEdvCrePlan.bmp
+  jtMenu[§ext][§l]3"¹Plan d'un descriptif¹"=lanc,LancCrePlan,{epUtilDir}\epEdvCrePlan.src{ex}
   §l=[chr(asc(§l)+1)]
   
   jtIcon[§ext][§l]"¹Volumétrie¹"=
   jtMenu[§ext][§l]"¹Volumétrie¹"=
-  jtIcon[§ext][§l]1"¹Exporter projets¹"={epUtil}\icon\hbExProjEddv.bmp
-  jtMenu[§ext][§l]1"¹Exporter projets+parcellaire¹"=lanc,SelProj,{epUtil}\hbExProjEddv{ex}
-  jtIcon[§ext][§l]2"¹Importer projets¹"={epUtil}\icon\hbImProjEddv.bmp
-  jtMenu[§ext][§l]2"¹Importer projets+parcellaire¹"=lanc,SelFic,{epUtil}\hbImProjEddv{ex} 
+  jtIcon[§ext][§l]1"¹Exporter projets¹"={epUtilDir}\icon\hbExProjEddv.bmp
+  jtMenu[§ext][§l]1"¹Exporter projets+parcellaire¹"=lanc,SelProj,{epUtilDir}\hbExProjEddv{ex}
+  jtIcon[§ext][§l]2"¹Importer projets¹"={epUtilDir}\icon\hbImProjEddv.bmp
+  jtMenu[§ext][§l]2"¹Importer projets+parcellaire¹"=lanc,SelFic,{epUtilDir}\hbImProjEddv{ex} 
   jtIcon[§ext][§l]4""=
   jtMenu[§ext][§l]4""=
-  jtMenu[§ext][§l]5"¹Forcer rallonges E¹"=lanc,AplSetRalE,{epUtil}\eddv{ex}
+  jtMenu[§ext][§l]5"¹Forcer rallonges E¹"=lanc,AplSetRalE,{epUtilDir}\eddv{ex}
   jtIcon[§ext][§l]6""=
   jtMenu[§ext][§l]6""=
   §l=[chr(asc(§l)+1)]
@@ -72,51 +80,62 @@ rout,Setup(§ext,§dir)
   jtMenu[§ext][§l]1"¹Force de représentation¹"=lanc,Appel,{juCartEP}\epRep_entfonc{ex}
   jtIcon[§ext][§l]2""=
   jtMenu[§ext][§l]2""=
-  jtMenu[§ext][§l]3"¹Modèles EPAD¹"=lanc,ConvertMdlToEp,{epUtil}\EpConvertMdl{ex}
-  jtMenu[§ext][§l]4"¹Modèles HBASE¹"=lanc,ConvertMdlToHb,{epUtil}\EpconvertMdl{ex}
+  jtMenu[§ext][§l]3"¹Modèles EPAD¹"=lanc,ConvertMdlToEp,{epUtilDir}\EpConvertMdl{ex}
+  jtMenu[§ext][§l]4"¹Modèles HBASE¹"=lanc,ConvertMdlToHb,{epUtilDir}\EpconvertMdl{ex}
   §l=[chr(asc(§l)+1)]
   
   jtIcon[§ext][§l]"¹Nettoyage¹"=
   jtMenu[§ext][§l]"¹Nettoyage¹"=
-  jtIcon[§ext][§l]1"¹Forcer DuCalque¹"={epUtil}\icon\epDuClq.bmp
-  jtMenu[§ext][§l]1"¹Forcer DuCalque¹"=lanc,AplDuClq,{epUtil}\epDxf{ex}
-  jtIcon[§ext][§l]2"¹Enlever calque¹"={epUtil}\icon\epEnlvClq.bmp
-  jtMenu[§ext][§l]2"¹Enlever calque¹"=lanc,AplEnlvClq,{epUtil}\epDxf{ex}
+  jtIcon[§ext][§l]1"¹Forcer DuCalque¹"={epUtilDir}\icon\epDuClq.bmp
+  jtMenu[§ext][§l]1"¹Forcer DuCalque¹"=lanc,AplDuClq,{epUtilDir}\epDxf{ex}
+  jtIcon[§ext][§l]2"¹Enlever calque¹"={epUtilDir}\icon\epEnlvClq.bmp
+  jtMenu[§ext][§l]2"¹Enlever calque¹"=lanc,AplEnlvClq,{epUtilDir}\epDxf{ex}
   §l=[chr(asc(§l)+1)]
                                                                                                         /* Mercator²*/
   jtMenu[§ext][§l]"¹Requêtes¹"=
-  jtIcon[§ext][§l]a"¹Requête selon n° de volume¹"={epUtil}\icon\hbReqNumVol.bmp
-  jtMenu[§ext][§l]a"¹Selon n° de volume¹"=lanc,ChoiVol,{epUtil}\hbReqNumVol{ex}
-  jtIcon[§ext][§l]b"¹Requête teintes volumes voisins¹"={epUtil}\icon\hbReqTeinVoi.bmp
-  jtMenu[§ext][§l]b"¹Teintes volumes voisins¹"=lanc,ChoiVol,{epUtil}\hbReqTeinVoi{ex}
-  jtIcon[§ext][§l]c"¹Requête verticale d'un point¹"={epUtil}\icon\hbReqVertPnt.bmp
-  jtMenu[§ext][§l]c"¹Verticale d'un point¹"=lanc,Fenetre,{epUtil}\hbReqVertPnt{ex}
+  jtIcon[§ext][§l]a"¹Requête selon n° de volume¹"={epUtilDir}\icon\hbReqNumVol.bmp
+  jtMenu[§ext][§l]a"¹Selon n° de volume¹"=lanc,ChoiVol,{epUtilDir}\hbReqNumVol{ex}
+  jtIcon[§ext][§l]b"¹Requête teintes volumes voisins¹"={epUtilDir}\icon\hbReqTeinVoi.bmp
+  jtMenu[§ext][§l]b"¹Teintes volumes voisins¹"=lanc,ChoiVol,{epUtilDir}\hbReqTeinVoi{ex}
+  jtIcon[§ext][§l]c"¹Requête verticale d'un point¹"={epUtilDir}\icon\hbReqVertPnt.bmp
+  jtMenu[§ext][§l]c"¹Verticale d'un point¹"=lanc,Fenetre,{epUtilDir}\hbReqVertPnt{ex}
   §l=[chr(asc(§l)+1)]
   
   jtMenu[§ext][§l]"¹Utilitaires¹"=
-  jtIcon[§ext][§l]a"¹Appliquer un plan d'EDDV¹"={epUtil}\icon\hbAppPlanEdv.bmp
-  jtMenu[§ext][§l]a"¹Appliquer un plan d'EDDV¹"=lanc,Fenetre,{epUtil}\hbAppPlanEdv{ex}
-/*  jtIcon[§ext][§l]b"¹Appliquer plan d'EDDV Z inf¹"={epUtil}\icon\hbAppPzinf.bmp */
-/*  jtMenu[§ext][§l]b"¹Appliquer plan d'EDDV Z inf¹"=lanc,Fenetre,{epUtil}\hbAppPzinf{ex}  */
-/*  jtIcon[§ext][§l]c"¹Appliquer plan d'EDDV Z sup¹"={epUtil}\icon\hbAppPzsup.bmp */
-/*  jtMenu[§ext][§l]c"¹Appliquer plan d'EDDV Z sup¹"=lanc,Fenetre,{epUtil}\hbAppPzsup{ex} */   
-  jtIcon[§ext][§l]d"¹Tracer FCL du plan Z inf¹"={epUtil}\icon\hbTraFCLPzinf.bmp
-  jtMenu[§ext][§l]d"¹Tracer FCL du plan Z inf¹"=lanc,Fenetre,{epUtil}\hbTraFCLPzinf{ex}  
-  jtIcon[§ext][§l]e"¹Tracer FCL du plan Z sup¹"={epUtil}\icon\hbTraFCLPzsup.bmp
-  jtMenu[§ext][§l]e"¹Tracer FCL du plan Z sup¹"=lanc,Fenetre,{epUtil}\hbTraFCLPzsup{ex}  
-  jtIcon[§ext][§l]f"¹Tracer coupes h. même dom Dn¹"={epUtil}\icon\hbTraCoupDom.bmp
-  jtMenu[§ext][§l]f"¹Tracer coupes h. même dom Dn¹"=lanc,Fenetre,{epUtil}\hbTraCoupDom{ex} 
-  jtIcon[§ext][§l]g"¹Contrôle du tracé des coupes h. de volumes¹"={epUtil}\icon\hbCtrTraCoup.bmp
-  jtMenu[§ext][§l]g"¹Contrôle du tracé des coupes h. de volumes¹"=lanc,Fenetre,{epUtil}\hbCtrTraCoup{ex}
+  jtIcon[§ext][§l]a"¹Appliquer un plan d'EDDV¹"={epUtilDir}\icon\hbAppPlanEdv.bmp
+  jtMenu[§ext][§l]a"¹Appliquer un plan d'EDDV¹"=lanc,Fenetre,{epUtilDir}\hbAppPlanEdv{ex}
+/*  jtIcon[§ext][§l]b"¹Appliquer plan d'EDDV Z inf¹"={epUtilDir}\icon\hbAppPzinf.bmp */
+/*  jtMenu[§ext][§l]b"¹Appliquer plan d'EDDV Z inf¹"=lanc,Fenetre,{epUtilDir}\hbAppPzinf{ex}  */
+/*  jtIcon[§ext][§l]c"¹Appliquer plan d'EDDV Z sup¹"={epUtilDir}\icon\hbAppPzsup.bmp */
+/*  jtMenu[§ext][§l]c"¹Appliquer plan d'EDDV Z sup¹"=lanc,Fenetre,{epUtilDir}\hbAppPzsup{ex} */   
+  jtIcon[§ext][§l]d"¹Tracer FCL du plan Z inf¹"={epUtilDir}\icon\hbTraFCLPzinf.bmp
+  jtMenu[§ext][§l]d"¹Tracer FCL du plan Z inf¹"=lanc,Fenetre,{epUtilDir}\hbTraFCLPzinf{ex}  
+  jtIcon[§ext][§l]e"¹Tracer FCL du plan Z sup¹"={epUtilDir}\icon\hbTraFCLPzsup.bmp
+  jtMenu[§ext][§l]e"¹Tracer FCL du plan Z sup¹"=lanc,Fenetre,{epUtilDir}\hbTraFCLPzsup{ex}  
+  jtIcon[§ext][§l]f"¹Tracer coupes h. même dom Dn¹"={epUtilDir}\icon\hbTraCoupDom.bmp
+  jtMenu[§ext][§l]f"¹Tracer coupes h. même dom Dn¹"=lanc,Fenetre,{epUtilDir}\hbTraCoupDom{ex} 
+  jtIcon[§ext][§l]g"¹Contrôle du tracé des coupes h. de volumes¹"={epUtilDir}\icon\hbCtrTraCoup.bmp
+  jtMenu[§ext][§l]g"¹Contrôle du tracé des coupes h. de volumes¹"=lanc,Fenetre,{epUtilDir}\hbCtrTraCoup{ex}
   §l=[chr(asc(§l)+1)]
   
   jtMenu[§ext][§l]"¹Coupes verticales d'EDDV¹"=
   jtIcon[§ext][§l]a"¹Créer ligne de coupe¹"={juCartHbase}\icon\LgnCoupe.bmp
   jtMenu[§ext][§l]a"¹Créer ligne de coupe¹"=lanc,CreComp,{juCartHbase}\LgnCoupe{ex}
-  jtIcon[§ext][§l]b"¹Calculer coupe¹"={epUtil}\icon\hbCalCoup.bmp
-  jtMenu[§ext][§l]b"¹Calculer coupe¹"=lanc,Fenetre,{epUtil}\hbCalCoup{ex}
+  jtIcon[§ext][§l]b"¹Calculer coupe¹"={epUtilDir}\icon\hbCalCoup.bmp
+  jtMenu[§ext][§l]b"¹Calculer coupe¹"=lanc,Fenetre,{epUtilDir}\hbCalCoup{ex}
+  §l=[chr(asc(§l)+1)]
+  
+  jtIcon[§ext][§l]""=
+  jtMenu[§ext][§l]""=
+  §l=[chr(asc(§l)+1)]
+  
+  jtMenu[§ext][§l]"¹Publication de plans¹"=lanc,LancPubPlan,{epUtilDir}\epPubPlan{ex}
+  §l=[chr(asc(§l)+1)]
+  jtIcon[§ext][§l]"¹Palette Epad¹"={epUtilDir}\icon\menu.bmp
+  jtMenu[§ext][§l]"¹Tableau de bord EDDV¹"=lanc,LancTdb,{epUtilDir}\epEdvTdb{ex}
   §l=[chr(asc(§l)+1)]
                                                   
+  /* suppression d'une éventuelle boite "EPAD" qui survivrai ... */
   n=1 
   runp,jtBoite###_Nom
   {
@@ -131,18 +150,6 @@ rout,Setup(§ext,§dir)
     }
   }
   !prce,jtBoite[n)03]_%
-  §i=0
-  jtBoite[n)03]_[[§i+1=>§i])03]=menu
-  jtBoite[n)03]_Nom=¹Epad¹
-  jtBoite[n)03]_Ouv=1
-  jtBoite[n)03]_Pos=0
-  jtBoite[n)03]_Rg=1
-  jtBoite[n)03]_X=60
-  jtBoite[n)03]_Y=100
-
-  lanc,InitMenu,[juCartEP]\initMenu
-
-  lanc,Verif,[epUtil]\verif
 
   mnu
 }

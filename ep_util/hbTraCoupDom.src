@@ -55,5 +55,5 @@ rout,Fenetre
 
 rout,BfAide
 {
-	aide,{epUtil}\aide\hbTraCoupDom.txt
+	aide,{epUtilDir}\aide\hbTraCoupDom.txt
 }

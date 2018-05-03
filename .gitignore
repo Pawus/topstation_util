@@ -2,6 +2,8 @@
 ## PLD
 #############
 
+ep_dev/epIgnore.txt
+ep_dev/epProc.csv
 ep_util/archives
 ep_commun/gnu
 *.docx

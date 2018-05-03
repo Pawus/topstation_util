@@ -377,7 +377,7 @@ rout,BfBeok
 
 rout,BfAide
 {
-	aide,file={epUtil}\aide\epImCdif.txt
+	aide,file={epUtilDir}\aide\epImCdif.txt
 }
 
 rout,ChoixCmp
@@ -435,7 +435,7 @@ rout,CcSeOk(§xm,§ym,§gi,§lp,§hp,§ec)
 
 rout,CcAide
 {
-	aide,file={epUtil}\aide\epImCdifFen.txt
+	aide,file={epUtilDir}\aide\epImCdifFen.txt
 }
 
 rout,CcBeok

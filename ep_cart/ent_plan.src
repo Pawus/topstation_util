@@ -727,9 +727,7 @@ rout,CreComp(§r)
   Cas=Cre
   run,MajListe
   Ma=[ml(§r)]
-  Cart=[ml(`jtCart`)]
 
-  
   /* on détermine les dimensions du plan */
   /* aujourd'hui par défaut A0 au 1/500  */
   Lplan={LA0}
@@ -745,15 +743,17 @@ rout,CreComp(§r)
   [Ma]:X=[xmvue],Y=[ymvue],G=100,Cx=[Cx],Cy=[Cy],MD=[Md]
   [Ma]&V0:Nom="[Ma]",Ec=[Ec]
   [Ma]&T0:commune=0
-  
-  /* on créé le cartouche */
-  [Cart]:Cx=110.000,Cy=153.500,MD=[MdCart],J=0
-  [Cart]&V0:Nom="[Ma]:Cartouche principal",J=7,Dx=2.50,Dy=-2.50,Cx=22.00,Cy=30.70
-  [Cart]&R0:P=[Ma] 
     
   /* on définie le domaine du plan */
   §dom=[upcn(§r)][[Ma]:i]
   [Ma]&D0:[§dom]
+  
+  /* on créé le cartouche */
+  Cart=[ml(`jtCart`)]
+  
+  [Cart]:Cx=110.000,Cy=153.500,MD=[MdCart],J=0
+  [Cart]&V0:Nom="[Ma]:Cartouche principal",J=7,Dx=2.50,Dy=-2.50,Cx=22.00,Cy=30.70
+  [Cart]&R0:P=[Ma] 
   [Cart]&D0:[§dom]
   
   /* on ajoute les instructions qui seront exécutées à l'affichage du plan */
@@ -893,11 +893,17 @@ rout,CreeFenetre
   §h=[§h+Ht]
     
   §h=[§h+Ht2]
-  qc,bf,BF_CART,2,[§h],70,[Hc],j=5,tx="¹Cartouche¹"
-  qdim,BF_CART,dx=0.00,dy=0.00,dl=0.50,dh=0.00
+  qc,bf,BF_CART,2,[§h],70,[Hc],j=5,iv=1,tx=¹Cartouche¹
+  var,§text_oc_cart
+  §text_oc_cart=¹Créer automatiquement le cartouche¹
+  qc,oc,OC_CART,76,[§h],[10+[len(§text_oc_cart)*3.3]%0],[Hc],j=5,et=0,tx=[§text_oc_cart],rout=OcCart
+  qdim,BF_CART,dx=0.00,dy=0.00,dl=0,dh=0.00
+  qdim, OC_CART,dx=0.00,dy=0.00,dl=0,dh=0.00
   qc,bf,BF_ATTR,234,[§h],70,[Hc],j=5,tx="¹Attributs¹",rout=ModAttr
-  qdim,BF_ATTR,dx=1.00,dy=0.00,dl=0.50,dh=0.00
+  qdim,BF_ATTR,dx=1.00,dy=0.00,dl=0,dh=0.00
   §h=[§h+Ht]
+  
+  
   qc,bf,BF_BEOK,2,[§h],20,[Hc],j=5,tx="¹OK¹",rout=BfBeok
   qc,bf,BF_RPQT,24,[§h],48,[Hc],j=5,tx="¹Répercuter¹",rout=BfRpqt
   qc,bf,BF_AIDE,272,[§h],32,[Hc],j=5,tx="¹Aide¹",rout=BfAide
@@ -933,6 +939,11 @@ rout,Enreg
 {
   !cmpe,[MaR]
   !cmpe,epBase
+  
+  if,"[et(OC_CART)]=0"
+  {
+    !cmpe,[Cart]
+  }
   
   if,"[Cas==`Mod`]"
   {
@@ -1111,6 +1122,11 @@ rout,ModComp(§ma)
   run,InitRpqt
   run,LecArgs
   run,CreeFenetre
+}
+
+rout,OcCart
+{
+  qmod,BF_CART,iv=[1-[et(OC_CART)]]
 }
 
 rout,TraiteGis(§x,§y,§r,§n,§f)

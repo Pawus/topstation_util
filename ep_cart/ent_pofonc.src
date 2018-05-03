@@ -93,7 +93,7 @@ rout,MajListe
   if,"defprc(`ListeOk`)<>1"
   {
     run,MajCsvToEpl([juCartEP]\epLst_pofonc.csv,1)
-    run,MajCsvToEpl([epUtil]\epLst_SysR.csv,1)
+    run,MajCsvToEpl([epUtilDir]\epLst_SysR.csv,1)
     ListeOk=1
     marq,11
   }

@@ -4,7 +4,7 @@ proc,JtDebug=1
 
 rout,ForceVerif
 {
-  qpop,¹Voulez-vous forcer la configuration de l'Epad ?¹,j=0,temp=60
+  qpop,¹Voulez-vous forcer la configuration de l'Epa ?¹,j=0,temp=60
   {
     qap,¹Oui¹
     {
@@ -38,7 +38,7 @@ rout,VerifMdl
 
   if,"[nlfic(`[§file]`)=>§nl]>0"
   {
-    dial,EP_VERIF_MDL,l=256,h=16,tx=¹Vérification des modèles Epad¹
+    dial,EP_VERIF_MDL,l=256,h=16,tx=¹Vérification des modèles Epa¹
     qc,pg,PG_FILE,1,1,254,14,vmin=0,vmax=[§nl]
     §il=-1
     runf,file={§file},form=`§a:§cnt`
@@ -60,7 +60,7 @@ rout,VerifMdl
         }
       }
     }
-    marq,10,`¹Mise à jour des modèles Epad¹`
+    marq,10,`¹Mise à jour des modèles Epa¹`
     fdia
   }
 }
