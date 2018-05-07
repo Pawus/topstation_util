@@ -15,7 +15,7 @@ rout,Setup(§ext,§dir)
 	}
 
 	!prce,epDev%
-	epDevDir={epUtil}\ep_dev
+	epDevDir={util}\ep_dev
 	pgu,epDev%
 
 	!prce,jtIcon[§ext]%
