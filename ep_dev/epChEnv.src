@@ -6,6 +6,7 @@
 
 /* Pour fonctionner il faut inclure préalablement les boites à outils :     */
 
+proc,JtDebug=1
 
 /* Procédures de l'environnement                                            */
 
@@ -67,7 +68,6 @@ proc,Hc=[12+[udiay<1.8]]
 proc,Ht=[Hc+2+2*[udiay<1.8]]
 proc,Hc2=[6+[udiay<1.8]]
 proc,Ht2=[Hc2+1+1*[udiay<1.8]]
-epModDev=1
 
 
 /*--------------------------------------------------------------------------*/
@@ -157,6 +157,10 @@ rout,CreeFenetre
 	§taille_br_aide=50
 
 	/* Bloc mode developpement */
+	if,"defprc(`epModDev`)=0"
+	{
+	  epModDev=1
+	}
 	qc,br,id=BR_DEV,x=4,y=[§h],l=[100],h=[Hc],j=0,tx=[§text_br_dev],et=[si(epModDev==0,1,0)]
 	qc,BF,id=BF_MODIF_DEV,x=[§l_groupe-§taille_br_modif-4],y=[§h],l=[§taille_br_modif],h=[Hc],j=0,tx=[§text_qc_modif],rout=ModifFenetre(0,ValidDev)
 	§h=[§h+2*Ht2]

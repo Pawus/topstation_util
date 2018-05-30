@@ -436,7 +436,7 @@ rout,EcriSel(§sel,§fic,§ecri_com,§nom_model)
 /*                                                                                                   */
 /*                                  Commandes TopStation                                             */
 /*                                                                                                   */
-/*  lanc,EcriSel(Fpar.1740,C:\Users\arabaud\Desktop\test.gml,1,Model_test),[EpUtilDir]\ep_ladm\epExport */
+/*  lanc,EcriSel(Fpar.1740,C:\Users\arabaud\Desktop\test.gml,1,Model_test),[epUtil]\ep_ladm\epExport */
 /*  cmpl,Fpar.1740 ; CPro ; CDro                                                                     */
 /*  rdcl,!test(&V0:cpt==`******+00003`)                                                              */
 

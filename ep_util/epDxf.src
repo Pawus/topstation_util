@@ -70,14 +70,14 @@ rout,EnlvClq(§mat)
 rout,AplEnlvClq
 /* Ouvre une fenêtre de sélection de composant puis appelle EnlvClq       */
 {
-  chma,prop=,selc=!test(&v1:Ly><``),titr="¹Sélectionner composant¹",ok=EnlvClq,aide=[epUtilDir]\aide\epEnlvClq.txt
+  chma,prop=,selc=!test(&v1:Ly><``),titr="¹Sélectionner composant¹",ok=EnlvClq,aide=[epUtil]\aide\epEnlvClq.txt
 }
 
 rout,AplDuClq
 /* Ouvre une fenêtre de sélection de composants puis appelle DuCalq       */
 {
   !EpSlcDuClq=0
-  chsl,nom=!EpSlcDuClq,titr=¹Composants à traiter?¹,ok=DuClq,aide=[epUtilDir]\aide\epDuClq.txt
+  chsl,nom=!EpSlcDuClq,titr=¹Composants à traiter?¹,ok=DuClq,aide=[epUtil]\aide\epDuClq.txt
 }
 
 rout,DuClq
