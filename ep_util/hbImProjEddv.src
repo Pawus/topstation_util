@@ -70,7 +70,7 @@ rout,MessCaLif
 
 rout,Aide
 {
-    aide,{epUtilDir}\aide\hbImProjEddv.txt
+    aide,{epUtil}\aide\hbImProjEddv.txt
 } 
 
 rout,Anul

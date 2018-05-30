@@ -11,7 +11,7 @@
 rout,Main
 {
 	odbc,data=Cadastre,auto=1			
-	lanc,ImpTout,[epUtilDir]\epImCdif.src	
+	lanc,ImpTout,[epUtil]\epImCdif.src	
 	run,SelectToDZ
 	run,DeleteFED
 	run,TracePlans

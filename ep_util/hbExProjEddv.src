@@ -58,7 +58,7 @@ rout,SelProj
         {
             fdia,sauv=1
             §t="Sélection des projets d'EDDV"
-            chsa,nom=!HbProjets,selc=[hbcFep],bril=0,eval=`{&q1:nom(30}`,titr=[§t],ok=SelProjOk,aide={epUtilDir}\aide\hbExProjEddv.txt
+            chsa,nom=!HbProjets,selc=[hbcFep],bril=0,eval=`{&q1:nom(30}`,titr=[§t],ok=SelProjOk,aide={epUtil}\aide\hbExProjEddv.txt
         }
         else
         {
@@ -93,7 +93,7 @@ rout,SelProj
             fdia,sauv=1
 
             §t=Parcellaire foncier à exporter
-            chsl,nom=!HbParFonc,selc=[§seldep],titr=[§t],ok=SelParOk,aide={epUtilDir}\aide\hbExProjEddv.txt
+            chsl,nom=!HbParFonc,selc=[§seldep],titr=[§t],ok=SelParOk,aide={epUtil}\aide\hbExProjEddv.txt
         }
         else
         {
@@ -128,7 +128,7 @@ rout,SelProj
     
     rout,BfAide
     {
-    	aide,{epUtilDir}\aide\hbExProjEddv.txt
+    	aide,{epUtil}\aide\hbExProjEddv.txt
     }    
 }
 

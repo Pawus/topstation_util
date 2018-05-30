@@ -21,7 +21,7 @@ rout,Fenetre
 
 rout,FenAide
 {
-  aide,{epUtilDir}\aide\hbReqVertPnt.txt
+  aide,{epUtil}\aide\hbReqVertPnt.txt
 }
 
 rout,ReqVertPnt(§x,§y,§rayo)
@@ -91,7 +91,7 @@ rout,ReqVertPnt(§x,§y,§rayo)
         }
         list
         §t=¹[EPAD] Requête à la verticale d'un point¹
-        afli,imp=[%DFO:IMP],file="[base]\Listing.txt",titr={§t},aide={epUtilDir}\aide\hbReqVertPnt.txt
+        afli,imp=[%DFO:IMP],file="[base]\Listing.txt",titr={§t},aide={epUtil}\aide\hbReqVertPnt.txt
     }
 }
 

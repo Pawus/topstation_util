@@ -70,7 +70,7 @@ rout,Fenetre
 
 rout,BfAide
 {
-	aide,{epUtilDir}\aide\hbAppPlanEdv.txt
+	aide,{epUtil}\aide\hbAppPlanEdv.txt
 }
 
 rout,AppliquerPlan(§mat)
