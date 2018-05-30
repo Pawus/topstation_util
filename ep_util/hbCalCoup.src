@@ -47,7 +47,7 @@ rout,Fenetre
     
     rout,BfAide
     {
-        aide,file={epUtilDir}\aide\hbCalCoup.txt
+        aide,file={epUtil}\aide\hbCalCoup.txt
     }
 }
 

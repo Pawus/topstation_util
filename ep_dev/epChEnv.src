@@ -30,9 +30,9 @@ proc,JtDebug=1
 /* InitVal attribue automatiquement par défaut les zones de textes de 		*/
 /* 		production et de developpement lors du choix d'un nom de variable   */
 /* 		sur le formulaire de création en attribuant sa valeur actuelle 		*/
-/* LancChEnv initie le module en créant le fichier csv contenant les 		*/
-/*		données des valeurs et en copiant ce même fichier dans un fichier	*/
-/*		temporaire															*/
+/* LancChEnv initie le module en créant le fichier csv de production 		*/
+/* 		contenant les données des valeurs et en copiant ce même fichier 	*/
+/*		dans un fichier temporaire											*/
 /* ModifFenetre(§type) ouvre la fenêtre permettant l'édition ou l'accès à	*/
 /*      la création de valeurs. Elle concernera les valeurs de production   */
 /* 		ou de développement en fonction de §type							*/
@@ -54,9 +54,11 @@ proc,JtDebug=1
 
 proc,FAide={epDevDir}\aide\epChEnv.txt
 proc,FDirProc={epDevDir}\epProc.csv
+proc,FDirDev={epDevDir}\userConfig\{user}_devProc.csv
 proc,FDirIgnore={epDevDir}\epIgnore.txt
 proc,FDirTemp=C:\temp\epProcTemp.csv
-proc,Entete=¹nomproc;devVal;prodVal¹
+proc,EnteteFile=¹nomproc;val¹
+proc,EnteteTemp=¹nomproc;devVal;prodVal¹
 
 
 
@@ -159,7 +161,7 @@ rout,CreeFenetre
 	/* Bloc mode developpement */
 	if,"defprc(`epModDev`)=0"
 	{
-	  epModDev=1
+		epModDev=1
 	}
 	qc,br,id=BR_DEV,x=4,y=[§h],l=[100],h=[Hc],j=0,tx=[§text_br_dev],et=[si(epModDev==0,1,0)]
 	qc,BF,id=BF_MODIF_DEV,x=[§l_groupe-§taille_br_modif-4],y=[§h],l=[§taille_br_modif],h=[Hc],j=0,tx=[§text_qc_modif],rout=ModifFenetre(0,ValidDev)
@@ -202,6 +204,40 @@ rout,CreeFenetre
 
 	evnt,ferm=AnnulChEnv
 	qset,mod=0 
+}
+
+rout,CreeFichierTemp
+{
+	var,§fichierTemp,§fichierProd,§fichierDev,§nligneProd,§nligneDev,§textValDev,§textVal,§aux
+	§fichierTemp=[FDirTemp]
+	§fichierProd=[FDirProc]
+	§fichierDev=[FDirDev]
+	
+	
+	corb,file=[§fichierTemp] /* Tente de supprimer le fichier temporaire au cas où il serai présent*/
+	FRAJ,FILE=[§fichierTemp],proc=EnteteTemp /* rajoute l'entête */
+	
+	/* parcours l'ensemble des variables sauvegardés en production*/
+	if,"[nlfic(`[§fichierProd]`)=>§nligneProd]>1" 
+	{ 
+		runf,file=[FDirProc],form=`Np;Vp`,ldeb=2,lfin=[§nligneProd+1]
+		{
+			[ep]§textValDev={tq(Vp)} /* garde par défaut la valeur en production */
+			if,"[nlfic(`[§fichierDev]`)=>§nligneDev]>1" 
+			{ 
+				runf,file=[FDirDev],form=`Nd;Vd`,ldeb=2,lfin=[§nligneDev+1]
+				{
+					[ep]if,"[Nd==Np]" /* Si jamais cette variables est aussi gérée dans le fichier dev, on récupère sa valeur*/
+					{
+						[ep]§textValDev={tq(Vd)}
+					}
+					
+				}
+			}
+			[ep]§textVal={tq(Np)};{§textValDev};{tq(Vp)}
+			FRAJ,FILE=[§fichierTemp],proc=§textVal
+		}
+	}
 }
 
 /* Lance une fenêtre permettant de créer une nouvelle valeur*/
@@ -311,14 +347,14 @@ rout,LancAide
 
 rout,LancChEnv
 {
-	var,§fichierTemp,§fichierBase,§fichierIgnore,§nligne
+	var,§fichierTemp,§fichierProd,§fichierIgnore,§nligne
 	§fichierTemp=[FDirTemp]
-	§fichierBase=[FDirProc]
+	§fichierProd=[FDirProc]
 	§fichierIgnore=[FDirIgnore]
 	
-	if,"[nlfic(`[§fichierBase]`)=>§nligne]<1" 
+	if,"[nlfic(`[§fichierProd]`)=>§nligne]<1" 
 	{
-		[ep]FRAJ,FILE=[§fichierBase],proc=Entete
+		FRAJ,FILE=[§fichierProd],proc=EnteteFile
 	}
 	
 	if,"[nlfic(`[FDirIgnore]`)=>§nligne]<1" 
@@ -326,7 +362,7 @@ rout,LancChEnv
 		FRAJ,FILE=[§fichierIgnore]
 	}
 	
-	!FCPY,FILE=[§fichierBase],DEST=[§fichierTemp],REMP=1
+	run,CreeFichierTemp
 	run,CreeFenetre
 }
 
@@ -468,7 +504,7 @@ rout,ValidCreVal(§nom,§dev,§prod)
 	{
 		if,"[§nligne]==0" /* Si le fichier ne contient pas l'entête*/
 		{
-			FINS,FILE=[§fichierTemp],LINE=1,proc=Entete
+			FINS,FILE=[§fichierTemp],LINE=1,proc=EnteteTemp
 		}
 		FINS,FILE=[§fichierTemp],LINE=2,proc=§valeurs
 	}
@@ -510,9 +546,9 @@ rout,ValidFenetre
 	/* Dev=0, prod=1 */
 	epModDev=[[et(BR_PROD)]==1]
 	
-	var,§fichierTemp,§fichierBase,§nligne
+	var,§fichierTemp,§fichierProd,§nligne
 	§fichierTemp=[FDirTemp]
-	§fichierBase=[FDirProc]
+	§fichierProd=[FDirProc]
 	
 	
 	if,"[nlfic(`[§fichierTemp]`)=>§nligne]>1" 
@@ -522,7 +558,9 @@ rout,ValidFenetre
 			[N]=[si([epModDev]==0,tq(D),tq(P))]
 		}
 	}
-	!FCPY,FILE=[§fichierTemp],DEST=[§fichierBase],REMP=1
+	/* TODO : A partir du fichier temp réécrire le fichier Dev et Proc */
+	
+	/* !FCPY,FILE=[§fichierTemp],DEST=[§fichierProd],REMP=1 */
 	fdia
 }
 

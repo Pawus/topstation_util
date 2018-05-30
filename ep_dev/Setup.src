@@ -7,11 +7,11 @@ rout,Setup(§ext,§dir)
 	var,§l
 	§l=a
 
-	if,"defprc(`epUtil`)=0"
+	if,"defprc(`epEnv`)=0"
 	then
 	{
-		epUtil={util}
-		pgu,epUtil
+		epEnv={util}
+		pgu,epEnv
 	}
 
 	!prce,epDev%
