@@ -2,6 +2,7 @@
 ## PLD
 #############
 
+ep_dev/userConfig/*
 ep_dev/epIgnore.txt
 ep_dev/epProc.csv
 ep_util/archives
