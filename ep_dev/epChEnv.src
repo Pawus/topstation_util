@@ -53,7 +53,7 @@ proc,JtDebug=1
 /*--------------------------------------------------------------------------*/
 
 proc,FAide={epDevDir}\aide\epChEnv.txt
-proc,FDirProc={epDevDir}\epProc.csv
+proc,FDirProc={epDevDir}\userConfig\{user}_devProc.csv
 proc,FDirIgnore={epDevDir}\epIgnore.txt
 proc,FDirTemp=C:\temp\epProcTemp.csv
 proc,Entete=¹nomproc;devVal;prodVal¹
@@ -112,17 +112,8 @@ rout,CreeFenetre
 	var,§nligne,§fichier
 	§fichier=[FDirTemp]
 	
-	if,"[nlfic(`[§fichier]`)-1=>§nligne]>0" 
-	{ 
-		runf,file=[FDirTemp],form=`N;D;P`,ldeb=2,lfin=[§nligne+1]
-		{
-			if,"[N]=="
-			{
-				§nligne=[§nligne-1]
-			}
-			else
-		}
-	} 
+	§nligne=[nlfic(`[§fichier]`)-1] /* la dernière ligne étant vide */
+		
 	
 	var,§h,§hdial,§hgroupe
 	var,§l_fenetre,§l_groupe,§l_affichage
@@ -179,7 +170,7 @@ rout,CreeFenetre
 		§h=[§h+2*Ht2]
 		runf,file=[FDirTemp],form=`N;D;P`,ldeb=2,lfin=[§nligne+1]
 		{
-			if,"[N]><"
+			if,"[N><]"
 			{
 				qc,af,ID=AF_MODE_ACT_[N],x=2,y=[§h],l=[§l_affichage],h=11,j=3,tx="[N] = [tq([N])]"
 				§compt=[§compt+1]
@@ -318,7 +309,7 @@ rout,LancChEnv
 	
 	if,"[nlfic(`[§fichierBase]`)=>§nligne]<1" 
 	{
-		[ep]FRAJ,FILE=[§fichierBase],proc=Entete
+		FRAJ,FILE=[§fichierBase],proc=Entete
 	}
 	
 	if,"[nlfic(`[FDirIgnore]`)=>§nligne]<1" 
