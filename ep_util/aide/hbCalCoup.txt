@@ -6,23 +6,31 @@ CALCUL D'UNE COUPE VERTICALE D'EDDV
 	
 	La fenêtre de dialogue permet de choisir:	
       *	la ligne de coupe	
-      *	le X et le Y du coin bas gauche de la coupe	
+      *	l'altitude maximale de représentation des volumes les plus hauts; elle doit être 
+	plus haute que la cote définie la plus haute dans l'EDDV; il s'agit de	 
+	l'altitude maximale de représentation du zénith;	
+      *	l'altitude minimale de représentation des volumes les plus bas; elle doit être 
+	plus basse que la cote définie la plus basse dans l'EDDV; il s'agit de 	
+	l'altitude minimale de représentation du tréfond;				
+      *	le X et le Y du coin bas gauche de la coupe.	
 	
+	Le programme vérifie alors que toutes les coupes horizontales de volumes ont 
+	bien une altitude mini et une altitude maxi. Sinon, il édite la liste des	
+	coupes horizontales mal définies.	
 
-	Une fois la ligne sélectionnée, le programme calcule son intersection avec:	
-      *	les coupes de volumes d'EDDV	
-      *	les périmètres des EDDV	
-      *	les bâtiments ayant une altitude de base valide	
+	Puis le programme calcule l'intersection de la ligne de coupe avec:	
+      *	les coupes horizontales de volumes d'EDDV;	
+      *	les périmètres des EDDV;	
+      *	les bâtiments ayant une altitude de base valide;	
 	Si la ligne est définie entièrement en 3D, le programme calcule également son 
 	profil en long. A la fin du calcul, la coupe est représentée dans le plan en 
-	vigueur à l'endroit choisi.	
-	La coupe est aujourd'hui limitée à une altitude minimale de 10m et une 	
-	altitude maximale de 150m.		
-	
-	Les lignes et zones créées ont le radical contenu dans la procédure [hbcQQL]. 
-	Les textes créés ont le radical contenu dans la procédure [hbcQX].	
+	vigueur à l'endroit choisi.				
 	
 	Attention, la fonction de calcul ne supporte pas l'intersection de la ligne de 
 	coupe avec une zone en un point unique.	
+	La fonction plantait lorsque l'altitude de la base et/ou l'altitude mini
+	représentée des coupes est supérieure à l'altitude maxi des volumes de tréfonds. 
+	En pratique, il faut régler ces valeurs pour l'instant dans le fichier source 
+	"...\util\epUtil\hbCalCoup.src". Elle a été améliorée.
 	
 

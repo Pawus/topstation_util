@@ -18,12 +18,14 @@ EXPORTER PROJETS D'EDDV ET PARCELLAIRE FONCIER
 	Enfin, le bouton de fonction "Fichier" permet de définir le nom du fichier d'export avec son chemin.	
 	
 	Puis en appuyant sur <Ok>, des vérifications sont opérées:	
-	     -	un EDDV à exporter ne doit être concerné que par un projet et un seul	
-	     -	un plan associé à un EDDV ne doit être associé qu'à un seul domaine	
+	     -	un EDDV à exporter ne doit être concerné que par un projet et un seul;	
+	     -	un plan associé à un EDDV ne doit être associé qu'à un seul domaine;	
 	     - 	une image représentée dans un plan d'EDDV ne doit être représentée que dans ce plan (domaine 
-		unique).	
+		unique);	
+	     -	les sommets de lignes du foncier doivent avoir un radical et des attributs correspondant aux 
+		prescriptions de l'EPADESA;	
 	     -	enfin un projet d'EDDV ne doit être exporté qu'une fois. Si on veut néanmoins passer outre, 
-		il faudra modifier manuellement son attribut &v57:exp.	
+		il faudra modifier manuellement son attribut &v57:exp, ou remonter dans l'historique.		
 	Si l'export ne peut être réalisé pour l'une ou plusieurs des raisons ci-dessus, les anomalies détectées 
 	sont alors listées afin d'apporter les rectifications nécessaires.	
 	
@@ -34,9 +36,3 @@ EXPORTER PROJETS D'EDDV ET PARCELLAIRE FONCIER
 	Enfin, chaque projet exporté reçoit un attribut:
 		&v57:exp=1	
 	
-BONNE PRATIQUE DANS LA BASE CaLIF
-	
-	il est intéressant d'associer les plans d'assiette et coupes à l'EDDV avant export de façon à ce que lors 
-	du réimport dans la base, ces plans soient également mis à jour.	
-	
- 

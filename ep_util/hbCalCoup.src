@@ -2,38 +2,146 @@ proc,JtDebug=1
 
 /*	15/09/2013																																				*/
 /*		rout,CalCoup  et rout,CoupPlace																														*/	
-/*		Rectifié bog déplacement d'une coupe existante lors d'un nouveau calcul de coupe d'une même ligne de coupe en ajoutant une sel existante !HbAcCoup	*/
+/*		Rectifié bog déplacement d'une coupe existante lors d'un nouveau calcul de coupe d'une même ligne de coupe en ajoutant une sel existante !HbAncCoup	*/
 
 
 #include ".\hbOutils.inc"
 proc,EPAD=EPADESA
-proc,AltBas=10 				/* Altitude de la base pour une coupe correspondant à l'abscisse du premier point de la coupe */
-proc,AltMax=120             /* Altitude max représentée des élévations des coupes     */
-proc,AltMin=10              /* Altitude mini représentée des élévations des coupes    */
 proc,HautBat=20				/* Hauteur du bâtiment dépassant l'altitude maxi de la FCD la plus haute */
-proc,EchProf=200			/* Echelle de la coupe */
 proc,Style=Swis
 
 rout,Fenetre
 {
-    var,§t
+    var,§altmaxi,§altmini,§t
 
     §t=¹[EPAD] Calculer coupe schématique¹
 
-    dial,HB_CCS,l=230,h=44,tx={§t}
-    qc,tx,TX_LC ,002,002,076,012,j=8,tx="¹Ligne de coupe¹"
-    qc,ed,ED_LC ,080,002,048,012,j=2,vrif=lin,tdig=LIN,selc=[hbcQCL],rout=Valid
-    qc,tx,TX_XBG,002,016,076,012,j=8,tx="¹Coupe: X bas gauche¹"
-    qc,ed,ED_XBG,080,016,048,012,j=2,vrif=val,tdig=XDIG,rout=Valid
-    qc,tx,TX_YBG,130,016,048,012,j=8,tx="¹Y bas gauche¹"
-    qc,ed,ED_YBG,180,016,048,012,j=2,vrif=val,tdig=YDIG,rout=Valid
-    qc,bf,BF_OK	,002,030,050,012,j=5,tx="OK",rout=BfOk,iv=1
-    qc,bf,BF_AID,178,030,050,012,j=5,tx="Aide",rout=BfAide
+    dial,HB_CCS,l=230,h=86,tx={§t}
+    qc,tx,TX_LC 	,002,002,076,012,j=8,tx="¹Ligne de coupe¹"
+    qc,ed,ED_LC 	,080,002,048,012,j=2,vrif=lin,tdig=LIN,selc=[hbcQCL],rout=Valid_Lc
+    qc,tx,TX_ZMAX 	,002,016,076,012,j=8,tx="¹Altitude maximale¹"
+    qc,ed,ED_ZMAX 	,080,016,048,012,j=2,lmax=7,vrif=VAL,rout=Valid_ZMAX
+    qc,tx,TX_ZMAXI 	,132,016,096,012,j=2,tx=""	
+    qc,tx,TX_ZMIN 	,002,030,076,012,j=8,tx="¹Altitude minimale¹"
+    qc,ed,ED_ZMIN 	,080,030,048,012,j=2,lmax=7,vrif=VAL,rout=Valid_ZMIN
+    qc,tx,TX_ZMINI 	,132,030,096,012,j=2,tx=""
+    qc,tx,TX_ZBAS 	,002,044,076,012,j=8,tx="¹Altitude de la base¹"
+    qc,ed,ED_ZBAS 	,080,044,048,012,j=2,lmax=7,vrif=VAL,rout=Valid_ZBAS
+    qc,tx,TX_ZBASE 	,132,044,096,012,j=2,tx=""
+    qc,tx,TX_XBG	,002,058,076,012,j=8,tx="¹Coupe: X bas gauche¹"
+    qc,ed,ED_XBG	,080,058,048,012,j=2,vrif=val,tdig=XOPS,rout=Valid
+    qc,tx,TX_YBG	,130,058,048,012,j=8,tx="¹Y bas gauche¹"
+    qc,ed,ED_YBG	,180,058,048,012,j=2,vrif=val,tdig=YOPS,rout=Valid
+    qc,bf,BF_OK		,002,072,050,012,j=5,tx="OK",rout=BfOk,iv=1
+    qc,bf,BF_AID	,178,072,050,012,j=5,tx="Aide",rout=BfAide
 
-    
+    rout,Valid_Lc
+	{
+		hbTemp=1
+		F=[base]\Listing.txt
+		list,imp=[%DFO:imp],file="{F}",raz=1
+	    !Hb=[hbcFCD]*!zonl([tx(ED_LC)],-0.01)
+		§altmini=7000
+		§altmaxi=1
+		runs,!Hb
+		{
+			if,"[mm]&v1:altinf><``"
+			{
+				if,"[[mm]&v1:altinf<§altmini]@[[mm]&v1:altinf<>-999]"
+				{
+					§altmini=[[mm]&v1:altinf]
+				}
+			}
+			else
+			{
+				impr,`Coupe h. [mm]: pas de cote inférieure`				
+				hbTemp=0
+			}
+			if,"[mm]&v1:altsup><``"
+			{
+				if,"[[mm]&v1:altsup>§altmaxi]@[[mm]&v1:altsup<>999]"
+				{
+					§altmaxi=[[mm]&v1:altsup]
+				}
+			}
+			else
+			{
+				impr,`Coupe h. [mm]: pas de cote supérieure`				
+				hbTemp=0
+			}
+		}
+		list
+		if,"hbTemp"
+		{
+			qmod,TX_ZMAXI,tx="(Cote la plus haute: [§altmaxi])"
+			qmod,TX_ZMINI,tx="(Cote la plus basse: [§altmini])"
+			run,Valid
+		}
+		else
+		{
+			§t=Préparation coupe verticale
+			afli,imp=[%DFO:IMP],file="{F}",titr={§t},aide={epUtil}\aide\hbCalCoup.txt
+		}
+	}
+
+	rout,Valid_ZMAX
+	{
+		qmod,ED_ZMAX,tx=[tx(ED_ZMAX)%2]
+		run,Valid
+	}
+	
+	rout,Valid_ZMIN
+	{
+		qmod,ED_ZMIN,tx=[tx(ED_ZMIN)%2]
+		run,Valid
+	}
+	
+	rout,Valid_ZBAS
+	{
+		qmod,ED_ZBAS,tx=[tx(ED_ZBAS)%2]
+		run,Valid
+	}	
+	
     rout,Valid
     {
-        if,"[tx(ED_LC)><``]@[tx(ED_XBG)><``]@[tx(ED_YBG)><``]"
+		hbTemp=1
+		if,"len(tx(ED_ZMAX))>0"
+        {
+			if,"tx(ED_ZMAX)<§altmaxi"
+			{
+				run,Erreur(Valeur de l'altitude maximale inférieure à celle de la cote la plus haute [§altmaxi])
+				hbTemp=0
+			}
+        }
+		else
+		{
+			hbTemp=0
+		}	
+		if,"len(tx(ED_ZMIN))>0"
+        {
+			if,"tx(ED_ZMIN)>§altmini"
+			{
+				run,Erreur(Valeur de l'altitude minimale supérieure à celle de la cote la plus basse [§altmini])
+				hbTemp=0
+			}
+        }
+		else
+		{
+			hbTemp=0
+		}			
+		if,"[len(tx(ED_ZMIN))>0]@[len(tx(ED_ZBAS))>0]"
+        {
+			if,"tx(ED_ZBAS)>tx(ED_ZMIN)"
+			{
+				run,Erreur(Valeur de l'altitude de la base supérieure à celle de l'altitude minimale!)
+				hbTemp=0
+			}
+        }
+		else
+		{
+			hbTemp=0
+		}
+        if,"[tx(ED_LC)><``]@[tx(ED_XBG)><``]@[tx(ED_YBG)><``]@[hbTemp]"
         {
             qmod,BF_OK,iv=0
             evnt,entr=BfOk,bdro=BfOk
@@ -42,6 +150,9 @@ rout,Fenetre
     
     rout,BfOk
     {
+		AltBas=[tx(ED_ZBAS)]
+		AltMax=[tx(ED_ZMAX)]
+		AltMin=[tx(ED_ZMIN)]
         run,CalCoup([tx(ED_LC)],[tx(ED_XBG)],[tx(ED_YBG)])
     }
     
@@ -78,6 +189,7 @@ rout,CalCoup(§qcl,§xbg,§ybg)
 rout,Rmat_Q_KQ(§qcl)
 {
     !HbCoupe=QVuB-QVuS*!test(&q1:vue==[§qcl])
+	!HbCoupe>QVuFcd
     runs,!nev(!HbCoupe)*!pnt*~[hbcFLD]
     {   
         ral,[mm]&q0:mori="[mm]"
@@ -169,6 +281,8 @@ rout,CoupQVuFcd(§chem)
 {
   var,§qlfcd,§kqfcd,§i,§d,§qvutex1,§qvutex2
 
+  !HbSell>
+  !HbSell2>
   runs,QLFcd*!test(&Q1:vue==[§chem])
   {
     §i=0
@@ -204,7 +318,7 @@ rout,CoupQVuFcd(§chem)
       if,"§i=2"
       {
         invl,[mm]
-        join,QVuFc[[mm]:i-1],[mm],matl=QVuFcd
+        join,QVuFc[[mm]:i-1],[mm],matl=[hbcQZV]
         ferm,[mm]
         cenz,[mm]
         [mm]&q1:[[§kqfcd]&q1:]
@@ -213,16 +327,36 @@ rout,CoupQVuFcd(§chem)
         [mm]:ph=2,g=[gplan],md=[[[mm]&Q1:couph]:md]
         if,"[mm]:md==`EP_ZON_VOLUME`"
         {
-            [mm]:md=hbf_coupevol_v
+            [mm]:md=[hbmdQZV]
         }
-        dupl,[mm],QVuFco                        /* Contour en trait plein        */
-        [mm]:md=jsc_mj_tco,cl=61
+        dupl,[mm],QVuFc1.                        /* Contour en trait plein        */
+		!HbSell<[mm]
         [§qvutex1]:j=3
         [§qvutex2]:j=1
       }
     }
   }
-  !cmpf,QLFcd+QVuFc
+  runs,!HbSell									/* Elimine les doublons des contours	*/
+  {
+	§i=[mm]
+	doub,lign=[§i],sell=!HbSell,matc=[§i]
+	!HbSell2<[mm]
+  }
+  runs,!HbSell2
+  {
+	runl,[mm],opt=0							/* Décompose les contours en segments élémentaires de 2 points */
+	{
+		if,"deb_t<3"
+		{
+			lin,cma=*[deb_m]
+			lin,cma=/[fin_m]
+			lin,cma="=QVuFco"								/* QVuFco contours définitifs en segments élémentaires	*/
+			[mm]:md=jsc_mj_tco,cl=61
+			[mm]&q1:[[§kqfcd]&q1:]
+		}
+	}
+  }
+  !cmpf,QLFcd+QVuFc+QVuFc1.
 }
 
 rout,CoupQVuFed(§chem)

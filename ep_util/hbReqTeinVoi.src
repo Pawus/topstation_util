@@ -107,7 +107,8 @@ rout,ReqTeinVoi(§vol,§fed,§dist)
     run,CoupSansAlt
     list
     §t=[EPAD] - Teintes des volumes voisins
-    afli,imp=[%DFO:IMP],file="[base]\Listing.txt",titr={§t},aide=[epUtil]\aide\hbReqTeinVoi.txt
+	F=[base]\Listing.txt
+    afli,imp=[%DFO:IMP],file="{F}",titr={§t},aide=[epUtil]\aide\hbReqTeinVoi.txt
 }
 
 rout,TeinVoi(§fed,§vol,§dist)

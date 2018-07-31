@@ -83,7 +83,7 @@ rout,ReqVertPnt(§x,§y,§rayo)
                 §t={{mm}:z+11000}%2)8
                 runs,[hbcFCD]*!onc([§fed])*!zonp(hbTemp.[hbbIndMin],[§rayo]),tri={§t}
                 {
-                    impr,Volume [[[mm]&r0:l]&t2:nom] partie [[mm]&v0:niv] [[mm]&v0:ind]-- [[[mm]&r0:l]&q2:] -- [[[mm]&r0:l]&q3:]
+                    impr,Volume [[[mm]&r0:l]&t2:nom] partie [[mm]&v0:niv] [[mm]&v0:ind]-- [[[mm]&r0:l]&q2:] -- [[[mm]&r0:l]&q3:] ([mm])
                     impr,   [[mm]&v1:altinf] =====> [[mm]&v1:altsup]
                     impr
                 }
@@ -91,7 +91,8 @@ rout,ReqVertPnt(§x,§y,§rayo)
         }
         list
         §t=¹[EPAD] Requête à la verticale d'un point¹
-        afli,imp=[%DFO:IMP],file="[base]\Listing.txt",titr={§t},aide={epUtil}\aide\hbReqVertPnt.txt
+		F=[base]\Listing.txt
+        afli,imp=[%DFO:IMP],file="{F}",titr={§t},aide={epUtil}\aide\hbReqVertPnt.txt
     }
 }
 

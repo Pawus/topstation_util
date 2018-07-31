@@ -1,16 +1,16 @@
 
-CONTROLE DU TRACE DES COUPES HORIZONTALES DES VOLUMES D'EDDV	
+CONTROLE DU TRACE DES PARTIESES HORIZONTALES DES VOLUMES D'EDDV	
 	
-	Le programme va vérifier pour tous les volumes de la base de données que chaque coupe 
+	Le programme va vérifier pour tous les volumes de la base de données que chaque partie 
 	horizontale de volume est bien représentée dans au moins un plan descriptif associé à 
-	l’EDDV dont dépend la coupe.	
+	l’EDDV dont dépend le volume.	
 	
 	Les résultats sont fournis dans une liste et dans l'ordre alphabétique des EDDV:	
 	
-		Si toutes les coupes sont représentées au moins dans un plan descriptif de l’EDDV, 
+		Si toutes les parties h. sont représentées au moins dans un plan descriptif de l’EDDV, 
 		alors le programme le signale.	
 
-		Sinon le programme éditera le listing des coupes h. non tracées dans au moins un 
+		Sinon le programme éditera le listing des parties h. non tracées dans au moins un 
 		plan de l’EDDV.
 	
 

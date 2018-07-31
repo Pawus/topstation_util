@@ -1,0 +1,556 @@
+proc,JtDebug=1
+
+/* Utilisation de la boite à outils graphique EPADESA 					  */
+/*    et autres nécessaire à celles-ci                					  */
+#include "..\ep_commun\epTexteOutils.inc"
+#include "..\ep_commun\epNumOutils.inc"
+#include "..\ep_commun\epListeOutils.inc"
+#include "..\ep_commun\epGuiOutils.inc"
+#include "..\ep_commun\epRalOutils.inc"
+/* Utilisation de la boite à outils de gestion des    					  */
+/*   sytèmes de référence EPADESA                     					  */
+#include "..\ep_commun\epSridOutils.inc"
+#include "..\ep_commun\epTypeOutils.inc"/*(pour epRalOutils et epEdvOutils)*/
+
+#include ".\hbOutils.inc"
+
+proc,Hc=[12+[udiay<1.8]]
+proc,Ht=[Hc+2+2*[udiay<1.8]]
+
+rout,Prep
+{
+    !sele,deb=!Hb,fin=!Hc
+    hbOui=1
+	list,imp=[%DFO:IMP],[base]\LISTING.txt,raz=1
+	run,VerifPlan
+	if,"hbOui"
+	{
+		list
+		run,CreeFenetre
+	}
+	else
+	{
+		impr
+		impr,Compléter d'abord les attributs du plan ci-dessus
+		list
+		afli,imp=[%DFO:IMP],file="[base]\LISTING.txt"
+	}
+}
+
+rout,VerifPlan
+{
+	if,"[jtMatPlan]&d0:>>`+`"
+	{
+		hbOui=0
+		impr,plan "[[jtMatPlan]&v0:nom]" comportant plus d'un domaine)
+	}
+	else
+	{
+		DOM=[[jtMatPlan]&d0:]
+	}
+	if,"[jtMatPlan]&t5:date==``"
+	{
+		hbOui=0
+		impr,plan "[[jtMatPlan]&v0:nom]" sans attribut &t5:date
+	}
+	if,"[jtMatPlan]&t6:nordre==``"
+	{
+		hbOui=0
+		impr,plan "[[jtMatPlan]&v0:nom]" sans attribut &t6:nordre <Référence EPADESA du plan>
+	}
+	if,"[jtMatPlan]&t6:Emetteur==``"
+	{
+		hbOui=0
+		impr,plan "[[jtMatPlan]&v0:nom]" sans attribut &t6:Emetteur <Identifiant de l'émetteur du document>
+	}
+	if,"[jtMatPlan]&t10:dossier==``"
+	{
+		hbOui=0
+		impr,plan "[[jtMatPlan]&v0:nom]" sans attribut &t10:dossier <Référence interne du cabinet>
+	}
+	if,"[jtMatPlan]&q0:Io==``"
+	{
+		hbOui=0
+		impr,plan "[[jtMatPlan]&v0:nom]" sans attribut &q0:Io <Organisme ayant créé le plan>
+	}
+	
+}
+
+rout,MajListe
+{
+  if,"defprc(`ListeOk`)<>1"
+  {
+    run,MajCsvToEpl([juCartEP]\epLst_pofonc.csv,1)
+	run,MajCsvToEpl([epUtil]\epLst_SysR.csv,1)
+	ListeOk=1
+	marq,11
+  }
+}
+
+
+rout,CreeFenetre		/* Repiquage de la routine de ent_pofonc.src de l'EPADESA	*/
+{
+  var,§h,§hf,§bl,§c,§lmax,§nmbr_item,§lgauche,§href,§cref,§lf,§ldroite,§lcentre,§t
+  
+  §nmbr_item=12 /* nombre de lignes dans la fenêtre */
+ 
+  §lgauche=90 /* largeur de la colonne de gauche   (étiquette)       */
+  §lcentre=90 /* largeur de la colonne de centrale (zone de saisie)  */
+  §ldroite=0 /* largeur de la colonne de droite   (bouton poussoir) */
+  §href=2     /* interligne */
+  §cref=2     /* séparateur de colonne */
+  §lf=[§lgauche+§lcentre+§ldroite+4*§cref]    /* largeur de la fenêtre par défaut */
+  §hf=[§nmbr_item*Ht+2*§href] /* hauteur de la fenêtre par défaut */
+ 
+  §t=Retraiter points supports par plan
+  
+  run,MajListe
+  dial,EP_ENT_POFONC,l=[§lf],h=[§hf],lmin=[§lf],hmin=[§hf],lmax=512,hmax=[§hf],tx={§t},ferm=1
+  /*    PREMIERE PARTIE : CARACTERISTIQUES DU SOMMET                                               */
+  §h=[§href]                                       /* nouvelle ligne : famille du sommet (&v57:ir) */
+  §c=[§cref]
+  qc,tx,TX_RAD,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Nature du sommet :¹"
+  §c=[§c+§lgauche+§cref]
+  qc,op,OP_RAD,[§c],[§h],[§lcentre],[6*Hc]
+  {
+	run,QAOlstCMP(radicalKf) /* remplissage de la case à option avec la liste "radicalKf" */
+  }
+  Rmat=Kf
+  /******/
+  qdim,TX_RAD,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_RAD,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht]                                                          /* nouvelle ligne : précision */
+  §c=[§cref]
+  qc,tx,TX_PREC,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Classe de précision abs. : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,op,OP_PREC,[§c],[§h],[§lcentre],[6*Hc]
+  {
+	run,QAOlstCMP(precision) /* remplissage de la case à option avec la liste "precision" */
+  }
+  Prec=2
+  /****/
+  qmod,OP_PREC,et=1
+  qdim,TX_PREC,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_PREC,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  /*    DEUXIEME PARTIE : METADONNEE SOMMET                                                        */
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_LBLORG,[§c],[§h],120,[Hc],ft=2,j=2,tx="¹Origine commune des sommets : ¹"
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  qc,tx,TX_VIR,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Doc. de référence : ¹"
+  §c=[§c+§lgauche+§cref]
+  Vir=[[jtMatPlan]&t6:Emetteur]-[[jtMatPlan]&t6:nordre]
+  /*************************/
+  qc,ed,ED_VIR,[§c],[§h],[§lcentre],[Hc],tx={Vir}
+  qdim,TX_VIR,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_VIR,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_VID,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Date du document : ¹"
+  §c=[§c+§lgauche+§cref]
+  Vid=[[jtMatPlan]&t5:date]
+  /***********************/
+  qc,ed,ED_VID,[§c],[§h],[§lcentre],[Hc],tx={Vid}
+  qdim,TX_VID,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_VID,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_VIO,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Organisme : ¹"
+  §c=[§c+§lgauche+§cref]
+  Vio=[[jtMatPlan]&q0:Io]
+  /*********************/
+  qc,ed,ED_VIO,[§c],[§h],[§lcentre],[Hc],tx={Vio}
+  qdim,TX_VIO,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_VIO,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht]                                                                     /* nouvelle ligne */
+  §c=[§cref]
+  qc,tx,TX_SRID,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Projection : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,op,OP_SRID,[§c],[§h],[§lcentre],[6*Hc]
+  {
+	run,QAOlstCMP(srid) /* remplissage de la case à option avec la liste "srid" */
+  }
+  Srid=320002101
+  /************/
+  qmod,OP_SRID,et=2
+  qdim,TX_SRID,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_SRID,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  /*    TROISIEME PARTIE : METADONNEE SAISIE                                                       */
+  §h=[§h+Ht]                                                   /* nouvelle ligne : titre de partie */
+  §c=[§cref]
+  qc,tx,TX_LBLCMP,[§c],[§h],140,[Hc],ft=2,j=2,tx="¹Composants complétés par: ¹"
+  §h=[§h+Ht]                                            /* nouvelle ligne : organisme ayant saisi */
+  §c=[§cref]
+  qc,tx,TX_IO,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Cabinet : ¹"
+  §c=[§c+§lgauche+§cref]
+  Io=[epUsr]
+  /********/
+  qc,ed,ED_IO,[§c],[§h],[§lcentre],[Hc],tx=[Io],cint=vv
+  qdim,TX_IO,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_IO,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht]                                                         /* nouvelle ligne : nature */
+  §c=[§cref]
+  qc,tx,TX_IN,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Forme de la saisie : ¹"
+  §c=[§c+§lgauche+§cref]
+  qc,op,OP_IN,[§c],[§h],[§lcentre],[6*Hc]
+  {
+	run,QAOlstCMP(nature) /* remplissage de la case à option avec la liste "nature" */
+  }
+  In=digitalisé
+  /***********/
+  qmod,OP_IN,et=2
+  qdim,TX_IN,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,OP_IN,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht]                                                          /* nouvelle ligne: références */
+  §c=[§cref]
+  qc,tx,TX_IR,[§c],[§h],[§lgauche],[Hc],j=8,tx="¹Référence interne du cab. : ¹"
+  §c=[§c+§lgauche+§cref]
+  Ir=[[jtMatPlan]&t10:dossier]
+  /*********************/
+  qc,ed,ED_IR,[§c],[§h],[§lcentre],[Hc],tx={Ir}
+  qdim,TX_IR,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,ED_IR,dx=0.00,dy=0.00,dl=1.00,dh=0.00
+  §h=[§h+Ht+§href]                                                     /* nouvelle ligne : boutons */
+  §c=[§cref]
+  qc,bf,BF_BEOK,[§c],[§h],20,[Hc],j=5,tx="¹OK¹",rout=BfBeok
+  qc,bf,BF_AIDE,[§lf-§cref-32],[§h],32,[Hc],j=5,tx="¹Aide¹",rout=BfAide
+  qdim,BF_BEOK,dx=0.00,dy=0.00,dl=0.00,dh=0.00
+  qdim,BF_AIDE,dx=1.00,dy=0.00,dl=0.00,dh=0.00
+  
+  evnt,entr=BfBeok,bdro=BfBeok
+  qset,foc=OP_RAD,mod=0
+}
+
+rout,BfBeok
+{
+	run,ETlstPRC([et(OP_RAD)],radicalKf,Rmat)
+	run,ETlstPRC([et(OP_PREC)],precision,Prec)
+	Vir=[tx(ED_VIR)]
+	Vid=[tx(ED_VID)]
+	Vio=[tx(ED_VIO)]
+	run,ETlstPRC([et(OP_SRID)],srid,Srid)
+	Io=[tx(ED_IO)]
+	run,ETlstPRC([et(OP_IN)],nature,In)
+	Ir=[tx(ED_IR)]
+	run,Trait
+}
+
+rout,BfAide
+{
+	aide,{epUtil}\aide\hbRetraitPtSup.txt
+}
+
+rout,QAONat										/* Repiquage de la routine de ent_pofonc.src de l'EPADESA	*/								
+/* Remplissage du menu déroulant du complément d'information sur la nature du sommet */
+/*  en fonction de la nature */
+{
+  var,§liste,§mat
+  §liste=sommet
+  /* valeurs possible pour les bornes */
+  run,FormateTexte(epcFB,§mat)
+  if,"Rmat==§mat"
+  {
+    §liste=borne
+  }
+  /* valeurs possible pour les clous */
+  run,FormateTexte(epcFC,§mat)
+  if,"Rmat==§mat"
+  {
+    §liste=clou
+  }
+  /* valeurs possible pour les gravures */
+  run,FormateTexte(epcFG,§mat)
+  if,"Rmat==§mat"
+  {
+    §liste=gravure
+  }
+  qmod,id=CB_NAT
+  {
+	run,QAOlstCMP([§liste]) /* remplissage de la case à option avec la liste ad hoc */
+  }
+}
+
+
+
+rout,Trait
+{
+	list,imp=[%DFO:IMP],[base]\LISTING.txt,raz=1
+	impr,Retraitement des points supports du plan [[jtMatPlan]&v0:nom]
+	impr,============================================================
+	run,PrepSel
+	run,RplaPntSup
+	run,RmatPntSup
+	run,PrepSel2
+	run,RalO57
+	run,RalQ0
+	run,RalT0
+	run,RalV1
+	run,RalV57
+	run,RalV59
+	marq,10,`Retraitement des points supports du plan[[jtMatPlan]&v0:nom]`
+	list
+	fdia
+	afli,imp=[%DFO:IMP],file="[base]\LISTING.txt"
+}
+
+rout,PrepSel
+{
+	var,§p
+	
+	!HbLgn=(FSL+[hbcF]+[hbcFLP]+[hbcFCD]+[hbcFCL]+[hbcFCO]+[hbcFED]+[hbcFEO]+[hbcFEd])*!dom([DOM])
+	!HbPts=!nev(!HbLgn,L)
+	!HbPts>FB+FC+FG+FP+FS+Kf+Kfn+[hbcFED]+[hbcFEO]+[hbcFEd]+[hbcFLD]+[hbcFLO]
+	if,"nmbr(`!HbPts`)=0"
+	{
+		impr,Pas de points supports remplacés ou renommés
+	}
+	else
+	{
+		runs,!HbPts*~!tout	/* voir si utile de mettre en oeuvre ce qui suit; si oui, on retire ~!tout */
+		{
+			§p=[mm]
+			!HbSel=!HbLgn*!onc([§p])
+			runs,!HbSel
+			{
+				runl,[mm],opt=0
+				{
+					if,"[deb_m==§p]@[deb_t=1]@[typ_h>1]"
+					{
+						impr,Point [§p] non traité car sur un arc de cercle de la ligne [mm]
+						!HbPts>[§p]
+					}
+				}
+			}
+		}
+	}
+}
+
+rout,RplaPntSup
+{	
+	var,§pnt,§proche
+	
+	runs,!HbPts
+	{
+		§pnt=[mm]
+		runs,(FB+FC+FG+FP+FS+Kf+Kfn)*!pntp([§pnt],0.003)
+		{
+			§proche=[mm]
+			rpla,[§pnt],[§proche],selo=!HbLgn
+			impr,Point [§pnt] remplacé par le point proche [§proche]
+			!HbPts>[§pnt]
+			[fi]
+		}
+	}
+}
+
+rout,RmatPntSup
+{
+	var,§pnt
+	
+	runs,!HbPts
+	{
+		§pnt=[mm]
+		rmat,[§pnt],Kfn
+		if,"xtr([mm]:md,0,7)><`EP_PNT_`"
+		{
+			[mm]:md=ep_pnt_courant
+		}
+		impr,Point [§pnt] renommé en [mm]
+	}
+}
+
+rout,PrepSel2
+{
+	!HbPts2=!nev(!HbLgn,L)
+	!HbPts2>[hbcFED]+[hbcFEO]+[hbcFEd]+[hbcFLD]+[hbcFLO]
+}
+
+rout,RalO57
+{
+	runs,!HbPts2
+	{
+		hbTemp=1
+		if,"[mm]&o57:srid><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			ral,[mm]&o57:srid=[Srid]
+		}
+		if,"[[mm]&o57:xo><``]@[[mm]&o57:yo><``]"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			ral,[mm]&o57:xo=[[mm]:x],yo=[[mm]:y]
+		}
+		if,"hbTemp"
+		{
+			impr,[mm]  Rallonge O57 complétée: [[mm]&o57:]
+		}
+	}
+}
+
+rout,RalQ0
+{
+	var,§aa
+	
+	runs,!HbPts2
+	{
+		hbTemp=1
+		if,"[mm]&q0:dtc><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			§aa=20
+			if,"[[mm]:AN>90]"
+			{
+				§aa=19
+			}
+			ral,[mm]&q0:dtc=[[mm]:JO]/[[mm]:MO]/[§aa][[mm]:AN]
+		}
+		if,"[mm]&q0:Io><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			ral,[mm]&q0:Io=[Io]
+		}
+		if,"[mm]&q0:In><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			ral,[mm]&q0:In=[In]
+		}
+		if,"[mm]&q0:Ir><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			ral,[mm]&q0:Ir="[Ir]"
+		}		
+		if,"hbTemp"
+		{
+			impr,[mm]  Rallonge q0 complétée: [[mm]&q0:]
+		}
+	}
+}
+
+rout,RalT0
+{
+	runs,!HbPts2
+	{
+		hbTemp=1
+		if,"[mm]&T0:nat><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			ral,[mm]&T0:nat="Inconnu"
+		}
+		if,"hbTemp"
+		{
+			impr,[mm]  Rallonge T0 complétée: [[mm]&T0:]
+		}
+	}
+}
+
+rout,RalV1
+{
+	runs,!HbPts2
+	{
+		hbTemp=1
+		if,"[mm]&V1:prec><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			ral,[mm]&V1:prec=[Prec]
+		}
+		if,"hbTemp"
+		{
+			impr,[mm]  Rallonge V1 complétée: [[mm]&V1:]
+		}
+	}
+}
+
+rout,RalV57
+{
+	runs,!HbPts2
+	{
+		hbTemp=1
+		if,"[mm]&v57:ir><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			if,"[[mm]:r==`FB`]#[[mm]:r==`FC`]#[[mm]:r==`FG`]#[[mm]:r==`FP`]#[[mm]:r==`FS`]"
+			{
+				ral,[mm]&v57:ir=[[mm]:r]
+			}
+			else
+			{
+				ral,[mm]&v57:ir=[Rmat]
+			}
+		}
+		if,"hbTemp"
+		{
+			impr,[mm]  Rallonge v57 complétée: [[mm]&v57:]
+		}
+	}
+}
+
+rout,RalV59
+{
+	runs,!HbPts2
+	{
+		hbTemp=1
+		if,"[mm]&V59:Ir><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			ral,[mm]&V59:Ir="[Vir]"
+		}		
+		if,"[mm]&V59:Id><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			ral,[mm]&V59:Id="[Vid]"
+		}
+		if,"[mm]&V59:Io><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			ral,[mm]&V59:Io=[Vio]
+		}
+		if,"[mm]&V59:mori><``"
+		{
+			hbTemp=0
+		}
+		else
+		{
+			ral,[mm]&V59:mori=[mm]
+		}
+		if,"hbTemp"
+		{
+			impr,[mm]  Rallonge V59 complétée: [[mm]&V59:]
+		}
+	}
+}

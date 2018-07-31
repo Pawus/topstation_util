@@ -7,36 +7,28 @@ rout,Setup(§ext,§dir)
   var,§i
   
   var,§l
-  §l=a  /* Compteur pour hierarchiser les niveaux des menus */
+  §l=a
 
   !prce,epUtil%
   !prce,epFic%
   !prce,epCart%
-  
-  if,"defprc(`epEnv`)=0"
-  then
-  {
-    epEnv={util}
-    pgu,epEnv
-  }
-  
-  epUtil={epEnv}\ep_util
+  epUtil={util}\ep_util
   epFicCoul={epInitDir}\ep_couleurs.txt
-  juCartEP={epEnv}\ep_cart
+  juCartEP={util}\ep_cart
   pgu,epUtil%
   pgu,epFic%
   pgu,juCartEP
 
   !prce,jtIcon[§ext]%
   !prce,jtMenu[§ext]%
-  jtIcon[§ext]"¹Epa¹"=
-  jtMenu[§ext]"¹Epa¹"=
-  jtIcon[§ext][§l]"¹Palette Epa¹"={epUtil}\icon\menu.bmp
-  jtMenu[§ext][§l]"¹Palette Epa¹"=lanc,MenuExec(Ep),{jtCart}\Menus{ex}
+  jtIcon[§ext]"¹Epad¹"=
+  jtMenu[§ext]"¹Epad¹"=
+  jtIcon[§ext][§l]"¹Palette Epad¹"={epUtil}\icon\menu.bmp
+  jtMenu[§ext][§l]"¹Palette Epad¹"=lanc,MenuExec(Ep),{jtCart}\Menus{ex}
   §l=[chr(asc(§l)+1)]
   
-  jtIcon[§ext][§l]"¹Contrôle de la config. Epa¹"={epUtil}\icon\verif.bmp
-  jtMenu[§ext][§l]"¹Contrôle de la config. Epa¹"=lanc,ForceVerif,{epUtil}\verif{ex}
+  jtIcon[§ext][§l]"¹Contrôle de la config. Epad¹"={epUtil}\icon\verif.bmp
+  jtMenu[§ext][§l]"¹Contrôle de la config. Epad¹"=lanc,ForceVerif,{epUtil}\verif{ex}
   §l=[chr(asc(§l)+1)]
   
   jtIcon[§ext][§l]""=
@@ -72,6 +64,8 @@ rout,Setup(§ext,§dir)
   jtMenu[§ext][§l]5"¹Forcer rallonges E¹"=lanc,AplSetRalE,{epUtil}\eddv{ex}
   jtIcon[§ext][§l]6""=
   jtMenu[§ext][§l]6""=
+  jtIcon[§ext][§l]7"¹Points supports¹"={epUtil}\icon\hbRetraitPtSup.bmp
+  jtMenu[§ext][§l]7"¹Retraiter les points supports¹"=lanc,Prep,{epUtil}\hbRetraitPtSup{ex}
   §l=[chr(asc(§l)+1)]
 
   jtIcon[§ext][§l]"¹Graphisme¹"=
@@ -114,8 +108,12 @@ rout,Setup(§ext,§dir)
   jtMenu[§ext][§l]e"¹Tracer FCL du plan Z sup¹"=lanc,Fenetre,{epUtil}\hbTraFCLPzsup{ex}  
   jtIcon[§ext][§l]f"¹Tracer coupes h. même dom Dn¹"={epUtil}\icon\hbTraCoupDom.bmp
   jtMenu[§ext][§l]f"¹Tracer coupes h. même dom Dn¹"=lanc,Fenetre,{epUtil}\hbTraCoupDom{ex} 
-  jtIcon[§ext][§l]g"¹Contrôle du tracé des coupes h. de volumes¹"={epUtil}\icon\hbCtrTraCoup.bmp
-  jtMenu[§ext][§l]g"¹Contrôle du tracé des coupes h. de volumes¹"=lanc,Fenetre,{epUtil}\hbCtrTraCoup{ex}
+  jtMenu[§ext][§l]g"¹Recréer limites de fractions¹"=lanc,LancFcd2FclS,{epUtil}\epFCx.src{ex}
+  jtIcon[§ext][§l]h"¹Contrôle du tracé des coupes h. de volumes¹"={epUtil}\icon\hbCtrTraCoup.bmp
+  jtMenu[§ext][§l]h"¹Contrôle du tracé des coupes h. de volumes¹"=lanc,Fenetre,{epUtil}\hbCtrTraCoup{ex}
+  jtIcon[§ext][§l]i"¹Retraiter pts supports¹"={epUtil}\icon\hbRetraitPtSup.bmp
+  jtMenu[§ext][§l]i"¹Retraiter pts supports¹"=lanc,Prep,{epUtil}\hbRetraitPtSup{ex}  
+  jtMenu[§ext][§l]j"¹Tableau de bord des plans¹"=lanc,LancTdb,{epUtil}\epEdvTdb{ex}
   §l=[chr(asc(§l)+1)]
   
   jtMenu[§ext][§l]"¹Coupes verticales d'EDDV¹"=
@@ -124,18 +122,7 @@ rout,Setup(§ext,§dir)
   jtIcon[§ext][§l]b"¹Calculer coupe¹"={epUtil}\icon\hbCalCoup.bmp
   jtMenu[§ext][§l]b"¹Calculer coupe¹"=lanc,Fenetre,{epUtil}\hbCalCoup{ex}
   §l=[chr(asc(§l)+1)]
-  
-  jtIcon[§ext][§l]""=
-  jtMenu[§ext][§l]""=
-  §l=[chr(asc(§l)+1)]
-  
-  jtMenu[§ext][§l]"¹Publication de plans¹"=lanc,LancPubPlan,{epUtil}\epPubPlan{ex}
-  §l=[chr(asc(§l)+1)]
-  jtIcon[§ext][§l]"¹Palette Epad¹"={epUtil}\icon\menu.bmp
-  jtMenu[§ext][§l]"¹Tableau de bord EDDV¹"=lanc,LancTdb,{epUtil}\epEdvTdb{ex}
-  §l=[chr(asc(§l)+1)]
                                                   
-  /* suppression d'une éventuelle boite "EPAD" qui survivrai ... */
   n=1 
   runp,jtBoite###_Nom
   {
@@ -150,6 +137,18 @@ rout,Setup(§ext,§dir)
     }
   }
   !prce,jtBoite[n)03]_%
+  §i=0
+  jtBoite[n)03]_[[§i+1=>§i])03]=menu
+  jtBoite[n)03]_Nom=¹Epad¹
+  jtBoite[n)03]_Ouv=1
+  jtBoite[n)03]_Pos=0
+  jtBoite[n)03]_Rg=1
+  jtBoite[n)03]_X=60
+  jtBoite[n)03]_Y=100
+
+  lanc,InitMenu,[juCartEP]\initMenu
+
+  lanc,Verif,[epUtil]\verif
 
   mnu
 }

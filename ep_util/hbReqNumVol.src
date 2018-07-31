@@ -50,6 +50,7 @@ rout,ChoiVol
         }
         
         !HbCoupes=[hbcFCD]*!onc([§vol])
+		!HbCoupesV=[hbcQZV]*!onc([§vol])
         !HbPlans=0
         runs,jtPlan*!onc([§fed])
         {
@@ -61,6 +62,10 @@ rout,ChoiVol
             {
                 !HbPlans<[mm]
             }
+			if,"nmbr(`!HbCoupesV*!dom([[mm]&d0:])`)"
+			{
+				!HbPlans<[mm]
+			}
         }
         qmod,BF_PLAN,iv=0
         qmod,BF_OK,iv=0
@@ -81,6 +86,11 @@ rout,ChoiVol
     rout,BfOkPlan(§jtplan)
     {
         plna,[§jtplan]
+		runs,FCD*!onc([ma(OP_NVOL)])*!visb
+		{
+			visp,pnt=[mm],cent=1
+			[fi]
+		}
     }
 
 	rout,BfOk
@@ -228,7 +238,7 @@ rout,ReqVol(§vol,§fed)
     {
         impr,Plans associés à l'EDDV décrivant des coupes du volume [[§vol]&t2:nom]
         impr,=====================================================================================
-        runs,!HbPlans,tri={mm}:z)6
+        runs,!HbPlans,tri={mm}:z)10
         {
             impr,[[mm]&v0:nom]  -   Référence [[mm]&t6:nordre] [[mm]&t6:indice]
             runs,!HbCoupes*!dom([[mm]&d0:]),tri=`{{mm}&v0:niv)5}{{mm}&v0:ind)3}{{mm}:z)7}`

@@ -60,7 +60,7 @@ rout,CtrEddv(§fed)
     }
 	if,"nmbr(`!Hb`)"
 	{
-		impr,Coupes non représentées dans au moins un plan descriptif
+		impr,Parties de volumes non représentées dans au moins un plan descriptif
 		impr,--------------------------------------------------------
 		run,ImpNomCoupes
 	}

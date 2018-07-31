@@ -5,8 +5,8 @@ REQUETE SELON UN NUMERO DE VOLUME D'ETAT DESCRIPTIF DE DIVISION EN VOLUME
 	d'une coupe horizontale du volume dans le plan.	
 		
 	Une fois le volume choisi, le nom de l'EDDV et son état sont affichés dans la fenêtre et on 
-	peut accéder au bouton de fonction suivant qui permet de choisir d'appliquer un plan 
-	descriptif associé à l'EDDV et comprenant une coupe du volume.	
+	peut accéder au bouton de fonction suivant qui permet d'appliquer un plan descriptif associé 
+	à l'EDDV comprenant une coupe du volume, et de la viser.		
 	
 	En appuyant sur le bouton <Ok>, l'assiette complète du volume est tramée et la vue est centrée 
 	dessus. Cette assiette correspond à l'empilement de toutes les coupes horizontales.	

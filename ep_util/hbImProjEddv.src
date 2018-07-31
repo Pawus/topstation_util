@@ -1,14 +1,4 @@
-/*  dernière modification :                                               */
-/*         14 01 2016 (SD)                                                */
-/*  auteur :                                                              */
-/*         FB François Bellanger (francois.bellanger@mercator2.fr)        */
-/*         SD Samuel Déom (sdeom@epadesa.fr)                              */
-
 proc,JtDebug=1
-
-/* Pour fonctionner dépends des fichiers sources suivants :               */
-/*    ZonEddv.prc de HbFonc                                               */
-/*    ProjEddvI.prc de HbFonc                                             */
 
 #include ".\hbOutils.inc"
 
@@ -20,9 +10,6 @@ proc,PTSINVAR=(FB+FC+FG+FP+FS+Kf)                                   /* Points in
 proc,SELCMPDEP=hbbFld.1+[hbcCom]+[hbcDep]+[hbcDro]+[hbcPro]+epZO+epZP         /* Sélection de départ admissible dans une base de travail                      */
 
 rout,SelFic
-/*  Cette routine vérifie que la base est bien la CaLiF avant de lancer   */
-/*      le processus d'import en appelant MessCaLif                       */
-/*  Dernière modification : ?? ?? 20?? (FB)                               */
 {
     if,"defprc(`hbbEpad`)=0"
     {
@@ -51,10 +38,6 @@ rout,SelFic
 }
 
 rout,MessCaLif
-/*  Cette routine affiche un message d'avertissement et permet d'annuler  */
-/*      le départ de la routine d'import si l'utilisateur le souhaite,    */
-/*      sinon amorce le processus d'import en appelant SelFich            */
-/*  Dernière modification : ?? ?? 20?? (FB)                               */
 {
     dial,id=HB_CALIF,l=[L],h=[H],lmin=[L],lmax=[L],tx="[EPAD] Import de projets d'EDDV dans la CaLif"
     qc,gr,GR_1,002,000,[L-4],[H-1-13-1],tx="",ft=
@@ -79,11 +62,6 @@ rout,Anul
 }
 
 rout,SelFich
-/*  Cette routine permet de sélectionner le fichier contenant le projet à */
-/*      importer et de lancer :                                           */
-/*      1) soit la routine d'import dans une base de travail LecFicBaseT  */
-/*      2) soit la routine d'import dans la CaLiF (VerifCaLif)            */
-/*  Dernière modification : ?? ?? 20?? (FB)                               */
 {
     var,§t
 
@@ -132,16 +110,13 @@ rout,SelFich
 
 
 rout,LecFicBaseT
-/*  Cette routine permet d'importer les composants enregistrés dans le    */
-/*      fichier dont le nom et contenu dans la procédure tx(HB_FIC) dans  */
-/*      la base courante (normalement une base de travail)                */
-/*  Dernière modification : ?? ?? 20?? (FB)                               */
 {
     var,§fic
     
     §fic=[tx(HB_FIC)]
     exec,[§fic]
     marq,10,`Import [§fic]`
+	fdia
     list,file=[base]\LISTING,raz=1
     impr
     impr,IMPORT DE PROJETS D'EDDV DANS UNE BASE DE TRAVAIL
@@ -155,11 +130,6 @@ rout,LecFicBaseT
 }
 
 rout,VerifCaLif(§fic)
-/*  Cette routine procéde à des contrôles et appelle la routine           */
-/*      LecFicBaseC s'ils sont satisfaits                                 */
-/*    A l'issue de son execution la sélection !HbFedpr contient les       */
-/*      composants projets contenus dans l'import                         */
-/*  Dernière modification : ?? ?? 20?? (FB)                               */
 {
     var,§fep,§sel,§sel2
     
@@ -258,8 +228,6 @@ rout,VerifCaLif(§fic)
 }
 
 rout,LecFicBaseC(§fic)
-/*  Cette routine procéde à l'import proprement dit dans la CaLiF         */
-/*  Dernière modification : ?? ?? 20?? (FB)                               */
 {
     list,file=[base]\LISTING,raz=1
     impr
@@ -267,24 +235,17 @@ rout,LecFicBaseC(§fic)
     impr,===========================================
     impr    
     list
-    
-    /* On supprime le projet de la CaLiF */
     run,SupProCaLif
-    /* Il ne reste plus que le FED dans son état initial */
-    
-    /* On traite le cas des "points doubles" */
     run,ESomInvT([§fic])                    /*  Ecriture dans un nouveau fichier des sommets invariants du fichier provenant de la base T    */
     run,PtsAnorm([§fic])                    /*  Liste les sommets de T ayant des XY différents de ceux de C, ainsi que les sommets dits        */
                                             /*  invariants de T non présents dans la base C                                                    */              
     run,ESomInvC                             /*    Ecriture des M X Y des sommets invariants de la base C - par précaution                        */
-    
-    
     run,SupFEDCaLif
     !HbAvant=!tout
     cmpr,"[§fic]",rnum=1,seli=[PTSINVAR]    /*  Reprise en ignorant les sommets invariants du fichier provenant de la base T                   */
-    run,RmatFedpro([§fic])                    /*  Réimmatriculation des Fedpro avec le même indice que dans le fichier provenant de la base T    */
+    run,RmatFedpro([§fic])                  /*  Réimmatriculation des Fedpro avec le même indice que dans le fichier provenant de la base T    */
     exec,[base]\hbSomInvT.txt               /*    Exécution du fichier des sommets invariants du fichier provenant de la base T                  */
-    exec,[base]\hbSomInvC.txt                  /*    Lecture des M X Y des sommets invariants de la base C                                        */
+    exec,[base]\hbSomInvC.txt               /*    Lecture des M X Y des sommets invariants de la base C                                        */
     /* fsup,file=[base]\hbSomInvT.txt       */
     /* fsup,file=[base]\hbSomInvC.txt       */ 
     !HbApres=!tout*~!HbAvant
@@ -320,9 +281,8 @@ rout,SupProCaLif
     {
         §fep=[mm]
         §i=[§i+1]
-        run,ChProActi([§fep]) /* On récupére l'état du projet dans la base */
+        run,ChProActi([§fep])
         dcod,ETPR,form=`§fed;§fepacti;§nbind;§indacti`
-        /* On supprime les volumétries attachées au projets les unes après les autres dans l'ordre décroissant des indices */
         for,0->§j,§j<§nbind,§j+1->§j
         {
             §a=[xtr(`eabcd`,[§nbind-§j],1)]
@@ -344,12 +304,9 @@ rout,SupProCaLif
 }
 
 rout,SupFEDCaLif
-/*  Cette supprime les volumétries concernées par le projet qui sont dans */
-/*      la CaLiF AVANT import                                             */
-/*  Dernière modification : 14 01 2016 (SD)                               */
 {
-    var,§dom,§fed,§jtplan,§nom_plan,§nom_edd
-
+    var,§dom,§fed,§jtplan,§nom_eddv,§nom_plan
+	
     list,file=[base]\LISTING,raz=0    
     runs,!HbFED
     {
@@ -368,7 +325,6 @@ rout,SupFEDCaLif
             §nom_plan=[[§jtplan]&v0:nom]
             !cmpe,[§jtplan]
             if,"defcmp(§jtplan)"
-            then
             {
               impr,Impossible de supprimer le plan [§nom_plan] de l'EDDV [[§fed]&q1:nom]
             }
@@ -378,24 +334,20 @@ rout,SupFEDCaLif
             }
         }
         !HbPts=!pts([§fed]+!onc([§fed])*([hbcFLD]+[hbcFLO]+[hbcFCD]+[hbcFCO]+[hbcFCL]))
-        §nom_edd=[[§fed]&q1:nom]
+        §nom_eddv=[[§fed]&q1:nom]
         lanc,SuppEddv([§fed],0),[hbFonc]\ZonEddv.prc
         if,"defcmp(§fed)"
-        then
         {
-          impr,Impossible de supprimer l'EDDV [§nom_edd] de la base CaLif sans archivage.
-          impr,  Oncle de l'EDDV [§nom_edd] (composants restant empechant la suppression):
-          rdcl,!onc([§fed]) 
+          impr,Impossible de supprimer l'EDDV [§nom_eddv] de la base CaLif sans archivage.
+		  impr,  Oncles de l'EDDV [§nom_eddv] (composants restant empechant la suppression):
+		  rdcl,!onc([§fed]) 
         }
         else
         {
-          impr,Suppression de l'EDDV [§nom_edd] de la base CaLif sans archivage.
+          impr,Suppression de l'EDDV [§nom_eddv] de la base CaLif sans archivage.
         }
         !cmpe,!HbPts*~([PTSINVAR])
-        if,"nmbr(`!HbFED`)"
-        {
-            impr
-        }
+        impr
     }
     list
 }

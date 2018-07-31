@@ -41,6 +41,14 @@ rout,SelProj
     rout,BfOk
     {
         NomFicTxt=[tx(ED_FICH)]
+		if,"tx(ED_SPAF)><``"
+		{
+			!HbParFonc=[tx(ED_SPAF)]
+		}
+		else
+		{
+			!HbParFonc>
+		}
         run,Verif
         if,"hbOui"
         {
@@ -139,7 +147,7 @@ rout,Verif
 	fdia
     
     hbOui=1
-	list,[base]\LISTING,raz=1
+	list,imp=[%dfo:imp],[base]\LISTING,raz=1
 	impr
 	impr,RECTIFICATIONS PREALABLES A APPORTER A LA BASE POUR L'EXPORT DE PROJETS D'EDDV
     impr,==============================================================================
@@ -151,15 +159,6 @@ rout,Verif
 	runs,!HbProjets
     {
 	    §fep=[mm]
-		/*	run,ChProActi([§fep])													*/
-		/*	dcod,ETPR,form=`FED;FEP1;NBIND;INDACTI`									*/
-		/*	if,"INDACTI><`0`"														*/
-		/*	{																		*/
-		/*		hbOui=0																*/
-		/*		impr,Projet "[[§fep]&q1:nom]"										*/
-		/*		impr,		A désactiver au préalable pour autoriser son export.	*/
-		/*		impr																*/
-		/*	}																		*/
 		if,"[§fep]&v57:exp><``"
         {
             if,"[§fep]&v57:exp=1"
@@ -222,12 +221,22 @@ rout,Verif
 
 rout,VerifPntsSup
 {
-	var,§j,§p
+	var,§i,§j,§p
 	
-	!Hb>
+	!HbRad>
 	runs,FE%*!nev(!HbProjets)
 	{
-		!Hb=J*!nev(F%*!asc([mm]))
+		!HbRad<!pnt*!nev(F%*!asc([mm]),L)*~(FB+FC+FG+FP+FS+Kf+Kfn+[hbcFED]+[hbcFEO]+[hbcFEd]+[hbcFLD]+[hbcFLO])
+	}
+	runs,([hbcF]+[hbcFLP])*!HbParFonc
+	{
+		!HbRad<!pnt*!nev([mm],L)*~(FB+FC+FG+FP+FS+Kf+Kfn)
+	}
+	!Hb=!HbRad
+	if,"nmbr(`!HbRad`)"
+	{
+		impr,Sélection !HbRad - radicaux à retraiter avant export
+		impr,====================================================
 	}
 	whil,"nmbr(`!Hb`)"
 	{
@@ -236,7 +245,7 @@ rout,VerifPntsSup
 		    hbOui=0
 			§j=[mm]
 			!Hb>[§j]
-			impr,Point [§j] support de composant(s) foncier(s):
+			impr,[§j] - radical non accepté - support de ligne(s) du foncier:
 			runs,F%*!onc([mm])
 			{
 				impr,		[mm]	Domaine(s) [[mm]&d0:]
@@ -246,8 +255,13 @@ rout,VerifPntsSup
 	!Hb>
 	runs,FE%*!nev(!HbProjets)
 	{
-		!Hb<!nev(F%*!asc([mm]))*~(FC£+FE%+FL£+FX%)
+		!Hb<!pnt*!nev(F%*!asc([mm]),L)
 	}
+	runs,([hbcF]+[hbcFLP])*!HbParFonc
+	{
+		!Hb<!pnt*!nev([mm],L)
+	}
+	§i=0
 	whil,"nmbr(`!Hb`)"
 	{
 		runs,!Hb
@@ -271,10 +285,18 @@ rout,VerifPntsSup
 			{
 				§j=[§j] V59 
 			}
+			if,"[§i=0]@[§j><``]"
+			{
+				impr,Sélection !HbRal - rallonges à retraiter avant export
+				impr,=====================================================
+				§i=1
+				!HbRal>
+			}
 			if,"§j><``"
 			{
 				hbOui=0
-				impr,Sommet [§p] avec attributs incomplets sur rallonge(s) [§j] support de composant(s) foncier(s):
+				!HbRal<[§p]
+				impr,[§p] - rallonge(s) [§j] inexistante(s) -  support de ligne(s) du foncier:
 				runs,F%*!onc([§p])
 				{
 					impr,		[mm]	Domaine(s) [[mm]&d0:]
@@ -307,13 +329,28 @@ rout,ExProj
     runs,jtPlan*!Hb
     {
         !Hb<jtCart*!onc([mm])           /* les jtCart  */
-        runs,Dimg*!dom([[mm]&d0:])
+		if,"defprc(`epDimgDir`)=0"
+		{
+			epDimgDir=Images
+		}
+        runs,Dim%*!dom([[mm]&d0:])
         {
-            !Hb<[mm]
-            !HbDimg<[mm]
+			if,"[mm]&v2:im>>`epDimgDir`"
+			{
+				!Hb<[mm]
+			}
+			else
+			{
+				ral,[mm]&v2:im="{epDimgDir}[xtr([mm]&v2:im,6,100)]"
+				!Hb<[mm]
+			}
+			!HbDimg<[mm]
         }
-    }    
-    !Hb<!HbParFonc                      /* Les FL FLP Fpar et F */
+    }
+	if,"nmbr(`!HbParFonc`)"
+	{
+		!Hb<!HbParFonc                      /* Les FL FLP Fpar et F */
+	}
     !Hb<!util(!Hb)
     
     list,[NomFicTxt],raz=1
@@ -326,12 +363,12 @@ rout,ExProj
     marq,10,`Export des projets !HbProjets`
     if,"nmbr(`!HbDimg`)"
     {
-    	list,[base]\LISTING,raz=1
+    	list,imp=[%dfo:imp],[base]\LISTING,raz=1
     	impr
     	impr,FICHIERS IMAGES A FOURNIR AVEC L'EXPORT DE PROJETS D'EDDV
         impr,==========================================================
     	impr
-        runs,!HbDimg
+        runs,!HbDimg,tri=&v2:im
         {
             impr,[[mm]&v2:im]
         }

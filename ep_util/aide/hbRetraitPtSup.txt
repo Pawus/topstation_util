@@ -1,0 +1,55 @@
+
+RETRAITE LES POINTS SUPPORTS DU FONCIER SELON LE PLAN APPLIQUE
+	
+	Cette fonction permet  de retraiter tous les points supports des composants du foncier ayant le domaine 
+	de ce plan, de les remplacer, les renommer si nécessaire et également de compléter les attributs demandés 
+	par l'EPADESA. Bien sûr, si certains attributs de points supports sont déjà renseignés, ils ne seront pas 
+	modifiés. Les points de justifications des composants du foncier ne seront pas traités.
+	
+	Préalablement à l'exécution de la fonction, si nécessaire, il est demandé de compléter le composant 
+	définissant le plan en vigueur de radical "jtPlan" par les attributs:	
+		&t5:date	
+		&t6:nordre <Référence EPADESA du plan>	
+		&q0:Io <Organisme ayant créé le plan>	
+	De plus, le plan ne doit être associé qu'à un seul domaine.	
+	Il est suggéré aussi de préciser l'attribut &t6:ref <Référence interne au cabinet>.	
+	
+	
+	Une fenêtre de dialogue demande certaines valeurs des attributs à compléter:	
+	     - 	Nature: en général on laissera "point support", sauf pour un plan de division où on choisira "Sommet 
+		arpenté";	
+	     -	Ecart-type;	
+	     -	Doc de référence: la référence du plan en vigueur est proposée;	
+	     -	Date du document: la date du plan en vigueur est proposée;	
+	     -	Organisme: l'organisme ayant créé le plan en vigueur est proposé;	
+	     -	Projection: le Lambert France Nord est proposé par défaut;	
+	     -	Cabinet: la valeur contenue dans la variable epUsr est proposée;	
+	     -	Forme de la saisie: par défaut, coordonnées établies par digitalisation;	
+	     -	Référence interne du cabinet: par défaut, l'attribut &t6:ref du plan de radical "jtPlan" appliqué.	
+	
+	En appuyant sur le bouton <Ok>, le programme va d'abord sélectionner tous les points supports 
+	des composants du foncier ayant le domaine de ce plan.	
+	Puis il va essayer de remplacer les points qui n'ont pas un radical autorisé par un sommet foncier situé à 
+	moins de 3mm de celui-ci.	
+	Ensuite il va renommer les points qui n'ont pas un radical autorisé en sommet de radical "Kfn".	
+	Il va remplacer le modèle du point support en EP_PNT_COURANT s'il n'a pas déjà un modèle commençant par EP_PNT_.
+	Enfin, il va compléter les attributs manquants par ceux ci-dessus pré-définis.	
+	D'autres attributs, s'ils sont manquants, sont complétés d'office comme suit:	
+	     -	Complément nature: la valeur "Inconnu" est appliquée;		
+	     -	Matricule (d'origine): le matricule du sommet en cours est enregistré;	
+	     -	Positions X et Y (d'origine): les valeurs X et Y du sommet en cours sont reprises;		
+	     -	Dernière modif.: la date contenue dans l'origine du sommet en cours.	
+	
+	A la fin de l'opération, un listing des traitements est édité.			
+
+ORDRE PREFERENTIEL DE RETRAITEMENT
+	
+	L'ordre sera de façon logique des plans les plus anciens aux plans les plus récents, et dans une série de plans 
+	d'un EDDV, d'abord le plan d'assiette, puis les plans par niveaux du tréfonds au zénith.	
+	
+POUR NE MODIFIER QUE CERTAINS ATTRIBUTS
+	
+	On pourra utiliser la fonction Cart > Modifier, sélectionner un composant, modifier le ou les attributs
+	voulus, puis éventuellement utiliser les boutons <Répercuter> pour justement répercuter des attributs sur 
+	d'autres sommets.	
+	
